@@ -52,6 +52,9 @@ class MetOfficeClient(
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
     _time_series_endpoint = TIME_SERIES_ENDPOINT
+    # ACHTUNG: in MetOffice, the station id col is "id" in the stations endpoint but "i"
+    # in the time series endpoint
+    _time_series_station_id_col = "i"
     _api_key_param_name = "key"
 
     def __init__(
@@ -69,7 +72,7 @@ class MetOfficeClient(
         self.SJOIN_KWS = sjoin_kws
         if res_param is None:
             res_param = "hourly"
-        self.res_param_dict = {"res": res_param}
+        self.request_params = {"res": res_param}
 
         # need to call super().__init__() to set the cache
         super().__init__()
@@ -86,13 +89,60 @@ class MetOfficeClient(
         try:
             return self._variables_df
         except AttributeError:
-            # TODO: DRY setting `res_param` in `self.request_params`?
             with self._session.cache_disabled():
-                response_content = self._get_content_from_url(
-                    self._variables_endpoint, params=self.res_param_dict
-                )
+                response_content = self._get_content_from_url(self._variables_endpoint)
             self._variables_df = self._variables_df_from_content(response_content)
             return self._variables_df
+
+    def _ts_df_from_content(self, response_content):
+        # this is the time of the latest observation, from which the API returns the
+        # latest 24 hours
+        latest_obs_time = pd.Timestamp(response_content["SiteRep"]["DV"]["dataDate"])
+
+        # now we get the data, which is provided for each station separately, and for
+        # each of the days in which the previous 24h fall
+        ts_list = response_content["SiteRep"]["DV"]["Location"]
+
+        # ensure that we have a list even if there is only one location (in which case
+        # the API returns a dict)
+        if isinstance(ts_list, dict):
+            ts_list = [ts_list]
+
+        # process the response
+        df = pd.json_normalize(ts_list)
+        # first, filter by stations of interest
+        df = df[
+            df[self._time_series_station_id_col].isin(
+                self.stations_gdf[self._stations_id_col].values
+            )
+        ]
+        # process the observations in the filtered location
+        ts_df = pd.concat(
+            [
+                pd.concat(
+                    [
+                        pd.DataFrame(obs_dict["Rep"])
+                        for obs_dict in station_records[::-1]
+                    ]
+                ).assign(**{self._time_serise_station_id_col: station_id})
+                for station_id, station_records in df["Period"].items()
+            ]
+        )
+
+        # compute the timestamp of each observation (the "$" column contains the minutes
+        # before `latest_obs_time`
+        ts_df["time"] = ts_df["$"].apply(
+            lambda dt: latest_obs_time - datetime.timedelta(minutes=int(dt))
+        )
+
+        _index_cols = [self._time_series_station_id_col, "time"]
+        # ts_df = ts_df[variable_ids]
+        # convert into long data frame
+        return (
+            ts_df.apply(pd.to_numeric)
+            .assign(**{_index_col: ts_df[_index_col] for _index_col in _index_cols})
+            .pivot_table(index=_index_cols)
+        )
 
     def get_ts_df(
         self,
@@ -114,76 +164,6 @@ class MetOfficeClient(
             (columns).
 
         """
-        # process variables
-        variable_ids = self._get_variable_ids(variables)
-
+        # disable cache since the endpoint returns the latest 24h of data
         with self._session.cache_disabled():
-            response_content = self._get_content_from_url(
-                self._time_series_endpoint, params=self.res_param_dict
-            )
-
-        # this is the time of the latest observation, from which the API returns the
-        # latest 24 hours
-        latest_obs_time = pd.Timestamp(response_content["SiteRep"]["DV"]["dataDate"])
-
-        # now we get the data, which is provided for each station separately, and for
-        # each of the days in which the previous 24h fall
-        ts_list = response_content["SiteRep"]["DV"]["Location"]
-
-        # ensure that we have a list even if there is only one location (in which case
-        # the API returns a dict)
-        if isinstance(ts_list, dict):
-            ts_list = [ts_list]
-
-        # process the response
-        df = pd.json_normalize(ts_list)
-        # first, filter by stations of interest
-        # ACHTUNG: in MetOffice, the station id col is "id" in the stations endpoint but
-        # "i" in the data endpoint
-        _data_station_id_col = "i"
-        df = df[
-            df[_data_station_id_col].isin(
-                self.stations_gdf[self._stations_id_col].values
-            )
-        ]
-        # process the observations in the filtered location
-        ts_df = pd.concat(
-            [
-                pd.concat(
-                    [
-                        pd.DataFrame(obs_dict["Rep"])
-                        for obs_dict in station_records[::-1]
-                    ]
-                ).assign(**{_data_station_id_col: station_id})
-                for station_id, station_records in df["Period"].items()
-            ]
-        )
-
-        # compute the timestamp of each observation (the "$" column contains the minutes
-        # before `latest_obs_time`
-        ts_df["time"] = ts_df["$"].apply(
-            lambda dt: latest_obs_time - datetime.timedelta(minutes=int(dt))
-        )
-        # ts_df = ts_df.set_index("time")  # .sort_index()
-
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        # TODO: avoid this if the user provided variable codes (in which case the dict
-        # maps variable codes to variable codes)?
-        variable_label_dict = {
-            str(variable_id): variable
-            for variable_id, variable in zip(variable_ids, variables)
-        }
-        _index_cols = [_data_station_id_col, "time"]
-        # convert into long data frame, rename the variable columns, ensure numeric
-        # dtypes and return the sorted data frame
-        return (
-            ts_df[variable_ids]
-            .apply(pd.to_numeric)
-            .assign(**{_index_col: ts_df[_index_col] for _index_col in _index_cols})
-            .pivot_table(index=_index_cols)
-            .rename(columns=variable_label_dict)
-            .apply(pd.to_numeric, axis=1)
-            .sort_index()
-        )
+            return self._get_ts_df(variables)

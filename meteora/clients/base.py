@@ -189,31 +189,57 @@ class BaseClient(abc.ABC):
 
         return region.to_crs(self.CRS)
 
-    # @abc.abstractmethod
-    # def get_ts_df(self, *args, **kwargs):
-    #     """
-    #     Get time series data frame.
+    @abstract_attribute
+    def _time_series_endpoint(self):
+        pass
 
-    #     Returns
-    #     -------
-    #     ts_df : pd.DataFrame
-    #         Data frame with a time series of meaurements (rows) at each station
-    #         (columns).
-    #     """
-    #     pass
+    def _time_series_params(self, variable_ids, *args, **kwargs):
+        return {}
 
-    # @abc.abstractmethod
-    # def get_ts_gdf(self, *args, **kwargs):
-    #     """
-    #     Get time series geo-data frame.
+    def _post_process_ts_df(self, ts_df):
+        return ts_df.apply(pd.to_numeric, axis="columns").sort_index()
 
-    #     Returns
-    #     -------
-    #     ts_gdf : gpd.GeoDataFrame
-    #         Geo-data frame with a time series of meaurements (columns) at each station
-    #         (rows), with an additional geometry column with the stations' locations.
-    #     """
-    #     pass
+    def _get_variable_ids(self, variables):
+        # ensure variable codes have the same dtype as in the variables data frame
+        return pd.Series(
+            self._get_variable_ids(variables),
+            dtype=self.variables_df[self._variables_id_col].dtype,
+        )
+
+    def _rename_variables_cols(self, ts_df, variables, variable_ids):
+        # TODO: avoid this if the user provided variable codes (in which case the dict
+        # maps variable codes to variable codes)?
+        variable_label_dict = {
+            str(variable_id): variable
+            for variable_id, variable in zip(variable_ids, variables)
+        }
+
+        # also keep only columns of requested variables
+        return ts_df[variable_label_dict.keys()].rename(columns=variable_label_dict)
+
+    def _get_ts_df(self, variables, *args, **kwargs):
+        # process the variables arg
+        variable_ids = self._get_variable_ids(variables)
+
+        # prepare request
+        time_series_params = self._time_series_params(variable_ids, *args, **kwargs)
+        response_content = self._get_content_from_url(
+            variable_ids, params=time_series_params
+        )
+
+        # process response content into a time series data frame
+        ts_df = self._ts_df_from_content(response_content)
+
+        # set station, time multi-index
+        ts_df = ts_df.set_index([self._stations_id_col, self._time_col])
+
+        # ensure that we return the variable column names as provided by the user in the
+        # `variables` argument (e.g., if the user provided variable codes, use
+        # variable codes in the column names).
+        ts_df = self._rename_variables_cols(ts_df, variables, variable_ids)
+
+        # apply a generic post-processing function
+        return self._post_process_ts_df(ts_df)
 
     @property
     def request_headers(self):

@@ -158,11 +158,43 @@ class IEMClient(
             stations_gdf.columns
         ]
 
+    def _time_series_params(self, variable_ids, start, end):
+        # process date args
+        start = pd.Timestamp(start)
+        end = pd.Timestamp(end)
+
+        return {
+            "year1": start.year,
+            "month1": start.month,
+            "day1": start.day,
+            "year2": end.year,
+            "month2": end.month,
+            "day2": end.day,
+            self._vars_param: ",".join(variable_ids),
+            "station": ",".join(self.stations_gdf[self._stations_id_col]),
+        }
+
+    def _ts_df_from_content(self, response_content):
+        return (
+            pd.read_csv(
+                response_content,
+                na_values="M",
+            )
+            .groupby(["stations", self._time_col])
+            .first(skipna=True)
+        )
+
+    def _post_process_ts_df(self, ts_df):
+        # In this case:
+        # - avoid sorting on index as data is already sorted
+        # - avoid to_numeric as data is already numeric
+        return ts_df
+
     def get_ts_df(
         self,
-        variables: Union[str, list[str]] = None,
-        start: Union[DateTimeType, None] = None,
-        end: Union[DateTimeType, None] = None,
+        variables: Union[str, list[str]],
+        start: DateTimeType,
+        end: DateTimeType,
     ) -> pd.DataFrame:
         """Get time series data frame for a given station.
 
@@ -183,68 +215,7 @@ class IEMClient(
             (columns).
 
         """
-        # process variables
-        if not pd.api.types.is_list_like(variables):
-            variables = [variables]
-        variable_ids = [self._process_variable_arg(variable) for variable in variables]
-
-        # process date args
-        start = pd.Timestamp(start)
-        end = pd.Timestamp(end)
-        # prepare params
-        params = {
-            "year1": start.year,
-            "month1": start.month,
-            "day1": start.day,
-            "year2": end.year,
-            "month2": end.month,
-            "day2": end.day,
-            self._vars_param: ",".join(variable_ids),
-            "station": ",".join(self.stations_gdf[self._stations_id_col]),
-        }
-
-        # request url
-        ts_df = pd.read_csv(
-            self._get_content_from_url(self._time_series_endpoint, params=params),
-            na_values="M",
-        )
-
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        # TODO: avoid this if the user provided variable codes (in which case the dict
-        # maps variable codes to variable codes)?
-        variable_label_dict = {
-            str(variable_id): variable
-            for variable_id, variable in zip(variable_ids, variables)
-        }
-
-        # return in proper shape, i.e., station and time as multi index, variables as
-        # columns and numeric dtypes. In this case:
-        # - avoid sorting on index as data is already sorted
-        # - avoid to_numeric as data is already numeric
-        _station_col = "station"
-        # # return in proper shape, i.e., time as index, station as columns, and infer
-        # # numeric dtypes. In this case:
-        # # - avoid sorting on index as data is already sorted
-        # # - avoid to_numeric as data is already numeric
-        # ts_df = (
-        #     ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
-        #     .set_index(self._time_col)[variable_codes + [_station_col]]
-        #     .rename(columns=variable_label_dict)
-        #     .pivot(columns=_station_col)
-        #     .swaplevel(axis="columns")
-        #     .sort_index(axis="columns")
-        # )
-        # # .apply(pd.to_numeric, axis=1)
-        # # .sort_index()
-        # return ts_df
-        return (
-            ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
-            .groupby([_station_col, self._time_col])
-            .first(skipna=True)[variable_ids]
-            .rename(columns=variable_label_dict)
-        )
+        return self._get_ts_df(variables, start, end)
 
 
 class ASOSOneMinIEMClient(IEMClient):

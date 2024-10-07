@@ -1,13 +1,12 @@
 """Meteocat client."""
 
-import datetime
 from typing import List, Mapping, Union
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType
 from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyHeaderMixin,
@@ -75,36 +74,7 @@ class MeteocatClient(
     def _variables_df_from_content(self, response_content: dict) -> pd.DataFrame:
         return pd.json_normalize(response_content)
 
-    def _get_ts_df(
-        self,
-        variable_id: int,
-        date: datetime.date,
-    ) -> pd.DataFrame:
-        """Get time series data frame for a given day.
-
-        Parameters
-        ----------
-        variable_id : int
-            Meteocat variable code.
-        date : datetime.date
-            datetime.date instance for the requested data period.
-
-        Returns
-        -------
-        ts_df : pd.DataFrame
-            Data frame with a time series of meaurements (rows) at each station
-            (columns).
-
-        """
-        # # process date arg
-        # if isinstance(date, str):
-        #     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        # request url
-        request_url = (
-            f"{self._time_series_endpoint}"
-            f"/{variable_id}/{date.year}/{date.month:02}/{date.day:02}"
-        )
-        response_content = self._get_content_from_url(request_url)
+    def _ts_df_from_content(self, response_content):
         # process response
         response_df = pd.json_normalize(response_content)
         # filter stations
@@ -140,17 +110,47 @@ class MeteocatClient(
         # ts_df.index = pd.to_datetime(ts_df.index)
         # ACHTUNG: do not sort the index here
         # note that we are renaming a series
-        return (
-            ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
-            .set_index([self._stations_id_col, self._time_col])[values_col]
-            .rename(variable_id)
-        )
+        return ts_df.assign(
+            **{self._time_col: pd.to_datetime(ts_df[self._time_col])}
+        ).set_index([self._stations_id_col, self._time_col])[values_col]
+
+    # def _get_date_ts_df(
+    #     self,
+    #     variable_id: int,
+    #     date: datetime.date,
+    # ) -> pd.DataFrame:
+    #     """Get time series data frame for a given day.
+
+    #     Parameters
+    #     ----------
+    #     variable_id : int
+    #         Meteocat variable code.
+    #     date : datetime.date
+    #         datetime.date instance for the requested data period.
+
+    #     Returns
+    #     -------
+    #     ts_df : pd.DataFrame
+    #         Data frame with a time series of meaurements (rows) at each station
+    #         (columns).
+
+    #     """
+    #     # # process date arg
+    #     # if isinstance(date, str):
+    #     #     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    #     # request url
+    #     request_url = (
+    #         f"{self._time_series_endpoint}"
+    #         f"/{variable_id}/{date.year}/{date.month:02}/{date.day:02}"
+    #     )
+    #     response_content = self._get_content_from_url(request_url)
+    #     return self._ts_df_from_content(response_content).rename(variable_id)
 
     def get_ts_df(
         self,
         variables: Union[str, int, List[str], List[int]],
-        start_date: Union[str, datetime.date],
-        end_date: Union[str, datetime.date],
+        start: DateTimeType,
+        end: DateTimeType,
     ) -> pd.DataFrame:
         """Get time series data frame.
 
@@ -171,41 +171,38 @@ class MeteocatClient(
             (columns).
 
         """
-        # process variables
-        # ensure variable codes have the same dtype as in the variables data frame
-        variable_ids = pd.Series(
-            self._get_variable_ids(variables),
-            dtype=self.variables_df[self._variables_id_col].dtype,
-        )
+        # process the variables arg
+        variable_ids = self._get_variable_ids(variables)
 
-        # return self._get_ts_df(variable, date)
-        date_range = pd.date_range(start=start_date, end=end_date, freq="D")
+        # the API only allows returning data for a given day and variable so we have to
+        # iterate over the date range and variables to obtain data for all days
+        date_range = pd.date_range(start=start, end=end, freq="D")
+        ts_df = pd.concat(
+            [
+                pd.concat(
+                    [
+                        # self._get_date_ts_df(variable_id, date)
+                        self._ts_df_from_content(
+                            self._get_content_from_url(
+                                f"{self._time_series_endpoint}/{variable_id}/"
+                                f"{date.year}/{date.month:02}/{date.day:02}"
+                            )
+                        ).rename(variable_id)
+                        for variable_id in variable_ids
+                    ],
+                    axis="columns",
+                    ignore_index=False,
+                )
+                for date in date_range
+            ],
+            axis="index",
+            ignore_index=False,
+        )
 
         # ensure that we return the variable column names as provided by the user in the
         # `variables` argument (e.g., if the user provided variable codes, use
         # variable codes in the column names).
-        # TODO: avoid this if the user provided variable codes (in which case the dict
-        # maps variable codes to variable codes)?
-        variable_label_dict = {
-            variable_id: variable
-            for variable_id, variable in zip(variable_ids, variables)
-        }
-        return (
-            pd.concat(
-                [
-                    pd.concat(
-                        [
-                            self._get_ts_df(variable_id, date)
-                            for variable_id in variable_ids
-                        ],
-                        axis="columns",
-                        ignore_index=False,
-                    )
-                    for date in date_range
-                ],
-                axis="index",
-                ignore_index=False,
-            )
-            .rename(columns=variable_label_dict)
-            .sort_index()
-        )
+        ts_df = self._rename_variables_cols(ts_df, variables, variable_ids)
+
+        # apply a generic post-processing function
+        return self._post_process_ts_df(ts_df)

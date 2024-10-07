@@ -1,13 +1,12 @@
 """Agrometeo client."""
 
-import datetime
 from typing import Any, List, Mapping, Union
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType
 from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
 
 # API endpoints
@@ -154,11 +153,63 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         variables_df[VARIABLES_NAME_COL] = variables_df[VARIABLES_NAME_COL].str.strip()
         return variables_df
 
+    def _time_series_params(
+        self, variable_ids, start, end, scale=None, measurement=None
+    ):
+        # process date args
+        start_date = pd.Timestamp(start).strftime(API_DT_FMT)
+        end_date = pd.Timestamp(end).strftime(API_DT_FMT)
+        # process scale and measurement args
+        if scale is None:
+            # the API needs it to be lowercase
+            scale = SCALE
+        if measurement is None:
+            measurement = MEASUREMENT
+
+        _stations_ids = self.stations_gdf.index.astype(str)
+
+        return {
+            "from": start_date,
+            "to": end_date,
+            "scale": scale,
+            "sensors": ",".join(
+                f"{variable_id}:{measurement}" for variable_id in variable_ids
+            ),
+            "stations": ",".join(_stations_ids),
+        }
+
+    def _ts_df_from_content(self, response_content):
+        # parse the response as a data frame
+        ts_df = pd.json_normalize(response_content["data"]).set_index(self._time_col)
+        ts_df.index = pd.to_datetime(ts_df.index)
+        ts_df.index.name = settings.TIME_NAME
+
+        # ts_df.columns = self.stations_gdf[STATIONS_ID_COL]
+        # ACHTUNG: note that agrometeo returns the data indexed by keys of the form
+        # "{station_id}_{variable_code}_{measurement}". We can ignore the latter and
+        # convert to a two-level (station, variable) multi index
+        ts_df.columns = (
+            ts_df.columns.str.split("_")
+            .str[:-1]
+            .map(tuple)
+            .rename(["station", "variable"])
+        )
+        # convert station ids to integer
+        # ts_df.columns = ts_df.columns.set_levels(
+        #     ts_df.columns.levels["station"].astype(int), level="station"
+        # )
+        ts_df.columns = ts_df.columns.set_levels(
+            ts_df.columns.levels[0].astype(int), level=0
+        )
+
+        # convert to long form and return it
+        return ts_df.stack(level="station").swaplevel()
+
     def get_ts_df(
         self,
         variables: Union[str, int, List[str], List[int]],
-        start_date: Union[str, datetime.date],
-        end_date: Union[str, datetime.date],
+        start: DateTimeType,
+        end: DateTimeType,
         *,
         scale: Union[str, None] = None,
         measurement: Union[str, None] = None,
@@ -188,78 +239,6 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             (columns).
 
         """
-        # process variables
-        variable_ids = self._get_variable_ids(variables)
-
-        # process date args
-        if isinstance(start_date, datetime.date):
-            start_date = start_date.strftime(API_DT_FMT)
-        if isinstance(end_date, datetime.date):
-            end_date = end_date.strftime(API_DT_FMT)
-        # process scale and measurement args
-        if scale is None:
-            # the API needs it to be lowercase
-            scale = SCALE
-        if measurement is None:
-            measurement = MEASUREMENT
-        # # process the stations_id_col arg
-        # if stations_id_col is None:
-        #     stations_id_col = self._stations_id_col
-
-        _stations_ids = self.stations_gdf.index.astype(str)
-        # TODO: use parameters instead of str formatting?
-        data_params = {
-            "from": start_date,
-            "to": end_date,
-            "scale": scale,
-            "sensors": ",".join(
-                f"{variable_id}:{measurement}" for variable_id in variable_ids
-            ),
-            "stations": ",".join(_stations_ids),
-        }
-        response_content = self._get_content_from_url(
-            self._time_series_endpoint, params=data_params
-        )
-
-        # parse the response as a data frame
-        ts_df = pd.json_normalize(response_content["data"]).set_index(self._time_col)
-        ts_df.index = pd.to_datetime(ts_df.index)
-        ts_df.index.name = settings.TIME_NAME
-
-        # ts_df.columns = self.stations_gdf[STATIONS_ID_COL]
-        # ACHTUNG: note that agrometeo returns the data indexed by keys of the form
-        # "{station_id}_{variable_code}_{measurement}". We can ignore the latter and
-        # convert to a two-level (station, variable) multi index
-        ts_df.columns = (
-            ts_df.columns.str.split("_")
-            .str[:-1]
-            .map(tuple)
-            .rename(["station", "variable"])
-        )
-        # convert station ids to integer
-        # ts_df.columns = ts_df.columns.set_levels(
-        #     ts_df.columns.levels["station"].astype(int), level="station"
-        # )
-        ts_df.columns = ts_df.columns.set_levels(
-            ts_df.columns.levels[0].astype(int), level=0
-        )
-
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        # TODO: avoid this if the user provided variable codes (in which case the dict
-        # maps variable codes to variable codes)?
-        variable_label_dict = {
-            str(variable_id): variable
-            for variable_id, variable in zip(variable_ids, variables)
-        }
-
-        # convert into long data frame, rename the variable columns, ensure numeric
-        # dtypes and return the sorted data frame
-        return (
-            ts_df.stack(level="station")
-            .swaplevel()
-            .rename(columns=variable_label_dict)
-            .apply(pd.to_numeric, axis=1)
-            .sort_index()
+        return self._get_ts_df(
+            self, variables, start, end, scale=scale, measurement=measurement
         )

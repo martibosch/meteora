@@ -99,6 +99,16 @@ class AemetClient(
             self._variables_df = self._variables_df_from_content(response_content)
             return self._variables_df
 
+    def _ts_df_from_content(self, response_content):
+        # response_content returns a dict with urls, where the one under the "datos" key
+        # contains the JSON data
+        ts_df = pd.read_json(response_content["datos"], encoding="latin1")
+        # filter only stations from the region
+        # TODO: how to handle better the "indicativo" column name? i.e., the stations id
+        # column is "idema" in the observation data frame but "indicativo" in the
+        # stations data frame.
+        return ts_df[ts_df[self._stations_id_col].isin(self.stations_gdf["indicativo"])]
+
     def get_ts_df(
         self,
         variables: Union[str, int, List[str], List[int]],
@@ -119,39 +129,6 @@ class AemetClient(
             (columns).
 
         """
-        # process the variable arg
-        variable_ids = self._get_variable_ids(variables)
-
+        # disable cache since the endpoint returns the latest 24h of data
         with self._session.cache_disabled():
-            response_content = self._get_content_from_url(self._time_series_endpoint)
-        # response_content returns a dict with urls, where the one under the "datos" key
-        # contains the JSON data
-        ts_df = pd.read_json(response_content["datos"], encoding="latin1")
-        # filter only stations from the region
-        # TODO: how to handle better the "indicativo" column name? i.e., the stations id
-        # column is "idema" in the observation data frame but "indicativo" in the
-        # stations data frame.
-        ts_df = ts_df[
-            ts_df[self._stations_id_col].isin(self.stations_gdf["indicativo"])
-        ]
-
-        # # convert to wide_df
-        # TODO: allow returning long_df?
-        # ts_df = long_df.pivot_table(
-        #     index=self._time_col, columns=self._stations_id_col, values=variable_codes
-        # )
-        # set station-time multi-level index
-        ts_df = ts_df.set_index([self._stations_id_col, self._time_col])
-
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        # TODO: avoid this if the user provided variable codes (in which case the dict
-        # maps variable codes to variable codes)?
-        variable_label_dict = {
-            str(variable_id): variable
-            for variable_id, variable in zip(variable_ids, variables)
-        }
-
-        # return the sorted data frame
-        return ts_df[variable_ids].rename(columns=variable_label_dict).sort_index()
+            return self._get_ts_df(variables)
