@@ -58,7 +58,7 @@ test = [
     "coverage[toml]",
     "pytest",
     "pytest-cov",
-    "python-dotenv",
+    "python-dotenv[cli]",
     "ruff",
 ]
 
