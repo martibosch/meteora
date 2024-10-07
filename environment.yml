@@ -9,3 +9,4 @@ dependencies:
   - python=3.12
   - pip:
     - -e .
+  - tox>=4
