@@ -8,7 +8,7 @@ from os import path
 
 import osmnx as ox
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
 from meteostations import settings, utils
 from meteostations.clients import (
@@ -120,11 +120,17 @@ class BaseClientTest:
             ts_df_kwargs = self.ts_df_kwargs.copy()
         for variables in [self.variables, self.variable_codes]:
             ts_df = self.client.get_ts_df(self.variables, *ts_df_args, **ts_df_kwargs)
+            # test data frame shape
             assert len(ts_df.columns) == len(self.variables)
             # TODO: use "station" as `level` arg?
             assert len(ts_df.index.get_level_values(0).unique()) == len(
                 self.client.stations_gdf
             )
+            # TODO: use "time" as `level` arg?
+            assert is_datetime64_any_dtype(ts_df.index.get_level_values(1))
+            # test that index is sorted (note that we need to test it as a multi-index
+            # because otherwise the time index alone is not unique in long data frames
+            assert ts_df.index.is_monotonic_increasing
 
 
 class APIKeyClientTest(BaseClientTest):

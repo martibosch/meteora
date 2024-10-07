@@ -140,9 +140,11 @@ class MeteocatClient(
         # ts_df.index = pd.to_datetime(ts_df.index)
         # ACHTUNG: do not sort the index here
         # note that we are renaming a series
-        return ts_df.set_index([self._stations_id_col, self._time_col])[
-            values_col
-        ].rename(variable_id)
+        return (
+            ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
+            .set_index([self._stations_id_col, self._time_col])[values_col]
+            .rename(variable_id)
+        )
 
     def get_ts_df(
         self,
