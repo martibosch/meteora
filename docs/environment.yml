@@ -1,4 +1,4 @@
-name: meteostations
+name: meteora
 channels:
   - conda-forge
 dependencies:

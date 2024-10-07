@@ -1,1 +1,1 @@
-"""Tests for Meteostations geopy."""
+"""Tests for Meteora."""

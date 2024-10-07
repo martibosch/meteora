@@ -1,6 +1,6 @@
 # User guide
 
-Meteostations-geopy provides a set of provider-specific clients to get observations from meteorological stations. The list of supported providers is available at the [API reference page](https://meteostations-geopy.readthedocs.io/en/latest/api.html#available-clients).
+Meteora provides a set of provider-specific clients to get observations from meteorological stations. The list of supported providers is available at the [API reference page](https://meteora.readthedocs.io/en/latest/api.html#available-clients).
 
 ## Example notebooks
 
@@ -14,8 +14,8 @@ user-guide/agrometeo
 user-guide/meteocat
 ```
 
-- [Agrometeo](https://meteostations-geopy.readthedocs.io/en/latest/user-guide/agrometeo.html)
-- [Meteocat](https://meteostations-geopy.readthedocs.io/en/latest/user-guide/meteocat.html)
+- [Agrometeo](https://meteora.readthedocs.io/en/latest/user-guide/agrometeo.html)
+- [Meteocat](https://meteora.readthedocs.io/en/latest/user-guide/meteocat.html)
 
 ## Selecting a region
 
@@ -32,7 +32,7 @@ All clients are instantiated with at least the `region` argument, which defines 
 When accessing to data (e.g., the `get_ts_df` method of each client), the `variable` argument is used to select the variable to retrieve. The `variables` argument can be either:
 
 a) a string or integer with variable name or code according to the provider's nomenclature, or
-b) a string referring to essential climate variable (ECV) following the meteostations-geopy nomenclature, i.e., a string among:
+b) a string referring to essential climate variable (ECV) following the meteora nomenclature, i.e., a string among:
 
 ```python
 ECVS = [

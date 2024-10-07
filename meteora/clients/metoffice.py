@@ -6,9 +6,9 @@ from typing import List, Mapping, Union
 import pandas as pd
 import pyproj
 
-from meteostations import settings
-from meteostations.clients.base import BaseJSONClient, RegionType
-from meteostations.mixins import (
+from meteora import settings
+from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyParamMixin,
     VariablesEndpointMixin,
@@ -103,10 +103,9 @@ class MetOfficeClient(
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an agrometeo variable code (integer or
-            string), an essential climate variable (ECV) following the
-            meteostations-geopy nomenclature (string), or an agrometeo variable name
-            (string).
+            Target variables, which can be either a MetOffice variable code (integer or
+            string), an essential climate variable (ECV) following the meteora
+            nomenclature (string), or a MetOffice variable name (string).
 
         Returns
         -------

@@ -20,7 +20,7 @@ from fiona.errors import DriverError
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
 
-from meteostations import settings, utils
+from meteora import settings, utils
 
 try:
     import osmnx as ox

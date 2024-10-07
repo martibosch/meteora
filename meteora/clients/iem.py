@@ -7,9 +7,9 @@ import geopandas as gpd
 import pandas as pd
 import pyproj
 
-from meteostations import settings
-from meteostations.clients.base import BaseTextClient, DateTimeType, RegionType
-from meteostations.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
+from meteora import settings
+from meteora.clients.base import BaseTextClient, DateTimeType, RegionType
+from meteora.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
 
 # API endpoints
 BASE_URL = "https://mesonet.agron.iastate.edu"
@@ -169,10 +169,9 @@ class IEMClient(
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an agrometeo variable code (integer or
-            string), an essential climate variable (ECV) following the
-            meteostations-geopy nomenclature (string), or an agrometeo variable name
-            (string).
+            Target variables, which can be either an IEM variable code (integer or
+            string), an essential climate variable (ECV) following the meteora
+            nomenclature (string), or an agrometeo variable name (string).
         start_date, end_date : str or datetime.date
             String in the "YYYY-MM-DD" format or datetime.date instance, respectively
             representing the start and end days of the requested data period.

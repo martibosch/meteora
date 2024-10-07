@@ -3,57 +3,57 @@
 ## Available clients
 
 ```{eval-rst}
-.. automodule:: meteostations.clients.aemet
+.. automodule:: meteora.clients.aemet
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.clients.agrometeo
+.. automodule:: meteora.clients.agrometeo
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.clients.meteocat
+.. automodule:: meteora.clients.meteocat
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.clients.metoffice
+.. automodule:: meteora.clients.metoffice
    :members:
 ```
 
 ## Base abstract client
 
 ```{eval-rst}
-.. automodule:: meteostations.base
+.. automodule:: meteora.base
    :members:
 ```
 
 ## Mixins
 
 ```{eval-rst}
-.. automodule:: meteostations.mixins.auth
+.. automodule:: meteora.mixins.auth
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.mixins.region
+.. automodule:: meteora.mixins.region
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.mixins.stations
+.. automodule:: meteora.mixins.stations
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteostations.mixins.variables
+.. automodule:: meteora.mixins.variables
    :members:
 ```
 
 ## Utils
 
 ```{eval-rst}
-.. automodule:: meteostations.utils
+.. automodule:: meteora.utils
    :members:
 ```

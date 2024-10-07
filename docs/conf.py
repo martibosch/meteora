@@ -3,7 +3,7 @@
 import os
 import sys
 
-project = "Meteostations geopy"
+project = "Meteora"
 author = "Martí Bosch"
 
 __version__ = "0.1.0"

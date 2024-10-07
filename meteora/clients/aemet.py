@@ -1,13 +1,13 @@
-"""MetOffice client."""
+"""AEMET client."""
 
 from typing import List, Mapping, Union
 
 import pandas as pd
 import pyproj
 
-from meteostations import settings, utils
-from meteostations.clients.base import BaseJSONClient, RegionType
-from meteostations.mixins import (
+from meteora import settings, utils
+from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyParamMixin,
     VariablesEndpointMixin,
@@ -109,9 +109,8 @@ class AemetClient(
         ----------
         variables : str, int or list-like of str or int
             Target variables, which can be either an AEMET variable code (integer or
-            string), an essential climate variable (ECV) following the
-            meteostations-geopy nomenclature (string), or an agrometeo variable name
-            (string).
+            string), an essential climate variable (ECV) following the meteora
+            nomenclature (string), or an agrometeo variable name (string).
 
         Returns
         -------

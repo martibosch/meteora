@@ -14,7 +14,7 @@ from typing import Union
 
 import pandas as pd
 
-from meteostations import settings
+from meteora import settings
 
 
 def dms_to_decimal(ser: pd.Series) -> pd.Series:

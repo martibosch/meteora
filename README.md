@@ -1,24 +1,24 @@
-[![PyPI version fury.io](https://badge.fury.io/py/meteostations-geopy.svg)](https://pypi.python.org/pypi/meteostations-geopy)
-[![Documentation Status](https://readthedocs.org/projects/meteostations-geopy/badge/?version=latest)](https://meteostations-geopy.readthedocs.io/en/latest/?badge=latest)
-[![CI/CD](https://github.com/martibosch/meteostations-geopy/actions/workflows/dev.yml/badge.svg)](https://github.com/martibosch/meteostations-geopy/blob/main/.github/workflows/dev.yml)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/martibosch/meteostations-geopy/main.svg)](https://results.pre-commit.ci/latest/github/martibosch/meteostations-geopy/main)
-[![codecov](https://codecov.io/gh/martibosch/meteostations-geopy/branch/main/graph/badge.svg?token=hKoSSRn58a)](https://codecov.io/gh/martibosch/meteostations-geopy)
-[![GitHub license](https://img.shields.io/github/license/martibosch/meteostations-geopy.svg)](https://github.com/martibosch/meteostations-geopy/blob/main/LICENSE)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/martibosch/meteostations-geopy/HEAD?labpath=docs%2Fuser-guide%2Fagrometeo.ipynb)
+[![PyPI version fury.io](https://badge.fury.io/py/meteora.svg)](https://pypi.python.org/pypi/meteora)
+[![Documentation Status](https://readthedocs.org/projects/meteora/badge/?version=latest)](https://meteora.readthedocs.io/en/latest/?badge=latest)
+[![CI/CD](https://github.com/martibosch/meteora/actions/workflows/dev.yml/badge.svg)](https://github.com/martibosch/meteora/blob/main/.github/workflows/dev.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/martibosch/meteora/main.svg)](https://results.pre-commit.ci/latest/github/martibosch/meteora/main)
+[![codecov](https://codecov.io/gh/martibosch/meteora/branch/main/graph/badge.svg?token=hKoSSRn58a)](https://codecov.io/gh/martibosch/meteora)
+[![GitHub license](https://img.shields.io/github/license/martibosch/meteora.svg)](https://github.com/martibosch/meteora/blob/main/LICENSE)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/martibosch/meteora/HEAD?labpath=docs%2Fuser-guide%2Fagrometeo.ipynb)
 
-# Meteostations geopy
+# Meteora
 
 Pythonic interface to access data from meteorological stations
 
 ## Installation
 
-Although meteostations-geopy is not available in PyPI and conda-forge yet (hopefully will be soon), it can be installed using conda/mamba and pip as follows:
+Although meteora is not available in PyPI and conda-forge yet (hopefully will be soon), it can be installed using conda/mamba and pip as follows:
 
 ```bash
 # install GDAL-based requirements
 conda install -c conda-forge contextily geopandas osmnx
-# install meteostations-geopy from GitHub
-pip install https://github.com/martibosch/meteostations-geopy/archive/main.zip
+# install meteora from GitHub
+pip install https://github.com/martibosch/meteora/archive/main.zip
 ```
 
 ## Overview
@@ -26,7 +26,7 @@ pip install https://github.com/martibosch/meteostations-geopy/archive/main.zip
 This library provides a set of provider-specific clients to get observations from meteorological stations.
 
 ```python
-from meteostations.clients import agrometeo
+from meteora.clients import agrometeo
 
 start_date = "2021-08-13"
 end_date = "2021-08-16"
@@ -141,9 +141,9 @@ ts_df.head()
 ts_df.resample("H").mean().plot()
 ```
 
-![Agrometeo time series plot](https://github.com/martibosch/meteostations-geopy/raw/main/docs/figures/agrometeo-ts.png)
+![Agrometeo time series plot](https://github.com/martibosch/meteora/raw/main/docs/figures/agrometeo-ts.png)
 
-See [the user guide](https://meteostations-geopy.readthedocs.io/en/latest/user-guide.html) for more details.
+See [the user guide](https://meteora.readthedocs.io/en/latest/user-guide.html) for more details.
 
 ## See also
 
@@ -152,7 +152,7 @@ This library intends to provide a unified way to access data from meteorological
 - [martibosch/agrometeo-geopy](https://github.com/martibosch/agrometeo-geopy)
 - [martibosch/netatmo-geopy](https://github.com/martibosch/netatmo-geopy)
 
-Eventually these packages will be fully integrated into meteostations-geopy.
+Eventually these packages will be fully integrated into meteora.
 
 ## Acknowledgements
 

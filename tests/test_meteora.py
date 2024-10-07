@@ -1,4 +1,4 @@
-"""Tests for Meteostations geopy."""
+"""Tests for Meteora."""
 
 import logging as lg
 import os
@@ -10,8 +10,8 @@ import osmnx as ox
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
-from meteostations import settings, utils
-from meteostations.clients import (
+from meteora import settings, utils
+from meteora.clients import (
     AemetClient,
     AgrometeoClient,
     ASOSOneMinIEMClient,
@@ -19,7 +19,7 @@ from meteostations.clients import (
     MeteocatClient,
     MetOfficeClient,
 )
-from meteostations.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
+from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
 
 
 def override_settings(module, **kwargs):

@@ -16,14 +16,14 @@ ERROR_PAUSE = 60
 # TIMEOUT = 180
 ## cache
 USE_CACHE = True
-CACHE_NAME = "meteostations-cache"
+CACHE_NAME = "meteora-cache"
 CACHE_BACKEND = "sqlite"
 CACHE_EXPIRE = requests_cache.NEVER_EXPIRE
 
 ## logging
 LOG_CONSOLE = False
 LOG_FILE = False
-LOG_FILENAME = "meteostations"
+LOG_FILENAME = "meteora"
 LOG_LEVEL = lg.INFO
-LOG_NAME = "meteostations"
+LOG_NAME = "meteora"
 LOGS_FOLDER = "./logs"

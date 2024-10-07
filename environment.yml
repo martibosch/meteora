@@ -1,4 +1,4 @@
-name: meteostations
+name: meteora
 channels:
   - conda-forge
 dependencies:
@@ -6,6 +6,6 @@ dependencies:
   - osmnx
   - pip
   - pre-commit
-  - python=3.10
+  - python=3.12
   - pip:
     - -e .

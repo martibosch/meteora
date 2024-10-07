@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "meteostations-geopy"
+name = "meteora"
 version = "0.1.0"
 description = "Pythonic interface to access data from meteorological stations"
 readme = "README.md"
@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/martibosch/meteostations-geopy"
+Repository = "https://github.com/martibosch/meteora"
 
 [project.optional-dependencies]
 ox = ["osmnx"]
@@ -41,7 +41,7 @@ dev = ["build", "commitizen", "pre-commit", "pip", "toml", "tox", "twine"]
 doc = ["myst-parser", "sphinx"]
 
 [tool.setuptools.packages.find]
-include = ["meteostations", "meteostations.*"]
+include = ["meteora", "meteora.*"]
 
 [tool.ruff]
 line-length = 88
@@ -56,14 +56,14 @@ select = ["D", "E", "F", "I"]
 convention = "numpy"
 
 [tool.ruff.lint.isort]
-known-first-party = ["meteostations"]
+known-first-party = ["meteora"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401"]
-"tests/test_meteostations.py" = ["D"]
+"tests/test_meteora.py" = ["D"]
 
 [tool.coverage.run]
-source = ["meteostations"]
+source = ["meteora"]
 
 [tool.coverage.report]
 exclude_lines = [

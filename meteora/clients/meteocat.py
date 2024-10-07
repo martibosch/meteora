@@ -6,9 +6,9 @@ from typing import List, Mapping, Union
 import pandas as pd
 import pyproj
 
-from meteostations import settings
-from meteostations.clients.base import BaseJSONClient, RegionType
-from meteostations.mixins import (
+from meteora import settings
+from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyHeaderMixin,
     VariablesEndpointMixin,
@@ -158,9 +158,8 @@ class MeteocatClient(
         ----------
         variable : str or int
             Target variables, which can be either a Meteocat variable code (integer or
-            string), an essential climate variable (ECV) following the
-            meteostations-geopy nomenclature (string), or a Meteocat variable name
-            (string).
+            string), an essential climate variable (ECV) following the meteora
+            nomenclature (string), or a Meteocat variable name (string).
         start_date, end_date : str or datetime.date
             String in the "YYYY-MM-DD" format or datetime.date instance, respectively
             representing the start and end days of the requested data period.
