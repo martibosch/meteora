@@ -18,7 +18,7 @@ BASE_URL = "https://opendata.aemet.es/opendata/api"
 STATIONS_ENDPOINT = (
     f"{BASE_URL}/valores/climatologicos/inventarioestaciones/todasestaciones"
 )
-VARIABLES_ENDPOINT = DATA_ENDPOINT = f"{BASE_URL}/observacion/convencional/todas"
+VARIABLES_ENDPOINT = TIME_SERIES_ENDPOINT = f"{BASE_URL}/observacion/convencional/todas"
 
 # useful constants
 # ACHTUNG: in Aemet, the station id col is "indicativo" in the stations endpoint but
@@ -53,7 +53,7 @@ class AemetClient(
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_code_col = VARIABLES_CODE_COL
     _ecv_dict = ECV_DICT
-    _data_endpoint = DATA_ENDPOINT
+    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
     _api_key_param_name = "api_key"
     request_headers = {"cache-control": "no-cache"}
@@ -124,7 +124,7 @@ class AemetClient(
         variable_codes = self._get_variable_codes(variables)
 
         with self._session.cache_disabled():
-            response_content = self._get_content_from_url(self._data_endpoint)
+            response_content = self._get_content_from_url(self._time_series_endpoint)
         # response_content returns a dict with urls, where the one under the "datos" key
         # contains the JSON data
         ts_df = pd.read_json(response_content["datos"], encoding="latin1")

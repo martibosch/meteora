@@ -18,7 +18,7 @@ from meteostations.mixins import (
 BASE_URL = "https://api.meteo.cat/xema/v1"
 STATIONS_ENDPOINT = f"{BASE_URL}/estacions/metadades"
 VARIABLES_ENDPOINT = f"{BASE_URL}/variables/mesurades/metadades"
-DATA_ENDPOINT = f"{BASE_URL}/variables/mesurades"
+TIME_SERIES_ENDPOINT = f"{BASE_URL}/variables/mesurades"
 
 # useful constants
 STATIONS_ID_COL = "codi"
@@ -53,7 +53,7 @@ class MeteocatClient(
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_code_col = VARIABLES_CODE_COL
     _ecv_dict = ECV_DICT
-    _data_endpoint = DATA_ENDPOINT
+    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
 
     def __init__(
@@ -101,7 +101,7 @@ class MeteocatClient(
         #     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         # request url
         request_url = (
-            f"{self._data_endpoint}"
+            f"{self._time_series_endpoint}"
             f"/{variable_code}/{date.year}/{date.month:02}/{date.day:02}"
         )
         response_content = self._get_content_from_url(request_url)

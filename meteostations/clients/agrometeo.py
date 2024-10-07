@@ -14,7 +14,7 @@ from meteostations.mixins import AllStationsEndpointMixin, VariablesEndpointMixi
 BASE_URL = "https://agrometeo.ch/backend/api"
 STATIONS_ENDPOINT = f"{BASE_URL}/stations"
 VARIABLES_ENDPOINT = f"{BASE_URL}/sensors"
-DATA_ENDPOINT = f"{BASE_URL}/meteo/data"
+TIME_SERIES_ENDPOINT = f"{BASE_URL}/meteo/data"
 
 # useful constants
 LONLAT_CRS = pyproj.CRS("epsg:4326")
@@ -109,7 +109,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
     _variables_endpoint = VARIABLES_ENDPOINT
     _variables_code_col = VARIABLES_CODE_COL
     _variables_name_col = VARIABLES_NAME_COL
-    _data_endpoint = DATA_ENDPOINT
+    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _ecv_dict = ECV_DICT
     _time_col = TIME_COL
 
@@ -222,7 +222,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             "stations": ",".join(_stations_ids),
         }
         response_content = self._get_content_from_url(
-            self._data_endpoint, params=data_params
+            self._time_series_endpoint, params=data_params
         )
 
         # parse the response as a data frame

@@ -18,7 +18,7 @@ from meteostations.mixins import (
 BASE_URL = "http://datapoint.metoffice.gov.uk/public/data"
 STATIONS_ENDPOINT = f"{BASE_URL}/val/wxobs/all/json/sitelist"
 # TODO: support filtering by station id
-VARIABLES_ENDPOINT = DATA_ENDPOINT = f"{BASE_URL}/val/wxobs/all/json/all"
+VARIABLES_ENDPOINT = TIME_SERIES_ENDPOINT = f"{BASE_URL}/val/wxobs/all/json/all"
 
 # useful constants
 # ACHTUNG: in MetOffice, the station id col is "id" in the stations endpoint but "i" in
@@ -51,7 +51,7 @@ class MetOfficeClient(
     _variables_name_col = VARIABLES_NAME_COL
     _variables_code_col = VARIABLES_CODE_COL
     _ecv_dict = ECV_DICT
-    _data_endpoint = DATA_ENDPOINT
+    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _api_key_param_name = "key"
 
     def __init__(
@@ -120,7 +120,7 @@ class MetOfficeClient(
 
         with self._session.cache_disabled():
             response_content = self._get_content_from_url(
-                self._data_endpoint, params=self.res_param_dict
+                self._time_series_endpoint, params=self.res_param_dict
             )
 
         # this is the time of the latest observation, from which the API returns the

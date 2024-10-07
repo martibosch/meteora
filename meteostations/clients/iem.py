@@ -24,7 +24,7 @@ VARIABLES_NAME_COL = "name"
 
 # ASOS 1 minute https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?help
 ONEMIN_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/ASOS1MIN.geojson?only_online=0"
-ONEMIN_DATA_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos1min.py"
+ONEMIN_TIME_SERIES_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos1min.py"
 # tmpf: Air Temperature [F]
 # dwpf: Dew Point Temperature [F]
 # sknt: Wind Speed [knots]
@@ -61,7 +61,7 @@ ONEMIN_TIME_COL = "valid(UTC)"
 
 # METAR/ASOS https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?help
 METAR_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/AZOS.geojson"
-METAR_DATA_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos.py"
+METAR_TIME_SERIES_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos.py"
 # see https://www.weather.gov/media/asos/aum-toc.pdf
 # station: three or four character site identifier
 # valid: timestamp of the observation
@@ -208,7 +208,7 @@ class IEMClient(
 
         # request url
         ts_df = pd.read_csv(
-            self._get_content_from_url(self._data_endpoint, params=params),
+            self._get_content_from_url(self._time_series_endpoint, params=params),
             na_values="M",
         )
 
@@ -254,7 +254,7 @@ class ASOSOneMinIEMClient(IEMClient):
     """ASOS 1 minute Iowa Environmental Mesonet (IEM) client."""
 
     _stations_endpoint = ONEMIN_STATIONS_ENDPOINT
-    _data_endpoint = ONEMIN_DATA_ENDPOINT
+    _time_series_endpoint = ONEMIN_TIME_SERIES_ENDPOINT
     _variables_dict = ONEMIN_VARIABLES_DICT
     _ecv_dict = ONEMIN_ECV_DICT
     _time_col = ONEMIN_TIME_COL
@@ -265,7 +265,7 @@ class METARASOSIEMClient(IEMClient):
     """METAR/ASOS Iowa Environmental Mesonet (IEM) client."""
 
     _stations_endpoint = METAR_STATIONS_ENDPOINT
-    _data_endpoint = METAR_DATA_ENDPOINT
+    _time_series_endpoint = METAR_TIME_SERIES_ENDPOINT
     _variables_dict = METAR_VARIABLES_DICT
     _ecv_dict = METAR_ECV_DICT
     _time_col = METAR_TIME_COL
