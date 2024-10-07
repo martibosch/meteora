@@ -19,8 +19,8 @@ BASE_URL = "https://mesonet.agron.iastate.edu"
 
 # useful constants
 STATIONS_ID_COL = "id"
-VARIABLES_CODE_COL = "code"
-VARIABLES_NAME_COL = "name"
+VARIABLES_ID_COL = "code"
+# VARIABLES_NAME_COL = "name"
 
 # ASOS 1 minute https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?help
 ONEMIN_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/ASOS1MIN.geojson?only_online=0"
@@ -123,8 +123,8 @@ class IEMClient(
 
     CRS = pyproj.CRS("epsg:4326")
     _stations_id_col = STATIONS_ID_COL
-    _variables_code_col = VARIABLES_CODE_COL
-    _variables_name_col = VARIABLES_NAME_COL
+    _variables_id_col = VARIABLES_ID_COL
+    # _variables_name_col = VARIABLES_NAME_COL
 
     def __init__(
         self, region: RegionType, sjoin_kws: Union[Mapping, None] = None
@@ -187,9 +187,7 @@ class IEMClient(
         # process variables
         if not pd.api.types.is_list_like(variables):
             variables = [variables]
-        variable_codes = [
-            self._process_variable_arg(variable) for variable in variables
-        ]
+        variable_ids = [self._process_variable_arg(variable) for variable in variables]
 
         # process date args
         start = pd.Timestamp(start)
@@ -202,7 +200,7 @@ class IEMClient(
             "year2": end.year,
             "month2": end.month,
             "day2": end.day,
-            self._vars_param: ",".join(variable_codes),
+            self._vars_param: ",".join(variable_ids),
             "station": ",".join(self.stations_gdf[self._stations_id_col]),
         }
 
@@ -218,8 +216,8 @@ class IEMClient(
         # TODO: avoid this if the user provided variable codes (in which case the dict
         # maps variable codes to variable codes)?
         variable_label_dict = {
-            str(variable_code): variable
-            for variable_code, variable in zip(variable_codes, variables)
+            str(variable_id): variable
+            for variable_id, variable in zip(variable_ids, variables)
         }
 
         # return in proper shape, i.e., station and time as multi index, variables as
@@ -245,7 +243,7 @@ class IEMClient(
         return (
             ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
             .groupby([_station_col, self._time_col])
-            .first(skipna=True)[variable_codes]
+            .first(skipna=True)[variable_ids]
             .rename(columns=variable_label_dict)
         )
 

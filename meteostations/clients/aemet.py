@@ -24,7 +24,7 @@ VARIABLES_ENDPOINT = TIME_SERIES_ENDPOINT = f"{BASE_URL}/observacion/convenciona
 # ACHTUNG: in Aemet, the station id col is "indicativo" in the stations endpoint but
 # "idema" in the data endpoint
 STATIONS_ID_COL = "idema"
-VARIABLES_CODE_COL = "id"
+VARIABLES_ID_COL = "id"
 ECV_DICT = {
     "precipitation": "prec",
     "pressure": "pres",
@@ -51,7 +51,7 @@ class AemetClient(
     _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
     # _variables_name_col = VARIABLES_NAME_COL
-    _variables_code_col = VARIABLES_CODE_COL
+    _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
     _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
@@ -121,7 +121,7 @@ class AemetClient(
 
         """
         # process the variable arg
-        variable_codes = self._get_variable_codes(variables)
+        variable_ids = self._get_variable_ids(variables)
 
         with self._session.cache_disabled():
             response_content = self._get_content_from_url(self._time_series_endpoint)
@@ -150,9 +150,9 @@ class AemetClient(
         # TODO: avoid this if the user provided variable codes (in which case the dict
         # maps variable codes to variable codes)?
         variable_label_dict = {
-            str(variable_code): variable
-            for variable_code, variable in zip(variable_codes, variables)
+            str(variable_id): variable
+            for variable_id, variable in zip(variable_ids, variables)
         }
 
         # return the sorted data frame
-        return ts_df[variable_codes].rename(columns=variable_label_dict).sort_index()
+        return ts_df[variable_ids].rename(columns=variable_label_dict).sort_index()

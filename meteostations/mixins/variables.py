@@ -20,11 +20,7 @@ class VariablesMixin:
     """Variables Mixin."""
 
     @abstract_attribute
-    def _variables_code_col(self):
-        pass
-
-    @abstract_attribute
-    def _variables_label_col(self):
+    def _variables_id_col(self):
         pass
 
     @abstract_attribute
@@ -39,10 +35,10 @@ class VariablesMixin:
         # nomenclature
         if isinstance(variable, int) or variable.isdigit():
             # case a: if variable is an integer, assert that it is a valid variable code
-            variable_code = int(variable)
-            if variable_code not in self.variables_df[self._variables_code_col].values:
-                raise ValueError(f"variable {variable} is not a valid variable code")
-        elif variable in self.variables_df[self._variables_code_col].values:
+            variable_id = int(variable)
+            if variable_id not in self.variables_df[self._variables_id_col].values:
+                raise ValueError(f"variable {variable} is not a valid variable id")
+        elif variable in self.variables_df[self._variables_id_col].values:
             # still case a: if variable is a variable code, but it is a string - then,
             # just return it as it is
             return variable
@@ -50,15 +46,15 @@ class VariablesMixin:
             # case b: if variable is an ECV, it will be a key in the ECV_DICT so
             # the provider's variable code can be retrieved directly, otherwise we
             # assume that variable is a variable name (provider's nomenclature).
-            variable_code = self._ecv_dict.get(variable, variable)
+            variable_id = self._ecv_dict.get(variable, variable)
             # variable_code = self.variables_df.loc[
             #     self.variables_df[self._variables_label_col] == variable_name,
             #     self._variables_code_col,
             # ].item()
 
-        return variable_code
+        return variable_id
 
-    def _get_variable_codes(self, variables):
+    def _get_variable_ids(self, variables):
         """Given the `variables` argument, return a list of variable codes."""
         if not pd.api.types.is_list_like(variables):
             variables = [variables]
@@ -72,6 +68,10 @@ class VariablesHardcodedMixin(VariablesMixin):
     def _variables_dict(self):
         pass
 
+    @abstract_attribute
+    def _variables_label_col(self):
+        pass
+
     @property
     def variables_df(self) -> pd.DataFrame:
         """Variables dataframe."""
@@ -80,7 +80,7 @@ class VariablesHardcodedMixin(VariablesMixin):
         except AttributeError:
             variables_df = pd.DataFrame(
                 self._variables_dict.items(),
-                columns=[self._variables_code_col, self._variables_label_col],
+                columns=[self._variables_id_col, self._variables_label_col],
             )
             self._variables_df = variables_df
             return self._variables_df

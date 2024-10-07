@@ -36,7 +36,7 @@ STATIONS_ID_COL = "id"
 # variables name column
 VARIABLES_NAME_COL = "name.en"
 # variables code column
-VARIABLES_CODE_COL = "id"
+VARIABLES_ID_COL = "id"
 # agrometeo sensors
 # 42                       Leaf moisture III
 # 43     Voltage of internal lithium battery
@@ -107,8 +107,8 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
     _stations_endpoint = STATIONS_ENDPOINT
     _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
-    _variables_code_col = VARIABLES_CODE_COL
-    _variables_name_col = VARIABLES_NAME_COL
+    _variables_id_col = VARIABLES_ID_COL
+    # _variables_name_col = VARIABLES_NAME_COL
     _time_series_endpoint = TIME_SERIES_ENDPOINT
     _ecv_dict = ECV_DICT
     _time_col = TIME_COL
@@ -117,7 +117,6 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         self,
         region: RegionType,
         crs: Any = None,
-        variables_name_col: Union[str, None] = None,
         sjoin_kws: Union[Mapping, None] = None,
     ) -> None:
         """Initialize Agrometeo client."""
@@ -128,7 +127,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         else:
             crs = DEFAULT_CRS
         self.CRS = crs
-        self._variables_name_col = variables_name_col or VARIABLES_NAME_COL
+        # self._variables_name_col = variables_name_col or VARIABLES_NAME_COL
         try:
             self.X_COL, self.Y_COL = GEOM_COL_DICT[self.CRS]
         except KeyError:
@@ -152,9 +151,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         # ACHTUNG: need to strip strings, at least in variables name column. Note
         # that *it seems* that the integer type of variable code column is inferred
         # correctly
-        variables_df[self._variables_name_col] = variables_df[
-            self._variables_name_col
-        ].str.strip()
+        variables_df[VARIABLES_NAME_COL] = variables_df[VARIABLES_NAME_COL].str.strip()
         return variables_df
 
     def get_ts_df(
@@ -193,7 +190,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
 
         """
         # process variables
-        variable_codes = self._get_variable_codes(variables)
+        variable_ids = self._get_variable_ids(variables)
 
         # process date args
         if isinstance(start_date, datetime.date):
@@ -217,7 +214,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             "to": end_date,
             "scale": scale,
             "sensors": ",".join(
-                f"{variable_code}:{measurement}" for variable_code in variable_codes
+                f"{variable_id}:{measurement}" for variable_id in variable_ids
             ),
             "stations": ",".join(_stations_ids),
         }
@@ -254,8 +251,8 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         # TODO: avoid this if the user provided variable codes (in which case the dict
         # maps variable codes to variable codes)?
         variable_label_dict = {
-            str(variable_code): variable
-            for variable_code, variable in zip(variable_codes, variables)
+            str(variable_id): variable
+            for variable_id, variable in zip(variable_ids, variables)
         }
 
         # convert into long data frame, rename the variable columns, ensure numeric

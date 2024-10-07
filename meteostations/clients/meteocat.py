@@ -23,7 +23,7 @@ TIME_SERIES_ENDPOINT = f"{BASE_URL}/variables/mesurades"
 # useful constants
 STATIONS_ID_COL = "codi"
 # VARIABLES_NAME_COL = "nom"
-VARIABLES_CODE_COL = "codi"
+VARIABLES_ID_COL = "codi"
 ECV_DICT = {
     "precipitation": 35,  # "Precipitació",
     "pressure": 34,  # "Pressió atmosfèrica",
@@ -51,7 +51,7 @@ class MeteocatClient(
     _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
     # _variables_name_col = VARIABLES_NAME_COL
-    _variables_code_col = VARIABLES_CODE_COL
+    _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
     _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
@@ -77,14 +77,14 @@ class MeteocatClient(
 
     def _get_ts_df(
         self,
-        variable_code: int,
+        variable_id: int,
         date: datetime.date,
     ) -> pd.DataFrame:
         """Get time series data frame for a given day.
 
         Parameters
         ----------
-        variable_code : int
+        variable_id : int
             Meteocat variable code.
         date : datetime.date
             datetime.date instance for the requested data period.
@@ -102,7 +102,7 @@ class MeteocatClient(
         # request url
         request_url = (
             f"{self._time_series_endpoint}"
-            f"/{variable_code}/{date.year}/{date.month:02}/{date.day:02}"
+            f"/{variable_id}/{date.year}/{date.month:02}/{date.day:02}"
         )
         response_content = self._get_content_from_url(request_url)
         # process response
@@ -142,7 +142,7 @@ class MeteocatClient(
         # note that we are renaming a series
         return ts_df.set_index([self._stations_id_col, self._time_col])[
             values_col
-        ].rename(variable_code)
+        ].rename(variable_id)
 
     def get_ts_df(
         self,
@@ -172,9 +172,9 @@ class MeteocatClient(
         """
         # process variables
         # ensure variable codes have the same dtype as in the variables data frame
-        variable_codes = pd.Series(
-            self._get_variable_codes(variables),
-            dtype=self.variables_df[self._variables_code_col].dtype,
+        variable_ids = pd.Series(
+            self._get_variable_ids(variables),
+            dtype=self.variables_df[self._variables_id_col].dtype,
         )
 
         # return self._get_ts_df(variable, date)
@@ -186,16 +186,16 @@ class MeteocatClient(
         # TODO: avoid this if the user provided variable codes (in which case the dict
         # maps variable codes to variable codes)?
         variable_label_dict = {
-            variable_code: variable
-            for variable_code, variable in zip(variable_codes, variables)
+            variable_id: variable
+            for variable_id, variable in zip(variable_ids, variables)
         }
         return (
             pd.concat(
                 [
                     pd.concat(
                         [
-                            self._get_ts_df(variable_code, date)
-                            for variable_code in variable_codes
+                            self._get_ts_df(variable_id, date)
+                            for variable_id in variable_ids
                         ],
                         axis="columns",
                         ignore_index=False,
