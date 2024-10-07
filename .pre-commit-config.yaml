@@ -22,6 +22,11 @@ repos:
         additional_dependencies: [prettier, prettier-plugin-toml, prettier-plugin-ini]
         types: ["ini", "toml", "yaml"]
 
+  - repo: https://github.com/kieran-ryan/pyprojectsort
+    rev: v0.3.0
+    hooks:
+      - id: pyprojectsort
+
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17 # Use the ref you want to point at
     hooks:

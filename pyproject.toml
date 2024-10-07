@@ -1,16 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=61.0",
+]
 
 [project]
-name = "meteora"
-version = "0.1.0"
-description = "Pythonic interface to access data from meteorological stations"
-readme = "README.md"
 authors = [
-    { name = "Martí Bosch", email = "marti.bosch@epfl.ch" },
+    { email = "marti.bosch@epfl.ch", name = "Martí Bosch" },
 ]
-license = { text = "GPL-3.0" }
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
@@ -20,7 +17,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.9"
 dependencies = [
     "better-abc",
     "geopandas>=0.8.0",
@@ -29,19 +25,64 @@ dependencies = [
     "requests-cache",
     "requests-oauthlib",
 ]
+description = "Pythonic interface to access data from meteorological stations"
+name = "meteora"
+readme = "README.md"
+requires-python = ">=3.9"
+version = "0.1.0"
+
+[project.license]
+text = "GPL-3.0"
+
+[project.optional-dependencies]
+cx = [
+    "contextily",
+]
+dev = [
+    "build",
+    "commitizen",
+    "pip",
+    "pre-commit",
+    "toml",
+    "tox",
+    "twine",
+]
+doc = [
+    "myst-parser",
+    "sphinx",
+]
+ox = [
+    "osmnx",
+]
+test = [
+    "coverage[toml]",
+    "pytest",
+    "pytest-cov",
+    "python-dotenv",
+    "ruff",
+]
 
 [project.urls]
 Repository = "https://github.com/martibosch/meteora"
 
-[project.optional-dependencies]
-ox = ["osmnx"]
-cx = ["contextily"]
-test = ["coverage[toml]", "pytest", "pytest-cov", "python-dotenv", "ruff"]
-dev = ["build", "commitizen", "pre-commit", "pip", "toml", "tox", "twine"]
-doc = ["myst-parser", "sphinx"]
+[tool.coverage.report]
+exclude_lines = [
+    "except ImportError",
+    "except ModuleNotFoundError",
+    "if self.debug:",
+    "pragma: no cover",
+    "raise NotImplementedError",
+]
+ignore_errors = true
+omit = [
+    "docs/conf.py",
+    "tests/*",
+]
 
-[tool.setuptools.packages.find]
-include = ["meteora", "meteora.*"]
+[tool.coverage.run]
+source = [
+    "meteora",
+]
 
 [tool.ruff]
 line-length = 88
@@ -50,28 +91,31 @@ line-length = 88
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["D", "E", "F", "I"]
+select = [
+    "D",
+    "E",
+    "F",
+    "I",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "meteora",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = [
+    "F401",
+]
+"tests/test_meteora.py" = [
+    "D",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.ruff.lint.isort]
-known-first-party = ["meteora"]
-
-[tool.ruff.lint.per-file-ignores]
-"**/__init__.py" = ["F401"]
-"tests/test_meteora.py" = ["D"]
-
-[tool.coverage.run]
-source = ["meteora"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "if self.debug:",
-    "pragma: no cover",
-    "raise NotImplementedError",
-    "except ModuleNotFoundError",
-    "except ImportError",
+[tool.setuptools.packages.find]
+include = [
+    "meteora",
+    "meteora.*",
 ]
-ignore_errors = true
-omit = ["tests/*", "docs/conf.py"]
