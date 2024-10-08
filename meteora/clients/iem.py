@@ -178,12 +178,13 @@ class IEMClient(
         }
 
     def _ts_df_from_content(self, response_content):
+        ts_df = pd.read_csv(
+            response_content,
+            na_values="M",
+        )
         return (
-            pd.read_csv(
-                response_content,
-                na_values="M",
-            )
-            .groupby(["stations", self._time_col])
+            ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
+            .groupby(["station", self._time_col])
             .first(skipna=True)
         )
 

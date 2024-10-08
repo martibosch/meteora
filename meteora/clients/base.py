@@ -354,8 +354,11 @@ class BaseClient(abc.ABC):
         # process response content into a time series data frame
         ts_df = self._ts_df_from_content(response_content)
 
-        # set station, time multi-index
-        ts_df = ts_df.set_index([self._stations_id_col, self._time_col])
+        # ACHTUNG: do NOT set the station, time multi-index here because this is already
+        # done in `_ts_df_from_content` in many cases since it results from groupby,
+        # stack or pivot operations
+        # # set station, time multi-index
+        # ts_df = ts_df.set_index([self._stations_id_col, self._time_col])
 
         # ensure that we return the variable column names as provided by the user in the
         # `variables` argument (e.g., if the user provided variable codes, use

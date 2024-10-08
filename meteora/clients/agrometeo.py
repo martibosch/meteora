@@ -205,13 +205,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             )
 
         # convert to long form and return it
-        # TODO: we are using reset_index because then `_get_ts_df` will call `set_index`
-        # but we should avoid this while keeping the code as DRY as possible
-        return (
-            ts_df.stack(level=self._stations_id_col, future_stack=True)
-            .swaplevel()
-            .reset_index()
-        )
+        return ts_df.stack(level=self._stations_id_col, future_stack=True).swaplevel()
 
     def get_ts_df(
         self,

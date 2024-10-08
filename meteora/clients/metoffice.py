@@ -211,11 +211,6 @@ class MetOfficeClient(
         # process response content into a time series data frame
         ts_df = self._ts_df_from_content(response_content, variable_id_ser)
 
-        # ACHTUNG: when we pivot into a long data frame in `_ts_df_from_content`, we
-        # already set the station, time multi-index
-        # # set station, time multi-index
-        # ts_df = ts_df.set_index([self._stations_id_col, self._time_col])
-
         # TODO: the part below is embarrassingly DRY-able, i.e., hard copied from
         # `BaseClient._get_ts_df`
         # ensure that we return the variable column names as provided by the user in the

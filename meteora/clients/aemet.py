@@ -120,7 +120,9 @@ class AemetClient(
         # TODO: how to handle better the "indicativo" column name? i.e., the stations id
         # column is "idema" in the observation data frame but "indicativo" in the
         # stations data frame.
-        return ts_df[ts_df[self._stations_id_col].isin(self.stations_gdf["indicativo"])]
+        return ts_df[
+            ts_df[self._stations_id_col].isin(self.stations_gdf["indicativo"])
+        ].set_index([self._stations_id_col, self._time_col])
 
     def get_ts_df(
         self,
