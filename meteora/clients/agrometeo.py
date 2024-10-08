@@ -1,12 +1,12 @@
 """Agrometeo client."""
 
-from typing import Any, List, Mapping, Union
+from typing import Any, Mapping, Union
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType
+from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType, VariablesType
 from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
 
 # API endpoints
@@ -209,7 +209,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
 
     def get_ts_df(
         self,
-        variables: Union[str, int, List[str], List[int]],
+        variables: VariablesType,
         start: DateTimeType,
         end: DateTimeType,
         *,
@@ -222,11 +222,12 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         ----------
         variables : str, int or list-like of str or int
             Target variables, which can be either an Agrometeo variable code (integer or
-            string), an essential climate variable (ECV) following the meteora
-            nomenclature (string), or an Agrometeo variable name (string).
-        start_date, end_date : str or datetime.date
-            String in the "YYYY-MM-DD" format or datetime.date instance, respectively
-            representing the start and end days of the requested data period.
+            string) or an essential climate variable (ECV) following the Meteora
+            nomenclature (string).
+        start, end : datetime-like, str, int, float
+            Values representing the start and end of the requested data period
+            respectively. Accepts any datetime-like object that can be passed to
+            pandas.Timestamp.
         scale : None or {"hour", "day", "month", "year"}, default None
             Temporal scale of the measurements. The default value of None returns the
             finest scale, i.e., 10 minutes.
@@ -236,10 +237,9 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
 
         Returns
         -------
-        ts_df : pd.DataFrame
-            Data frame with a time series of meaurements (rows) at each station
-            (columns).
-
+        ts_df : pandas.DataFrame
+            Long form data frame with a time series of meaurements (second-level index)
+            at each station (first-level index) for each variable (column).
         """
         return self._get_ts_df(
             variables, start, end, scale=scale, measurement=measurement

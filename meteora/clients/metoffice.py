@@ -1,13 +1,13 @@
 """MetOffice client."""
 
 import datetime
-from typing import List, Mapping, Union
+from typing import Mapping, Union
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, RegionType
+from meteora.clients.base import BaseJSONClient, RegionType, VariablesType
 from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyParamMixin,
@@ -169,7 +169,7 @@ class MetOfficeClient(
 
     def get_ts_df(
         self,
-        variables: Union[str, int, List[str], List[int]],
+        variables: VariablesType,
     ) -> pd.DataFrame:
         """Get time series data frame for the last 24h.
 
@@ -177,15 +177,14 @@ class MetOfficeClient(
         ----------
         variables : str, int or list-like of str or int
             Target variables, which can be either a MetOffice variable code (integer or
-            string), an essential climate variable (ECV) following the meteora
-            nomenclature (string), or a MetOffice variable name (string).
+            string) or an essential climate variable (ECV) following the Meteora
+            nomenclature (string).
 
         Returns
         -------
-        ts_df : pd.DataFrame
-            Data frame with a time series of meaurements (rows) at each station
-            (columns).
-
+        ts_df : pandas.DataFrame
+            Long form data frame with a time series of meaurements (second-level index)
+            at each station (first-level index) for each variable (column).
         """
         # ACHTUNG: we cannot reuse the base `_get_ts_df` method here because we need to
         # pass the list of variables to `_ts_df_from_content`.

@@ -31,7 +31,7 @@ class VariablesMixin:
         # process the variable arg
         # variable is a string that can be either:
         # a) a variable code according to the provider's nomenclature
-        # b) an essential climate variable (ECV) following the meteora nomenclature
+        # b) an essential climate variable (ECV) following the Meteora nomenclature
         if isinstance(variable, int) or variable.isdigit():
             # case a: if variable is an integer, assert that it is a valid variable code
             variable_id = int(variable)

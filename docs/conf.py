@@ -10,7 +10,13 @@ __version__ = "0.1.0"
 version = __version__
 release = __version__
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon", "myst_parser", "nbsphinx"]
+extensions = [
+    "myst_parser",
+    "nbsphinx",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinxemoji.sphinxemoji",
+]
 
 autodoc_typehints = "description"
 html_theme = "pydata_sphinx_theme"

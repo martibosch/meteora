@@ -13,6 +13,11 @@
 ```
 
 ```{eval-rst}
+.. automodule:: meteora.clients.iem
+   :members:
+```
+
+```{eval-rst}
 .. automodule:: meteora.clients.meteocat
    :members:
 ```
@@ -25,7 +30,7 @@
 ## Base abstract client
 
 ```{eval-rst}
-.. automodule:: meteora.base
+.. automodule:: meteora.clients.base
    :members:
 ```
 

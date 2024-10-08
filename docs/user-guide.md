@@ -10,12 +10,10 @@ hidden:
 maxdepth: 1
 ---
 
-user-guide/agrometeo
-user-guide/meteocat
+user-guide/asos-example
 ```
 
-- [Agrometeo](https://meteora.readthedocs.io/en/latest/user-guide/agrometeo.html)
-- [Meteocat](https://meteora.readthedocs.io/en/latest/user-guide/meteocat.html)
+- [ASOS example](https://meteora.readthedocs.io/en/latest/user-guide/asos-example.html)
 
 ## Selecting a region
 
@@ -29,10 +27,10 @@ All clients are instantiated with at least the `region` argument, which defines 
 
 ## Selecting variables
 
-When accessing to data (e.g., the `get_ts_df` method of each client), the `variable` argument is used to select the variable to retrieve. The `variables` argument can be either:
+When accessing to time series data (e.g., the `get_ts_df` method of each client), the `variables` argument is used to select the variables to retrieve. The `variables` argument can be either:
 
 a) a string or integer with variable name or code according to the provider's nomenclature, or
-b) a string referring to essential climate variable (ECV) following the meteora nomenclature, i.e., a string among:
+b) a string referring to essential climate variable (ECV) following the Meteora nomenclature, i.e., a string among:
 
 ```python
 ECVS = [
@@ -48,3 +46,7 @@ ECVS = [
 ```
 
 See the guidelines by the [World Meteorological Organization](https://public.wmo.int/en/programmes/global-climate-observing-system/essential-climate-variables) on ECVs for more information.
+
+## Selecting date range
+
+While some providers only allow access to the most recent data, e.g., latest 24 hours, others allow querying data for a specific date range. In the latter case, the `start` and `end` arguments can be used to select the date range, which can be any object that can be converted to a [pandas `Timestamp` object](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Timestamp.html), i.e., a string, integer, float or a datetime object from the datetime module or numpy.

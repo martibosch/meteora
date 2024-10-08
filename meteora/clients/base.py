@@ -7,7 +7,7 @@ import logging as lg
 import os
 import re
 import time
-from typing import IO, Mapping, Sequence, Union
+from typing import IO, List, Mapping, Sequence, Union
 
 import geopandas as gpd
 import numpy as np
@@ -28,7 +28,13 @@ except ImportError:
     ox = None
 
 
-__all__ = ["BaseJSONClient", "BaseTextClient", "RegionType", "DateTimeType"]
+__all__ = [
+    "BaseJSONClient",
+    "BaseTextClient",
+    "RegionType",
+    "VariablesType",
+    "DateTimeType",
+]
 
 
 # def _long_ts_df(ts_df, station_id_name, time_name, value_name):
@@ -41,6 +47,7 @@ __all__ = ["BaseJSONClient", "BaseTextClient", "RegionType", "DateTimeType"]
 #     )
 
 RegionType = Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO]
+VariablesType = Union[str, int, List[str], List[int]]
 DateTimeType = Union[
     datetime.date, datetime.datetime, np.datetime64, pd.Timestamp, str, int, float
 ]
