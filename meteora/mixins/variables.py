@@ -53,11 +53,16 @@ class VariablesMixin:
 
         return variable_id
 
-    def _get_variable_ids(self, variables):
+    def _get_variable_id_ser(self, variables):
         """Given the `variables` argument, return a list of variable codes."""
         if not pd.api.types.is_list_like(variables):
             variables = [variables]
-        return [self._process_variable_arg(variable) for variable in variables]
+        # ensure variable codes have the same dtype as in the variables data frame
+        return pd.Series(
+            [self._process_variable_arg(variable) for variable in variables],
+            index=variables,
+            dtype=self.variables_df[self._variables_id_col].dtype,
+        )
 
 
 class VariablesHardcodedMixin(VariablesMixin):

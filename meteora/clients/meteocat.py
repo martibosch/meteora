@@ -17,7 +17,7 @@ from meteora.mixins import (
 BASE_URL = "https://api.meteo.cat/xema/v1"
 STATIONS_ENDPOINT = f"{BASE_URL}/estacions/metadades"
 VARIABLES_ENDPOINT = f"{BASE_URL}/variables/mesurades/metadades"
-TIME_SERIES_ENDPOINT = f"{BASE_URL}/variables/mesurades"
+TS_ENDPOINT = f"{BASE_URL}/variables/mesurades"
 
 # useful constants
 STATIONS_ID_COL = "codi"
@@ -43,16 +43,21 @@ class MeteocatClient(
 ):
     """Meteocat client."""
 
+    # geom constants
     X_COL = "coordenades.longitud"
     Y_COL = "coordenades.latitud"
     CRS = pyproj.CRS("epsg:4326")
+
+    # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
-    _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
+    _ts_endpoint = TS_ENDPOINT
+
+    # data frame labels constants
+    _stations_id_col = STATIONS_ID_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
-    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
 
     def __init__(
@@ -140,7 +145,7 @@ class MeteocatClient(
     #     #     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
     #     # request url
     #     request_url = (
-    #         f"{self._time_series_endpoint}"
+    #         f"{self._ts_endpoint}"
     #         f"/{variable_id}/{date.year}/{date.month:02}/{date.day:02}"
     #     )
     #     response_content = self._get_content_from_url(request_url)
@@ -172,7 +177,7 @@ class MeteocatClient(
 
         """
         # process the variables arg
-        variable_ids = self._get_variable_ids(variables)
+        variable_id_ser = self._get_variable_id_ser(variables)
 
         # the API only allows returning data for a given day and variable so we have to
         # iterate over the date range and variables to obtain data for all days
@@ -184,11 +189,11 @@ class MeteocatClient(
                         # self._get_date_ts_df(variable_id, date)
                         self._ts_df_from_content(
                             self._get_content_from_url(
-                                f"{self._time_series_endpoint}/{variable_id}/"
+                                f"{self._ts_endpoint}/{variable_id}/"
                                 f"{date.year}/{date.month:02}/{date.day:02}"
                             )
                         ).rename(variable_id)
-                        for variable_id in variable_ids
+                        for variable_id in variable_id_ser
                     ],
                     axis="columns",
                     ignore_index=False,
@@ -202,7 +207,7 @@ class MeteocatClient(
         # ensure that we return the variable column names as provided by the user in the
         # `variables` argument (e.g., if the user provided variable codes, use
         # variable codes in the column names).
-        ts_df = self._rename_variables_cols(ts_df, variables, variable_ids)
+        ts_df = self._rename_variables_cols(ts_df, variable_id_ser)
 
         # apply a generic post-processing function
         return self._post_process_ts_df(ts_df)

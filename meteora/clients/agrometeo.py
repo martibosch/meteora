@@ -13,7 +13,7 @@ from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
 BASE_URL = "https://agrometeo.ch/backend/api"
 STATIONS_ENDPOINT = f"{BASE_URL}/stations"
 VARIABLES_ENDPOINT = f"{BASE_URL}/sensors"
-TIME_SERIES_ENDPOINT = f"{BASE_URL}/meteo/data"
+TS_ENDPOINT = f"{BASE_URL}/meteo/data"
 
 # useful constants
 LONLAT_CRS = pyproj.CRS("epsg:4326")
@@ -103,12 +103,15 @@ MEASUREMENT = "avg"
 class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSONClient):
     """Agrometeo client."""
 
+    # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
-    _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
+    _ts_endpoint = TS_ENDPOINT
+
+    # data frame labels constants
+    _stations_id_col = STATIONS_ID_COL
     _variables_id_col = VARIABLES_ID_COL
     # _variables_name_col = VARIABLES_NAME_COL
-    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _ecv_dict = ECV_DICT
     _time_col = TIME_COL
 
@@ -153,9 +156,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         variables_df[VARIABLES_NAME_COL] = variables_df[VARIABLES_NAME_COL].str.strip()
         return variables_df
 
-    def _time_series_params(
-        self, variable_ids, start, end, scale=None, measurement=None
-    ):
+    def _ts_params(self, variable_ids, start, end, scale=None, measurement=None):
         # process date args
         start_date = pd.Timestamp(start).strftime(API_DT_FMT)
         end_date = pd.Timestamp(end).strftime(API_DT_FMT)
@@ -182,7 +183,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         # parse the response as a data frame
         ts_df = pd.json_normalize(response_content["data"]).set_index(self._time_col)
         ts_df.index = pd.to_datetime(ts_df.index)
-        ts_df.index.name = settings.TIME_NAME
+        ts_df.index.name = self._time_col
 
         # ts_df.columns = self.stations_gdf[STATIONS_ID_COL]
         # ACHTUNG: note that agrometeo returns the data indexed by keys of the form
@@ -192,18 +193,25 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             ts_df.columns.str.split("_")
             .str[:-1]
             .map(tuple)
-            .rename(["station", "variable"])
+            .rename([self._stations_id_col, "variable"])
         )
-        # convert station ids to integer
+        # convert station and variable ids to integer
         # ts_df.columns = ts_df.columns.set_levels(
         #     ts_df.columns.levels["station"].astype(int), level="station"
         # )
-        ts_df.columns = ts_df.columns.set_levels(
-            ts_df.columns.levels[0].astype(int), level=0
-        )
+        for level_i, level_name in enumerate(ts_df.columns.names):
+            ts_df.columns = ts_df.columns.set_levels(
+                ts_df.columns.levels[level_i].astype(int), level=level_name
+            )
 
         # convert to long form and return it
-        return ts_df.stack(level="station").swaplevel()
+        # TODO: we are using reset_index because then `_get_ts_df` will call `set_index`
+        # but we should avoid this while keeping the code as DRY as possible
+        return (
+            ts_df.stack(level=self._stations_id_col, future_stack=True)
+            .swaplevel()
+            .reset_index()
+        )
 
     def get_ts_df(
         self,
@@ -240,5 +248,5 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
 
         """
         return self._get_ts_df(
-            self, variables, start, end, scale=scale, measurement=measurement
+            variables, start, end, scale=scale, measurement=measurement
         )

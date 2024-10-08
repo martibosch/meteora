@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "better-abc",
-    "geopandas>=0.8.0",
+    "geopandas>=1.0.0",
     "matplotlib",
     "requests",
     "requests-cache",

@@ -24,7 +24,7 @@ VARIABLES_ID_COL = "code"
 
 # ASOS 1 minute https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?help
 ONEMIN_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/ASOS1MIN.geojson?only_online=0"
-ONEMIN_TIME_SERIES_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos1min.py"
+ONEMIN_TS_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos1min.py"
 # tmpf: Air Temperature [F]
 # dwpf: Dew Point Temperature [F]
 # sknt: Wind Speed [knots]
@@ -61,7 +61,7 @@ ONEMIN_TIME_COL = "valid(UTC)"
 
 # METAR/ASOS https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?help
 METAR_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/AZOS.geojson"
-METAR_TIME_SERIES_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos.py"
+METAR_TS_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos.py"
 # see https://www.weather.gov/media/asos/aum-toc.pdf
 # station: three or four character site identifier
 # valid: timestamp of the observation
@@ -121,7 +121,10 @@ class IEMClient(
 ):
     """Abstract Iowa Environmental Mesonet (IEM) client."""
 
+    # geom constants
     CRS = pyproj.CRS("epsg:4326")
+
+    # data frame label constants
     _stations_id_col = STATIONS_ID_COL
     _variables_id_col = VARIABLES_ID_COL
     # _variables_name_col = VARIABLES_NAME_COL
@@ -158,7 +161,7 @@ class IEMClient(
             stations_gdf.columns
         ]
 
-    def _time_series_params(self, variable_ids, start, end):
+    def _ts_params(self, variable_ids, start, end):
         # process date args
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
@@ -221,8 +224,11 @@ class IEMClient(
 class ASOSOneMinIEMClient(IEMClient):
     """ASOS 1 minute Iowa Environmental Mesonet (IEM) client."""
 
+    # API endpoints
     _stations_endpoint = ONEMIN_STATIONS_ENDPOINT
-    _time_series_endpoint = ONEMIN_TIME_SERIES_ENDPOINT
+    _ts_endpoint = ONEMIN_TS_ENDPOINT
+
+    # data frame labels constants
     _variables_dict = ONEMIN_VARIABLES_DICT
     _ecv_dict = ONEMIN_ECV_DICT
     _time_col = ONEMIN_TIME_COL
@@ -232,8 +238,11 @@ class ASOSOneMinIEMClient(IEMClient):
 class METARASOSIEMClient(IEMClient):
     """METAR/ASOS Iowa Environmental Mesonet (IEM) client."""
 
+    # API endpoints
     _stations_endpoint = METAR_STATIONS_ENDPOINT
-    _time_series_endpoint = METAR_TIME_SERIES_ENDPOINT
+    _ts_endpoint = METAR_TS_ENDPOINT
+
+    # data frame labels constants
     _variables_dict = METAR_VARIABLES_DICT
     _ecv_dict = METAR_ECV_DICT
     _time_col = METAR_TIME_COL

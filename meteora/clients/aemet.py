@@ -18,7 +18,7 @@ BASE_URL = "https://opendata.aemet.es/opendata/api"
 STATIONS_ENDPOINT = (
     f"{BASE_URL}/valores/climatologicos/inventarioestaciones/todasestaciones"
 )
-VARIABLES_ENDPOINT = TIME_SERIES_ENDPOINT = f"{BASE_URL}/observacion/convencional/todas"
+VARIABLES_ENDPOINT = TS_ENDPOINT = f"{BASE_URL}/observacion/convencional/todas"
 
 # useful constants
 # ACHTUNG: in Aemet, the station id col is "indicativo" in the stations endpoint but
@@ -44,24 +44,26 @@ class AemetClient(
 ):
     """MetOffice client."""
 
+    # geom constants
     X_COL = "longitud"
     Y_COL = "latitud"
     CRS = pyproj.CRS("epsg:4326")
+
+    # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
-    _stations_id_col = STATIONS_ID_COL
     _variables_endpoint = VARIABLES_ENDPOINT
+    _ts_endpoint = TS_ENDPOINT
+
+    # data frame labels constants
+    _stations_id_col = STATIONS_ID_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
-    _time_series_endpoint = TIME_SERIES_ENDPOINT
     _time_col = TIME_COL
-    _api_key_param_name = "api_key"
-    request_headers = {"cache-control": "no-cache"}
 
-    # @property
-    # def request_headers(self):
-    #     """Request headers."""
-    #     return {"cache-control": "no-cache"}
+    # auth constants
+    _api_key_param_name = "api_key"
+    # request_headers = {"cache-control": "no-cache"}
 
     def __init__(
         self, region: RegionType, api_key: str, sjoin_kws: Union[Mapping, None] = None
@@ -74,6 +76,17 @@ class AemetClient(
         self.SJOIN_KWS = sjoin_kws
         # need to call super().__init__() to set the cache
         super().__init__()
+
+    @property
+    def request_headers(self):
+        """Request headers."""
+        try:
+            return self._request_headers
+        except AttributeError:
+            self._request_headers = super().request_headers | {
+                "cache-control": "no-cache"
+            }
+        return self._request_headers
 
     def _stations_df_from_content(self, response_content: dict) -> pd.DataFrame:
         # response_content returns a dict with urls, where the one under the "datos" key

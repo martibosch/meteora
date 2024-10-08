@@ -4,7 +4,7 @@ import os
 from typing import IO, Sequence, Union
 
 import geopandas as gpd
-from fiona.errors import DriverError
+from pyogrio.errors import DataSourceError
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
 
@@ -119,7 +119,7 @@ class RegionMixin:
                 # query
                 try:
                     region = gpd.read_file(region)
-                except (DriverError, AttributeError):
+                except (DataSourceError, AttributeError):
                     #             if ox is None:
                     #                 lg.warning(
                     #                     """

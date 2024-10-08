@@ -2,7 +2,7 @@ name: meteora
 channels:
   - conda-forge
 dependencies:
-  - geopandas
+  - geopandas>=1
   - osmnx
   - pip
   - pre-commit
