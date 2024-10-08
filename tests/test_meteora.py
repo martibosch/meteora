@@ -183,20 +183,19 @@ class AgrometeoClientTest(BaseClientTest, unittest.TestCase):
     ts_df_args = [start_date, end_date]
 
 
-@unittest.skip("Prevent testing abstract IEM Client")
-class IEMBaseClientTest(BaseClientTest, unittest.TestCase):
+class IEMBaseClientTest(BaseClientTest):
     region = "Vermont"
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
 
 
-class ASOSOneMinIEMClientTest(IEMBaseClientTest):
+class ASOSOneMinIEMClientTest(IEMBaseClientTest, unittest.TestCase):
     client_cls = ASOSOneMinIEMClient
     variable_codes = ["tmpf", "pres1"]
 
 
-class METARASOSSIEMClientTest(IEMBaseClientTest):
+class METARASOSSIEMClientTest(IEMBaseClientTest, unittest.TestCase):
     client_cls = METARASOSIEMClient
     variable_codes = ["tmpf", "mslp"]
 
