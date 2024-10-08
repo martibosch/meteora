@@ -29,7 +29,7 @@ description = "Pythonic interface to access data from meteorological stations"
 name = "meteora"
 readme = "README.md"
 requires-python = ">=3.9"
-version = "0.1.0"
+version = "0.0.0"
 
 [project.license]
 text = "GPL-3.0"
@@ -64,6 +64,13 @@ test = [
 
 [project.urls]
 Repository = "https://github.com/martibosch/meteora"
+
+[tool.commitizen]
+major_version_zero = true
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_provider = "pep621"
+version_scheme = "semver"
 
 [tool.coverage.report]
 exclude_lines = [
