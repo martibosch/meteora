@@ -20,7 +20,7 @@ BASE_URL = "https://mesonet.agron.iastate.edu"
 # useful constants
 STATIONS_ID_COL = "id"
 VARIABLES_ID_COL = "code"
-# VARIABLES_NAME_COL = "name"
+VARIABLES_LABEL_COL = "description"
 
 # ASOS 1 minute https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?help
 ONEMIN_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/ASOS1MIN.geojson?only_online=0"
@@ -127,7 +127,7 @@ class IEMClient(
     # data frame label constants
     _stations_id_col = STATIONS_ID_COL
     _variables_id_col = VARIABLES_ID_COL
-    # _variables_name_col = VARIABLES_NAME_COL
+    _variables_label_col = VARIABLES_LABEL_COL
 
     def __init__(
         self, region: RegionType, sjoin_kws: Union[Mapping, None] = None
