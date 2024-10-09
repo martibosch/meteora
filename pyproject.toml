@@ -48,7 +48,10 @@ dev = [
 ]
 doc = [
     "myst-parser",
+    "nbsphinx",
+    "pydata-sphinx-theme",
     "sphinx",
+    "sphinxemoji",
 ]
 ox = [
     "osmnx",
