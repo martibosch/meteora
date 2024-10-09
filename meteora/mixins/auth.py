@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from better_abc import abstract_attribute
+from meteora.utils import abstract_attribute
 
 
 class APIKeyMixin(ABC):

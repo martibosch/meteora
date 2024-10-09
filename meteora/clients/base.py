@@ -15,7 +15,6 @@ import pandas as pd
 import pyproj
 import requests
 import requests_cache
-from better_abc import abstract_attribute
 from pyogrio.errors import DataSourceError
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
@@ -86,17 +85,17 @@ class BaseClient(abc.ABC):
             session = requests.Session()
         self._session = session
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def X_COL(self):  # pylint: disable=invalid-name
         """Name of the column with longitude coordinates."""
         pass
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def Y_COL(self):  # pylint: disable=invalid-name
         """Name of the column with latitude coordinates."""
         pass
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def CRS(self) -> pyproj.CRS:  # pylint: disable=invalid-name
         """CRS of the data source."""
         pass
@@ -325,7 +324,7 @@ class BaseClient(abc.ABC):
 
         return response_content
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def _ts_endpoint(self):
         pass
 

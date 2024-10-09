@@ -4,7 +4,8 @@ from abc import ABC
 
 import geopandas as gpd
 import pandas as pd
-from better_abc import abstract_attribute
+
+from meteora.utils import abstract_attribute
 
 
 class StationsEndpointMixin(ABC):

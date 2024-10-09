@@ -18,7 +18,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "better-abc",
     "geopandas>=1.0.0",
     "matplotlib",
     "requests",

@@ -1,7 +1,8 @@
 """Variables mixins."""
 
 import pandas as pd
-from better_abc import abstract_attribute
+
+from meteora.utils import abstract_attribute
 
 # https://public.wmo.int/en/programmes/global-climate-observing-system/essential-climate-variables
 ECVS = [

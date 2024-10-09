@@ -17,6 +17,23 @@ import pandas as pd
 from meteora import settings
 
 
+# `DummyAttribute` and `abstract_attribute` below are hardcoded from
+# github.com/rykener/better-abc to avoid relying on an unmaintained library that is not
+# in conda-forge
+class DummyAttribute:
+    """Dummy attribute."""
+
+    pass
+
+
+def abstract_attribute(obj=None):
+    """Abstract attribute."""
+    if obj is None:
+        obj = DummyAttribute()
+    obj.__is_abstract_attribute__ = True
+    return obj
+
+
 def dms_to_decimal(ser: pd.Series) -> pd.Series:
     """Convert a series from degrees, minutes, seconds (DMS) to decimal degrees."""
     degrees = ser.str[0:2].astype(int)
