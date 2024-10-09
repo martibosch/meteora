@@ -4,7 +4,7 @@
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/martibosch/meteora/main.svg)](https://results.pre-commit.ci/latest/github/martibosch/meteora/main)
 [![codecov](https://codecov.io/gh/martibosch/meteora/graph/badge.svg?token=smWkIfB7mM)](https://codecov.io/gh/martibosch/meteora)
 [![GitHub license](https://img.shields.io/github/license/martibosch/meteora.svg)](https://github.com/martibosch/meteora/blob/main/LICENSE)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/martibosch/meteora/HEAD?labpath=docs%2Fuser-guide%2Fagrometeo.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/martibosch/meteora/HEAD?labpath=docs%2Fuser-guide%2Fasos-example.ipynb)
 
 # Meteora
 
@@ -107,13 +107,13 @@ See [the user guide](https://meteora.readthedocs.io/en/latest/user-guide.html) f
 
 ## Installation
 
-Although Meteora is not available in PyPI and conda-forge yet (hopefully will be soon), it can be installed using conda/mamba and pip as follows:
+Although Meteora is not available in conda-forge yet (hopefully will be soon), it can be installed using conda/mamba and pip as follows:
 
 ```bash
 # install GDAL-based requirements
 conda install -c conda-forge contextily geopandas osmnx
-# install Meteora from GitHub
-pip install https://github.com/martibosch/meteora/archive/main.zip
+# install Meteora
+pip install meteora
 ```
 
 ## See also
