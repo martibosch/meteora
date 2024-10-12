@@ -1,4 +1,5 @@
 [![PyPI version fury.io](https://badge.fury.io/py/meteora.svg)](https://pypi.python.org/pypi/meteora)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/meteora.svg)](https://anaconda.org/conda-forge/meteora)
 [![Documentation Status](https://readthedocs.org/projects/meteora/badge/?version=latest)](https://meteora.readthedocs.io/en/latest/?badge=latest)
 [![tests](https://github.com/martibosch/meteora/actions/workflows/tests.yml/badge.svg)](https://github.com/martibosch/meteora/blob/main/.github/workflows/tests.yml)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/martibosch/meteora/main.svg)](https://results.pre-commit.ci/latest/github/martibosch/meteora/main)
@@ -107,12 +108,15 @@ See [the user guide](https://meteora.readthedocs.io/en/latest/user-guide.html) f
 
 ## Installation
 
-Although Meteora is not available in conda-forge yet (hopefully will be soon), it can be installed using conda/mamba and pip as follows:
+The easiest way to install Meteora is with conda/mamba:
 
 ```bash
-# install GDAL-based requirements
-conda install -c conda-forge contextily geopandas osmnx
-# install Meteora
+conda install -c conda-forge meteora
+```
+
+Alternatively, if [geopandas dependencies are installed correctly](https://geopandas.org/en/latest/getting_started/install.html), you can install Meteora using pip:
+
+```bash
 pip install meteora
 ```
 
