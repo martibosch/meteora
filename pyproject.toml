@@ -18,8 +18,11 @@ classifiers = [
   "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
+  "dask",
   "geopandas>=1.0.0",
   "matplotlib",
+  "polars",
+  "pyarrow",
   "requests",
   "requests-cache",
   "requests-oauthlib",

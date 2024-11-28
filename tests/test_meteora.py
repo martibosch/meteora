@@ -17,6 +17,7 @@ from meteora.clients import (
     AemetClient,
     AgrometeoClient,
     ASOSOneMinIEMClient,
+    GHCNHourlyClient,
     METARASOSIEMClient,
     MeteocatClient,
     MetOfficeClient,
@@ -274,3 +275,12 @@ class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
                     json=json.load(src),
                 )
             super().test_time_series()
+
+
+class GHCNHourlyClientTest(BaseClientTest, unittest.TestCase):
+    client_cls = GHCNHourlyClient
+    region = "Pully, Switzerland"
+    variable_codes = ["temperature", "relative_humidity"]
+    start_date = "2022-03-22"
+    end_date = "2022-03-23"
+    ts_df_args = [start_date, end_date]
