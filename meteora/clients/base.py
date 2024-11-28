@@ -286,7 +286,6 @@ class BaseClient(abc.ABC):
         response_content
             Response content.
         """
-        # print(requests.Request("get", url, params=params).prepare().url)
         response = self._get(
             url, params=params, headers=headers, request_kws=request_kws
         )

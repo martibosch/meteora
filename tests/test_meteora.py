@@ -1,5 +1,6 @@
 """Tests for Meteora."""
 
+import json
 import logging as lg
 import os
 import tempfile
@@ -8,6 +9,7 @@ from os import path
 
 import osmnx as ox
 import pandas as pd
+import requests_mock
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
 from meteora import settings, utils
@@ -18,8 +20,12 @@ from meteora.clients import (
     METARASOSIEMClient,
     MeteocatClient,
     MetOfficeClient,
+    NetatmoClient,
 )
 from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
+
+tests_dir = "tests"
+tests_data_dir = path.join(tests_dir, "data")
 
 
 def override_settings(module, **kwargs):
@@ -123,7 +129,9 @@ class BaseClientTest:
             # test data frame shape
             assert len(ts_df.columns) == len(self.variables)
             # TODO: use "station" as `level` arg?
-            assert len(ts_df.index.get_level_values(0).unique()) == len(
+            # ACHTUNG: using the <= because in many cases some stations are listed in
+            # the stations endpoint but do not return data (maybe inactive?)
+            assert len(ts_df.index.get_level_values(0).unique()) <= len(
                 self.client.stations_gdf
             )
             # TODO: use "time" as `level` arg?
@@ -159,6 +167,13 @@ class APIKeyParamClientTest(APIKeyClientTest):
         api_key_param_name = self.client._api_key_param_name
         self.assertTrue(api_key_param_name in self.client.request_params)
         self.assertIsNotNone(self.client.request_params[api_key_param_name])
+
+
+class OAuth2ClientTest(BaseClientTest):
+    def setUp(self):
+        self.client = self.client_cls(
+            self.region, self.client_id, self.client_secret, token=self.token
+        )
 
 
 class AemetClientTest(APIKeyParamClientTest, unittest.TestCase):
@@ -215,3 +230,47 @@ class MetOfficeClientTest(APIKeyParamClientTest, unittest.TestCase):
     region = "Edinburgh"
     api_key = os.environ["METOFFICE_API_KEY"]
     variable_codes = ["T", "P"]
+
+
+class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
+    client_cls = NetatmoClient
+    region = "Passanant i Belltall"
+    client_id = os.environ["NETATMO_CLIENT_ID"]
+    client_secret = os.environ["NETATMO_CLIENT_SECRET"]
+    token = {"access_token": os.environ["NETATMO_ACCESS_TOKEN"]}
+    # token = None
+    variables = ["temperature", "water_vapour"]
+    variable_codes = ["temperature", "humidity"]
+    start_date = "2024-12-22"
+    end_date = "2024-12-23"
+    ts_df_args = [start_date, end_date]
+
+    # def setUp(self):
+    #     with requests_mock.Mocker() as m:
+    #         m.post(
+    #             netatmo.OAUTH2_TOKEN_ENDPOINT,
+    #             json={"token_type": "bearer", "access_token": "abcd"},
+    #         )
+    #         super().setUp()
+
+    def test_stations(self):
+        with requests_mock.Mocker() as m:
+            with open(path.join(tests_data_dir, "netatmo-stations.json")) as src:
+                m.get(
+                    "https://api.netatmo.com/api/getpublicdata?lon_sw=1.1635994&lat_sw=41.4"
+                    "8811&lon_ne=1.2635994000000002&lat_ne=41.58811",
+                    json=json.load(src),
+                )
+            super().test_stations()
+
+    def test_time_series(self):
+        with requests_mock.Mocker() as m:
+            with open(path.join(tests_data_dir, "netatmo-time-series.json")) as src:
+                m.get(
+                    "https://api.netatmo.com/api/getmeasure?device_id=70%3Aee%3A50%3A74%3A2"
+                    "a%3Aba&module_id=02%3A00%3A00%3A73%3Ae0%3A7e&type=temperature%2Chumidi"
+                    "ty&date_begin=1734825600&date_end=1734912000&scale=30min&limit=1024&op"
+                    "timize=true&real_time=false",
+                    json=json.load(src),
+                )
+            super().test_time_series()
