@@ -48,6 +48,11 @@ repos:
     hooks:
       - id: check-github-workflows
 
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.4
+    hooks:
+      - id: actionlint
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.17.0
     hooks:

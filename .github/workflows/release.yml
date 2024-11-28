@@ -67,8 +67,6 @@ jobs:
         with:
           token: ${{ github.token }}
           tag: ${{ github.ref_name }}
-        if: needs.plan.outputs.tag != 'v0.1.0'
-        continue-on-error: true
 
       - name: create release
         uses: ncipollo/release-action@v1.14.0
@@ -79,8 +77,6 @@ jobs:
           name: ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.changes }}
           token: ${{ github.token }}
-        if: needs.plan.outputs.tag != 'v0.1.0'
-        continue-on-error: true
 
       - uses: actions/download-artifact@v4
         with:
