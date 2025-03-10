@@ -345,20 +345,24 @@ class BaseClient(abc.ABC):
             }
         )
 
-    def _get_ts_df(self, variables, *args, **kwargs):
-        # process the variables arg
-        variable_id_ser = self._get_variable_id_ser(variables)
-
-        # prepare request
-        ts_params = self._ts_params(variable_id_ser, *args, **kwargs)
-
+    def _ts_df_from_endpoint(self, ts_params):
         # perform request
         response_content = self._get_content_from_url(
             self._ts_endpoint, params=ts_params
         )
 
         # process response content into a time series data frame
-        ts_df = self._ts_df_from_content(response_content)
+        return self._ts_df_from_content(response_content)
+
+    def _get_ts_df(self, variables, *args, **kwargs):
+        # process the variables arg
+        variable_id_ser = self._get_variable_id_ser(variables)
+
+        # prepare base request parameters
+        ts_params = self._ts_params(variable_id_ser, *args, **kwargs)
+
+        # perform request
+        ts_df = self._ts_df_from_endpoint(ts_params)
 
         # ACHTUNG: do NOT set the station, time multi-index here because this is already
         # done in `_ts_df_from_content` in many cases since it results from groupby,
