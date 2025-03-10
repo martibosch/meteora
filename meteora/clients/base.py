@@ -53,7 +53,7 @@ DateTimeType = Union[
 
 
 class BaseClient(abc.ABC):
-    """Meteo station base client."""
+    """Meteora base client."""
 
     # def __init__(
     #     self,
@@ -306,6 +306,7 @@ class BaseClient(abc.ABC):
                     level=lg.WARNING,
                 )
                 time.sleep(error_pause)
+                # note that this is a recursive call
                 response_content = self._get_content_from_url(
                     url,
                     params=params,
@@ -318,8 +319,7 @@ class BaseClient(abc.ABC):
                 # else, this was an unhandled status code, throw an exception
                 utils.log(f"{domain} returned {sc}", level=lg.ERROR)
                 raise Exception(
-                    "Server returned:\n"
-                    f"{response} {response.reason}\n{response.text}"
+                    f"Server returned:\n{response} {response.reason}\n{response.text}"
                 )
 
         return response_content
