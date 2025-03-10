@@ -98,7 +98,7 @@ def _get_logger(level: int, name: str, filename: str) -> lg.Logger:
     # if a logger with this name is not already set up
     if not getattr(logger, "handler_set", None):
         # get today's date and construct a log filename
-        log_filename = Path(settings.LOGS_FOLDER) / f'{filename}_{ts(style="date")}.log'
+        log_filename = Path(settings.LOGS_FOLDER) / f"{filename}_{ts(style='date')}.log"
 
         # if the logs folder does not already exist, create it
         log_filename.parent.mkdir(parents=True, exist_ok=True)
