@@ -12,10 +12,10 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "geopandas>=1.0.0",
@@ -28,7 +28,7 @@ dependencies = [
 description = "Pythonic interface to access data from meteorological stations"
 name = "meteora"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 version = "0.1.1"
 
 [project.license]
@@ -138,10 +138,10 @@ include = [
 [tool.tox]
 envlist = [
     "lint",
-    "py39",
     "py310",
     "py311",
     "py312",
+    "py313",
 ]
 isolated_build = true
 requires = [
@@ -149,9 +149,6 @@ requires = [
 ]
 
 [tool.tox.gh-actions.python]
-"3.9" = [
-    "py39",
-]
 "3.10" = [
     "py310",
 ]
@@ -159,8 +156,11 @@ requires = [
     "py311",
 ]
 "3.12" = [
-    "lint",
     "py312",
+]
+"3.13" = [
+    "lint",
+    "py313",
 ]
 
 [tool.tox.testenv]
