@@ -22,11 +22,6 @@ repos:
         additional_dependencies: [prettier, prettier-plugin-toml, prettier-plugin-ini]
         types: ["ini", "toml", "yaml"]
 
-  - repo: https://github.com/kieran-ryan/pyprojectsort
-    rev: v0.4.0
-    hooks:
-      - id: pyprojectsort
-
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.22 # Use the ref you want to point at
     hooks:
@@ -35,6 +30,12 @@ repos:
         additional_dependencies:
           - mdformat-gfm
           - mdformat-black
+
+  - repo: https://github.com/pappasam/toml-sort
+    rev: v0.24.2
+    hooks:
+      - id: toml-sort-fix
+        args: ["--in-place"]
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.36.0

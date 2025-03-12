@@ -1,29 +1,29 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-    "setuptools>=61.0",
+  "setuptools>=61.0"
 ]
 
 [project]
 authors = [
-    { email = "marti.bosch@epfl.ch", name = "Martí Bosch" },
+  {email = "marti.bosch@epfl.ch", name = "Martí Bosch"}
 ]
 classifiers = [
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
-    "geopandas>=1.0.0",
-    "matplotlib",
-    "requests",
-    "requests-cache",
-    "requests-oauthlib",
-    "tqdm",
+  "geopandas>=1.0.0",
+  "matplotlib",
+  "requests",
+  "requests-cache",
+  "requests-oauthlib",
+  "tqdm"
 ]
 description = "Pythonic interface to access data from meteorological stations"
 name = "meteora"
@@ -36,34 +36,34 @@ text = "GPL-3.0"
 
 [project.optional-dependencies]
 cx = [
-    "contextily",
+  "contextily"
 ]
 dev = [
-    "build",
-    "commitizen",
-    "pip",
-    "pre-commit",
-    "toml",
-    "tox",
-    "twine",
+  "build",
+  "commitizen",
+  "pip",
+  "pre-commit",
+  "toml",
+  "tox",
+  "twine"
 ]
 doc = [
-    "myst-parser",
-    "nbsphinx",
-    "pydata-sphinx-theme",
-    "sphinx",
-    "sphinxemoji",
+  "myst-parser",
+  "nbsphinx",
+  "pydata-sphinx-theme",
+  "sphinx",
+  "sphinxemoji"
 ]
 ox = [
-    "osmnx",
+  "osmnx"
 ]
 test = [
-    "coverage[toml]",
-    "pytest",
-    "pytest-cov",
-    "python-dotenv[cli]",
-    "requests-mock",
-    "ruff",
+  "coverage[toml]",
+  "pytest",
+  "pytest-cov",
+  "python-dotenv[cli]",
+  "requests-mock",
+  "ruff"
 ]
 
 [project.urls]
@@ -82,21 +82,21 @@ version_scheme = "semver"
 
 [tool.coverage.report]
 exclude_lines = [
-    "except ImportError",
-    "except ModuleNotFoundError",
-    "if self.debug:",
-    "pragma: no cover",
-    "raise NotImplementedError",
+  "except ImportError",
+  "except ModuleNotFoundError",
+  "if self.debug:",
+  "pragma: no cover",
+  "raise NotImplementedError"
 ]
 ignore_errors = true
 omit = [
-    "docs/conf.py",
-    "tests/*",
+  "docs/conf.py",
+  "tests/*"
 ]
 
 [tool.coverage.run]
 source = [
-    "meteora",
+  "meteora"
 ]
 
 [tool.ruff]
@@ -107,23 +107,23 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 select = [
-    "D",
-    "E",
-    "F",
-    "I",
+  "D",
+  "E",
+  "F",
+  "I"
 ]
 
 [tool.ruff.lint.isort]
 known-first-party = [
-    "meteora",
+  "meteora"
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = [
-    "F401",
+  "F401"
 ]
 "tests/test_meteora.py" = [
-    "D",
+  "D"
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -131,70 +131,65 @@ convention = "numpy"
 
 [tool.setuptools.packages.find]
 include = [
-    "meteora",
-    "meteora.*",
+  "meteora",
+  "meteora.*"
 ]
 
 [tool.tox]
-envlist = [
-    "lint",
-    "py310",
-    "py311",
-    "py312",
-    "py313",
+env_list = [
+  "3.10",
+  "3.11",
+  "3.12",
+  "3.13",
+  "lint"
 ]
-isolated_build = true
 requires = [
-    "tox>=4.19",
+  "tox>=4.19"
 ]
 
-[tool.tox.gh-actions.python]
-"3.10" = [
-    "py310",
-]
-"3.11" = [
-    "py311",
-]
-"3.12" = [
-    "py312",
-]
-"3.13" = [
-    "lint",
-    "py313",
-]
-
-[tool.tox.testenv]
+[tool.tox.env.lint]
 commands = [
-    "dotenv -f .keys.env run pytest -s --cov=meteora --cov-append --cov-report=xml --cov-report term-missing tests",
+  "python -m build",
+  "sphinx-build docs docs/_build",
+  "twine check dist/*"
+]
+extras = [
+  "dev",
+  "doc",
+  "test"
+]
+whitelist_externals = [
+  "build",
+  "sphinx-build",
+  "twine"
+]
+
+[tool.tox.env_run_base]
+commands = [
+  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests"]
 ]
 conda_deps = [
-    "gdal>=3.3",
+  "gdal>=3.3"
 ]
 extras = [
-    "ox",
-    "test",
+  "ox",
+  "test"
 ]
 whitelist_externals = [
-    "pytest",
+  "pytest"
 ]
 
-[tool.tox.testenv.lint]
-commands = [
-    "python -m build",
-    "sphinx-build docs docs/_build",
-    "twine check dist/*",
+[tool.tox.gh.python]
+"3.10" = [
+  "3.10"
 ]
-extras = [
-    "dev",
-    "doc",
-    "test",
+"3.11" = [
+  "3.11"
 ]
-whitelist_externals = [
-    "build",
-    "sphinx-build",
-    "twine",
+"3.12" = [
+  "3.12"
 ]
-
-[tool.tox.testenv.setenv]
-PYTHONPATH = "{toxinidir}"
-PYTHONWARNINGS = "ignore"
+"3.13" = [
+  "3.13",
+  "lint"
+]
