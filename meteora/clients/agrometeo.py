@@ -238,7 +238,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         Returns
         -------
         ts_df : pandas.DataFrame
-            Long form data frame with a time series of meaurements (second-level index)
+            Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
         return self._get_ts_df(

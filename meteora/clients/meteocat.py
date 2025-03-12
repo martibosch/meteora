@@ -136,7 +136,7 @@ class MeteocatClient(
     #     Returns
     #     -------
     #     ts_df : pd.DataFrame
-    #         Data frame with a time series of meaurements (rows) at each station
+    #         Data frame with a time series of measurements (rows) at each station
     #         (columns).
 
     #     """
@@ -173,7 +173,7 @@ class MeteocatClient(
         Returns
         -------
         ts_df : pandas.DataFrame
-            Long form data frame with a time series of meaurements (second-level index)
+            Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
         # process the variables arg

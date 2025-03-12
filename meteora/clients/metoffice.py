@@ -183,7 +183,7 @@ class MetOfficeClient(
         Returns
         -------
         ts_df : pandas.DataFrame
-            Long form data frame with a time series of meaurements (second-level index)
+            Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
         # ACHTUNG: we cannot reuse the base `_get_ts_df` method here because we need to

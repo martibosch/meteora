@@ -23,7 +23,7 @@ dependencies = [
     "requests",
     "requests-cache",
     "requests-oauthlib",
-    "tqdm"
+    "tqdm",
 ]
 description = "Pythonic interface to access data from meteorological stations"
 name = "meteora"
@@ -68,6 +68,10 @@ test = [
 
 [project.urls]
 Repository = "https://github.com/martibosch/meteora"
+
+[tool.codespell]
+ignore-words-list = "convencional,pres,ser,temperatur"
+skip = "CHANGELOG.md"
 
 [tool.commitizen]
 major_version_zero = true

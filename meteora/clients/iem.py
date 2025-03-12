@@ -87,7 +87,7 @@ METAR_TS_ENDPOINT = f"{BASE_URL}/cgi-bin/request/asos.py"
 # skyl2: Sky Level 2 Altitude in feet
 # skyl3: Sky Level 3 Altitude in feet
 # skyl4: Sky Level 4 Altitude in feet
-# wxcodes: Present Weather Codes (space seperated)
+# wxcodes: Present Weather Codes (space separated)
 # feel: Apparent Temperature (Wind Chill or Heat Index) in Fahrenheit
 # ice_accretion_1hr: Ice Accretion over 1 Hour (inches)
 # ice_accretion_3hr: Ice Accretion over 3 Hours (inches)
@@ -216,7 +216,7 @@ class IEMClient(
         Returns
         -------
         ts_df : pandas.DataFrame
-            Long form data frame with a time series of meaurements (second-level index)
+            Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
         return self._get_ts_df(variables, start, end)

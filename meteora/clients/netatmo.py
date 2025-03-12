@@ -314,7 +314,7 @@ def _process_station_record(station_record: dict) -> dict:
     station_dict.update(
         {module_types[module_id]: module_id for module_id in module_types}
     )
-    # note that NAMain (for pressure) is ommited in "module_types" so we have to get
+    # note that NAMain (for pressure) is omitted in "module_types" so we have to get
     # them from "measures"
     # ACHTUNG: note that we are already iterating `station_record["measures"]` below to
     # get the latest observations, so it may be more efficient to merge the two loops
@@ -328,7 +328,7 @@ def _process_station_record(station_record: dict) -> dict:
 
     # station observations
     # NOTE: in the "modules" and "module_types" of station_record, there is the info
-    # about the sensors, i.e., NAMain is for pressure (ommited in "module_types"),
+    # about the sensors, i.e., NAMain is for pressure (omitted in "module_types"),
     # NAModule1 is for temperature and humidity, NAModule2 is for wind, NAModule3 is for
     # rain. It may be more efficient to use this information to query the
     # station_record["measures"].
@@ -358,7 +358,7 @@ def _process_station_record(station_record: dict) -> dict:
 class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClient):
     """Netatmo client."""
 
-    # geom constan
+    # geom constant
     X_COL = "lon"
     Y_COL = "lat"
     CRS = pyproj.CRS("epsg:4326")

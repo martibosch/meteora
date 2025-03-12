@@ -140,7 +140,7 @@ class AemetClient(
         Returns
         -------
         ts_df : pandas.DataFrame
-            Long form data frame with a time series of meaurements (second-level index)
+            Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
         # disable cache since the endpoint returns the latest 24h of data
