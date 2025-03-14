@@ -92,7 +92,7 @@ GETMEASURE_SCALE = "30min"
 GETMEASURE_LIMIT = 1024
 # ACHTUNG: boolean request parameters need to be in lowercase otherwise the API will
 # return an error
-GETMEASURE_OPTIMIZE = "true"
+# GETMEASURE_OPTIMIZE = "true"
 GETMEASURE_REAL_TIME = "false"
 
 # for API limits regarding the number of stations in large regions
@@ -530,8 +530,8 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
             scale = GETMEASURE_SCALE
         if limit is None:
             limit = GETMEASURE_LIMIT
-        if optimize is None:
-            optimize = GETMEASURE_OPTIMIZE
+        # if optimize is None:
+        #     optimize = GETMEASURE_OPTIMIZE
         if real_time is None:
             real_time = GETMEASURE_REAL_TIME
 
@@ -723,16 +723,44 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
         *,
         scale: Union[str, None] = None,
         limit: Union[int, None] = None,
-        optimize: Union[bool, None] = None,
         real_time: Union[bool, None] = None,
     ) -> pd.DataFrame:
-        """Get time series data frame."""
+        """Get time series data frame.
+
+        Parameters
+        ----------
+        variables : str, int or list-like of str or int
+            Target variables, which can be either a Netatmo variable code (integer or
+            string) or an essential climate variable (ECV) following the Meteora
+            nomenclature (string).
+        start, end : datetime-like, str, int, float
+            Values representing the start and end of the requested data period
+            respectively. Accepts any datetime-like object that can be passed to
+            pandas.Timestamp.
+        scale : None or {"30min", "1hour", "3hours", "1day", "1week", "1month"}, \
+            default None
+            Temporal scale of the measurements. The default value of None returns the
+            finest scale, i.e., "30min" (30 minutes).
+        limit : None or int, default None
+            Maximum number of time steps to return. If None, the maximum number allowed
+            by the Netatmo API (1024) is used.
+        real_time : None or bool, default None
+            A value of True returns the exact timestamps. Otherwise, when scale is
+            different than the maximum, i.e., 30 minutes, timestamps are offset by half
+            of the scale.
+
+        Returns
+        -------
+        ts_df : pandas.DataFrame
+            Long form data frame with a time series of measurements (second-level index)
+            at each station (first-level index) for each variable (column).
+        """
         return self._get_ts_df(
             variables=variables,
             start=start,
             end=end,
             scale=scale,
             limit=limit,
-            optimize=optimize,
+            optimize=True,  # avoid writing a parsers for each format
             real_time=real_time,
         )
