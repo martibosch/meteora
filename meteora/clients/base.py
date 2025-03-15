@@ -1,27 +1,23 @@
 """Base abstract classes for meteo station datasets."""
 
 import abc
-import datetime
 import io
 import logging as lg
-import os
 import re
 import time
-from collections.abc import Mapping, Sequence
-from typing import IO
+from collections.abc import Mapping
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import pyproj
 import requests
 import requests_cache
 from pyogrio.errors import DataSourceError
-from pyproj.crs import CRS
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
 
 from meteora import settings, utils
+from meteora.utils import KwargsType, RegionType, VariablesType
 
 try:
     import osmnx as ox
@@ -32,11 +28,6 @@ except ImportError:
 __all__ = [
     "BaseJSONClient",
     "BaseTextClient",
-    "RegionType",
-    "VariablesType",
-    "DateTimeType",
-    "CRSType",
-    "KwargsType",
 ]
 
 
@@ -48,14 +39,6 @@ __all__ = [
 #         var_name=station_id_name,
 #         value_name=value_name,
 #     )
-
-RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
-VariablesType = str | int | list[str] | list[int]
-DateTimeType = (
-    datetime.date | datetime.datetime | np.datetime64 | pd.Timestamp | str | int | float
-)
-CRSType = str | dict | CRS
-KwargsType = Mapping | None
 
 
 class BaseClient(abc.ABC):

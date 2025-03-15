@@ -16,14 +16,9 @@ from shapely import geometry
 from tqdm import tqdm
 
 from meteora import settings, utils
-from meteora.clients.base import (
-    BaseJSONClient,
-    DateTimeType,
-    KwargsType,
-    RegionType,
-    VariablesType,
-)
+from meteora.clients.base import BaseJSONClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
 
 # to show a progress bar in pandas/geopandas apply
 tqdm.pandas()

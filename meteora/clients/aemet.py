@@ -6,12 +6,13 @@ import pandas as pd
 import pyproj
 
 from meteora import settings, utils
-from meteora.clients.base import BaseJSONClient, KwargsType, RegionType, VariablesType
+from meteora.clients.base import BaseJSONClient
 from meteora.mixins import (
     APIKeyParamMixin,
     StationsEndpointMixin,
     VariablesEndpointMixin,
 )
+from meteora.utils import KwargsType, RegionType, VariablesType
 
 # API endpoints
 BASE_URL = "https://opendata.aemet.es/opendata/api"

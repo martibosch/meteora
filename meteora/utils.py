@@ -3,17 +3,31 @@
 Based on osmnx utils and downloader modules.
 """
 
+import datetime
 import datetime as dt
 import logging as lg
 import os
 import sys
 import unicodedata
+from collections.abc import Mapping, Sequence
 from contextlib import redirect_stdout
 from pathlib import Path
+from typing import IO
 
+import geopandas as gpd
+import numpy as np
 import pandas as pd
+from pyproj.crs import CRS
 
 from meteora import settings
+
+RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
+VariablesType = str | int | list[str] | list[int]
+DateTimeType = (
+    datetime.date | datetime.datetime | np.datetime64 | pd.Timestamp | str | int | float
+)
+CRSType = str | dict | CRS
+KwargsType = Mapping | None
 
 
 # `DummyAttribute` and `abstract_attribute` below are hardcoded from

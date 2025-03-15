@@ -6,18 +6,13 @@ import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import (
-    BaseJSONClient,
-    DateTimeType,
-    KwargsType,
-    RegionType,
-    VariablesType,
-)
+from meteora.clients.base import BaseJSONClient
 from meteora.mixins import (
     APIKeyHeaderMixin,
     StationsEndpointMixin,
     VariablesEndpointMixin,
 )
+from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
 
 # API endpoints
 BASE_URL = "https://api.meteo.cat/xema/v1"

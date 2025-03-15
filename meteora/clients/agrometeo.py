@@ -6,15 +6,9 @@ import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import (
-    BaseJSONClient,
-    CRSType,
-    DateTimeType,
-    KwargsType,
-    RegionType,
-    VariablesType,
-)
+from meteora.clients.base import BaseJSONClient
 from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.utils import CRSType, DateTimeType, KwargsType, RegionType, VariablesType
 
 # API endpoints
 BASE_URL = "https://agrometeo.ch/backend/api"
