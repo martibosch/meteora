@@ -22,7 +22,7 @@ from meteora.clients import (
     MetOfficeClient,
     NetatmoClient,
 )
-from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
+from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
 
 tests_dir = "tests"
 tests_data_dir = path.join(tests_dir, "data")
@@ -106,7 +106,7 @@ class BaseClientTest:
             self.assertIsNotNone(getattr(self.client, attr))
 
     def test_stations(self):
-        if isinstance(self.client, AllStationsEndpointMixin):
+        if isinstance(self.client, StationsEndpointMixin):
             stations_gdf = self.client.stations_gdf
             assert len(stations_gdf) >= 1
 

@@ -14,8 +14,8 @@ from meteora.clients.base import (
     VariablesType,
 )
 from meteora.mixins import (
-    AllStationsEndpointMixin,
     APIKeyHeaderMixin,
+    StationsEndpointMixin,
     VariablesEndpointMixin,
 )
 
@@ -43,7 +43,7 @@ TIME_COL = "data"
 
 class MeteocatClient(
     APIKeyHeaderMixin,
-    AllStationsEndpointMixin,
+    StationsEndpointMixin,
     VariablesEndpointMixin,
     BaseJSONClient,
 ):

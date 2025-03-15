@@ -23,7 +23,7 @@ from meteora.clients.base import (
     RegionType,
     VariablesType,
 )
-from meteora.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
+from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 
 # to show a progress bar in pandas/geopandas apply
 tqdm.pandas()
@@ -361,7 +361,7 @@ def _process_station_record(station_record: dict) -> dict:
     return station_dict
 
 
-class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClient):
+class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClient):
     """Netatmo client."""
 
     # geom constant

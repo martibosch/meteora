@@ -8,8 +8,8 @@ import pyproj
 from meteora import settings, utils
 from meteora.clients.base import BaseJSONClient, KwargsType, RegionType, VariablesType
 from meteora.mixins import (
-    AllStationsEndpointMixin,
     APIKeyParamMixin,
+    StationsEndpointMixin,
     VariablesEndpointMixin,
 )
 
@@ -38,7 +38,7 @@ TIME_COL = "fint"
 
 class AemetClient(
     APIKeyParamMixin,
-    AllStationsEndpointMixin,
+    StationsEndpointMixin,
     VariablesEndpointMixin,
     BaseJSONClient,
 ):

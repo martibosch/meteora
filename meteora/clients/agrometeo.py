@@ -14,7 +14,7 @@ from meteora.clients.base import (
     RegionType,
     VariablesType,
 )
-from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
+from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
 
 # API endpoints
 BASE_URL = "https://agrometeo.ch/backend/api"
@@ -107,7 +107,7 @@ SCALE = "none"
 MEASUREMENT = "avg"
 
 
-class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSONClient):
+class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONClient):
     """Agrometeo client."""
 
     # API endpoints

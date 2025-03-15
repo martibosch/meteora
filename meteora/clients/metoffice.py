@@ -9,8 +9,8 @@ import pyproj
 from meteora import settings
 from meteora.clients.base import BaseJSONClient, KwargsType, RegionType, VariablesType
 from meteora.mixins import (
-    AllStationsEndpointMixin,
     APIKeyParamMixin,
+    StationsEndpointMixin,
     VariablesEndpointMixin,
 )
 
@@ -37,7 +37,7 @@ TIME_COL = "$"
 
 
 class MetOfficeClient(
-    APIKeyParamMixin, AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSONClient
+    APIKeyParamMixin, StationsEndpointMixin, VariablesEndpointMixin, BaseJSONClient
 ):
     """MetOffice client."""
 

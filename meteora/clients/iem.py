@@ -16,7 +16,7 @@ from meteora.clients.base import (
     RegionType,
     VariablesType,
 )
-from meteora.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
+from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 
 # API endpoints
 BASE_URL = "https://mesonet.agron.iastate.edu"
@@ -124,7 +124,7 @@ METAR_TIME_COL = "valid"
 
 
 class IEMClient(
-    AllStationsEndpointMixin, VariablesHardcodedMixin, BaseTextClient, abc.ABC
+    StationsEndpointMixin, VariablesHardcodedMixin, BaseTextClient, abc.ABC
 ):
     """Abstract Iowa Environmental Mesonet (IEM) client."""
 
