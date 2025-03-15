@@ -1,12 +1,11 @@
 """Region mixins."""
 
-import os
-from typing import IO, Sequence, Union
-
 import geopandas as gpd
 from pyogrio.errors import DataSourceError
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
+
+from meteora.utils import CRSType, KwargsType, RegionType
 
 try:
     import osmnx as ox
@@ -14,49 +13,28 @@ except ImportError:
     ox = None
 
 
-RegionType = Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO]
-
-
 class RegionMixin:
-    """Mixin class to add a `region` attribute to a class.
-
-    Parameters
-    ----------
-    region : str, Sequence, GeoSeries, GeoDataFrame, PathLike, or IO
-        The region to process. This can be either:
-        -  A string with a place name (Nominatim query) to geocode.
-        -  A sequence with the west, south, east and north bounds.
-        -  A geometric object, e.g., shapely geometry, or a sequence of geometric
-           objects. In such a case, the region will be passed as the `data` argument of
-           the GeoSeries constructor.
-        -  A geopandas geo-series or geo-data frame.
-        -  A filename or URL, a file-like object opened in binary ('rb') mode, or a
-           Path object that will be passed to `geopandas.read_file`.
-
-    geocode_to_gdf_kws : dict or None, optional
-        Keyword arguments to pass to `geocode_to_gdf` if `region` is a string
-        corresponding to a place name (Nominatim query).
-
-    """
+    """Mixin class to add a `region` attribute to a class."""
 
     @property
-    def region(self) -> Union[gpd.GeoDataFrame, None]:
+    def region(self) -> gpd.GeoDataFrame | None:
         """The region as a GeoDataFrame."""
         return self._region
 
     @region.setter
     def region(
         self,
-        region: Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO],
+        region: RegionType,
     ):
-        self._region = self._process_region_arg(region)
+        self._region = self._process_region_arg(region, crs=getattr(self, "CRS", None))
 
     def _process_region_arg(
         self,
-        region: Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO],
+        region: RegionType,
         *,
-        geocode_to_gdf_kws: Union[dict, None] = None,
-    ) -> Union[gpd.GeoDataFrame, None]:
+        crs: CRSType | None = None,
+        **geocode_to_gdf_kwargs: KwargsType,
+    ) -> gpd.GeoDataFrame | None:
         """Process the region argument.
 
         Parameters
@@ -66,13 +44,18 @@ class RegionMixin:
             -  A string with a place name (Nominatim query) to geocode.
             -  A sequence with the west, south, east and north bounds.
             -  A geometric object, e.g., shapely geometry, or a sequence of geometric
-               objects. In such a case, the value will be passed as the `data` argument
-               of the GeoSeries constructor, and needs to be in the same CRS as the one
+               objects. In such a case, the value is passed as the `data` argument of
+               the GeoSeries constructor, and needs to be in the same CRS as the one
                used by the client's class (i.e., the `CRS` class attribute).
             -  A geopandas geo-series or geo-data frame.
             -  A filename or URL, a file-like object opened in binary ('rb') mode, or a
                Path object that will be passed to `geopandas.read_file`.
-        geocode_to_gdf_kws : dict or None, optional
+        crs : str, dict or pyproj.CRS, optional
+            The coordinate reference system (CRS) of the provided region. It can be any
+            CRS-like object accepted by geopandas. Ignored if `region` is a string
+            corresponding to a place name, a geopandas geo-series or geo-data frame with
+            its CRS attribute set or a filename, URL or file-like object.
+        geocode_to_gdf_kwargs : dict, optional
             Keyword arguments to pass to `geocode_to_gdf` if `region` is a string
             corresponding to a place name (Nominatim query).
 
@@ -82,7 +65,6 @@ class RegionMixin:
             The processed region as a GeoDataFrame, in the CRS used by the client's
             class. A value of None is returned when passing a place name (Nominatim
             query) but osmnx is not installed.
-
         """
         # crs : Any, optional
         # Coordinate Reference System of the provided `region`. Ignored if `region` is a
@@ -93,7 +75,7 @@ class RegionMixin:
 
         if not isinstance(region, gpd.GeoDataFrame):
             # naive geometries
-            if (
+            if not isinstance(region, gpd.GeoSeries) and (
                 hasattr(region, "__iter__")
                 and not isinstance(region, str)
                 or isinstance(region, BaseGeometry)
@@ -129,8 +111,8 @@ class RegionMixin:
                     #                 )
                     #                 return
 
-                    if geocode_to_gdf_kws is None:
-                        geocode_to_gdf_kws = {}
-                    region = ox.geocode_to_gdf(region, **geocode_to_gdf_kws).iloc[:1]
+                    if geocode_to_gdf_kwargs is None:
+                        geocode_to_gdf_kwargs = {}
+                    region = ox.geocode_to_gdf(region, **geocode_to_gdf_kwargs).iloc[:1]
 
         return region.to_crs(self.CRS)
