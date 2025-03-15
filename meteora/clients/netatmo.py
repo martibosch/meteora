@@ -99,7 +99,7 @@ GETMEASURE_LIMIT = 1024
 # ACHTUNG: boolean request parameters need to be in lowercase otherwise the API will
 # return an error
 # GETMEASURE_OPTIMIZE = "true"
-GETMEASURE_REAL_TIME = "false"
+GETMEASURE_REAL_TIME = False
 
 # for API limits regarding the number of stations in large regions
 WINDOW_SIZE = 0.1  # degrees
@@ -428,14 +428,6 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
             crs=self.CRS,
         )
         # end: split the region into windows
-
-        lon_sw, lat_sw, lon_ne, lat_ne = self.region.total_bounds
-        self._public_data_kwargs = dict(
-            lon_sw=lon_sw,
-            lat_sw=lat_sw,
-            lon_ne=lon_ne,
-            lat_ne=lat_ne,
-        )
 
         if sjoin_kwargs is None:
             sjoin_kwargs = {}
