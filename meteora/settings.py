@@ -7,10 +7,10 @@ import requests_cache
 # core
 # STATIONS_ID_NAME = "station_id"
 TIME_NAME = "time"
-SJOIN_KWS = {"how": "inner", "predicate": "intersects"}
+SJOIN_KWARGS = {"how": "inner", "predicate": "intersects"}
 
 # utils
-REQUEST_KWS = {}
+REQUEST_KWARGS = {}
 # PAUSE = 1
 ERROR_PAUSE = 60
 # TIMEOUT = 180

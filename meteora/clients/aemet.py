@@ -1,12 +1,12 @@
 """AEMET client."""
 
-from typing import Mapping, Union
+from collections.abc import Mapping
 
 import pandas as pd
 import pyproj
 
 from meteora import settings, utils
-from meteora.clients.base import BaseJSONClient, RegionType, VariablesType
+from meteora.clients.base import BaseJSONClient, KwargsType, RegionType, VariablesType
 from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyParamMixin,
@@ -66,19 +66,19 @@ class AemetClient(
     # request_headers = {"cache-control": "no-cache"}
 
     def __init__(
-        self, region: RegionType, api_key: str, sjoin_kws: Union[Mapping, None] = None
+        self, region: RegionType, api_key: str, **sjoin_kwargs: KwargsType
     ) -> None:
         """Initialize MetOffice client."""
         self.region = region
         self._api_key = api_key
-        if sjoin_kws is None:
-            sjoin_kws = settings.SJOIN_KWS.copy()
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = settings.SJOIN_KWARGS.copy()
+        self.SJOIN_KWARGS = sjoin_kwargs
         # need to call super().__init__() to set the cache
         super().__init__()
 
     @property
-    def request_headers(self):
+    def request_headers(self) -> dict:
         """Request headers."""
         try:
             return self._request_headers
@@ -88,7 +88,7 @@ class AemetClient(
             }
         return self._request_headers
 
-    def _stations_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         # response_content returns a dict with urls, where the one under the "datos" key
         # contains the JSON data
         stations_df = pd.read_json(response_content["datos"], encoding="latin1")
@@ -112,7 +112,7 @@ class AemetClient(
             self._variables_df = self._variables_df_from_content(response_content)
             return self._variables_df
 
-    def _ts_df_from_content(self, response_content):
+    def _ts_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         # response_content returns a dict with urls, where the one under the "datos" key
         # contains the JSON data
         ts_df = pd.read_json(response_content["datos"], encoding="latin1")

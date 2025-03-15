@@ -1,13 +1,13 @@
 """MetOffice client."""
 
 import datetime
-from typing import Mapping, Union
+from collections.abc import Mapping
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, RegionType, VariablesType
+from meteora.clients.base import BaseJSONClient, KwargsType, RegionType, VariablesType
 from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyParamMixin,
@@ -68,15 +68,15 @@ class MetOfficeClient(
         self,
         region: RegionType,
         api_key: str,
-        sjoin_kws: Union[Mapping, None] = None,
-        res_param: Union[str, None] = None,
+        res_param: str | None = None,
+        **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize MetOffice client."""
         self.region = region
         self._api_key = api_key
-        if sjoin_kws is None:
-            sjoin_kws = settings.SJOIN_KWS.copy()
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = settings.SJOIN_KWARGS.copy()
+        self.SJOIN_KWARGS = sjoin_kwargs
         if res_param is None:
             res_param = "hourly"
         self.res_param_dict = {"res": res_param}
@@ -85,7 +85,7 @@ class MetOfficeClient(
         super().__init__()
 
     @property
-    def request_params(self):
+    def request_params(self) -> dict:
         """Request parameters."""
         # TODO: would it be better to use a property setter?
         try:
@@ -94,10 +94,10 @@ class MetOfficeClient(
             self._request_params = super().request_params | self.res_param_dict
             return self._request_params
 
-    def _stations_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.DataFrame(response_content["Locations"]["Location"])
 
-    def _variables_df_from_content(self, response_content) -> pd.DataFrame:
+    def _variables_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.DataFrame(response_content["SiteRep"]["Wx"]["Param"])
 
     @property
@@ -111,7 +111,9 @@ class MetOfficeClient(
             self._variables_df = self._variables_df_from_content(response_content)
             return self._variables_df
 
-    def _ts_df_from_content(self, response_content, variable_id_ser):
+    def _ts_df_from_content(
+        self, response_content: Mapping, variable_id_ser: pd.Series
+    ) -> pd.DataFrame:
         # this is the time of the latest observation, from which the API returns the
         # latest 24 hours
         latest_obs_time = pd.Timestamp(response_content["SiteRep"]["DV"]["dataDate"])

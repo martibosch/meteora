@@ -2,6 +2,7 @@
 
 import pandas as pd
 
+from meteora.clients.base import VariablesType
 from meteora.utils import abstract_attribute
 
 # https://public.wmo.int/en/programmes/global-climate-observing-system/essential-climate-variables
@@ -21,14 +22,14 @@ class VariablesMixin:
     """Variables Mixin."""
 
     @abstract_attribute
-    def _variables_id_col(self):
+    def _variables_id_col(self) -> str:
         pass
 
     @abstract_attribute
-    def _ecv_dict(self):
+    def _ecv_dict(self) -> dict:
         pass
 
-    def _process_variable_arg(self, variable):
+    def _process_variable_arg(self, variable: str | int) -> str | int:
         # process the variable arg
         # variable is a string that can be either:
         # a) a variable code according to the provider's nomenclature
@@ -54,7 +55,7 @@ class VariablesMixin:
 
         return variable_id
 
-    def _get_variable_id_ser(self, variables):
+    def _get_variable_id_ser(self, variables: VariablesType) -> pd.Series:
         """Given the `variables` argument, return a list of variable codes."""
         if not pd.api.types.is_list_like(variables):
             variables = [variables]
@@ -70,11 +71,11 @@ class VariablesHardcodedMixin(VariablesMixin):
     """Hardcoded variables mixin."""
 
     @abstract_attribute
-    def _variables_dict(self):
+    def _variables_dict(self) -> dict:
         pass
 
     @abstract_attribute
-    def _variables_label_col(self):
+    def _variables_label_col(self) -> str:
         pass
 
     @property
@@ -95,7 +96,7 @@ class VariablesEndpointMixin(VariablesMixin):
     """Variables endpoint mixin."""
 
     @abstract_attribute
-    def _variables_endpoint(self):
+    def _variables_endpoint(self) -> str:
         pass
 
     @property

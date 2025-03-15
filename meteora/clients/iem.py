@@ -1,14 +1,21 @@
 """Iowa Environmental Mesonet (IEM) client."""
 
 import abc
-from typing import Mapping, Union
+import io
+from collections.abc import Sequence
 
 import geopandas as gpd
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseTextClient, DateTimeType, RegionType
+from meteora.clients.base import (
+    BaseTextClient,
+    DateTimeType,
+    KwargsType,
+    RegionType,
+    VariablesType,
+)
 from meteora.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
 
 # API endpoints
@@ -129,14 +136,12 @@ class IEMClient(
     _variables_id_col = VARIABLES_ID_COL
     _variables_label_col = VARIABLES_LABEL_COL
 
-    def __init__(
-        self, region: RegionType, sjoin_kws: Union[Mapping, None] = None
-    ) -> None:
+    def __init__(self, region: RegionType, **sjoin_kwargs: KwargsType) -> None:
         """Initialize ASOS 1 minute Iowa Environmental Mesonet (IEM) client."""
         self.region = region
-        if sjoin_kws is None:
-            sjoin_kws = settings.SJOIN_KWS.copy()
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = settings.SJOIN_KWARGS.copy()
+        self.SJOIN_KWARGS = sjoin_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
@@ -155,13 +160,15 @@ class IEMClient(
         stations_gdf = gpd.read_file(self._stations_endpoint)
         # filter the stations
         # TODO: do we need to copy the dict to avoid reference issues?
-        _sjoin_kws = self.SJOIN_KWS.copy()
+        _sjoin_kwargs = self.SJOIN_KWARGS.copy()
         # predicate = _sjoin_kws.pop("predicate", SJOIN_PREDICATE)
-        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kws)[
+        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kwargs)[
             stations_gdf.columns
         ]
 
-    def _ts_params(self, variable_ids, start, end):
+    def _ts_params(
+        self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
+    ) -> dict:
         # process date args
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
@@ -177,7 +184,7 @@ class IEMClient(
             "station": ",".join(self.stations_gdf[self._stations_id_col]),
         }
 
-    def _ts_df_from_content(self, response_content):
+    def _ts_df_from_content(self, response_content: io.StringIO) -> pd.DataFrame:
         ts_df = pd.read_csv(
             response_content,
             na_values="M",
@@ -188,7 +195,7 @@ class IEMClient(
             .first(skipna=True)
         )
 
-    def _post_process_ts_df(self, ts_df):
+    def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
         # In this case:
         # - avoid sorting on index as data is already sorted
         # - avoid to_numeric as data is already numeric
@@ -196,7 +203,7 @@ class IEMClient(
 
     def get_ts_df(
         self,
-        variables: Union[str, list[str]],
+        variables: VariablesType,
         start: DateTimeType,
         end: DateTimeType,
     ) -> pd.DataFrame:

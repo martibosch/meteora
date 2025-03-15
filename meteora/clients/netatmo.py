@@ -2,7 +2,7 @@
 
 import logging as lg
 import webbrowser
-from typing import Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
 
 import geopandas as gpd
 import numpy as np
@@ -16,7 +16,13 @@ from shapely import geometry
 from tqdm import tqdm
 
 from meteora import settings, utils
-from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType, VariablesType
+from meteora.clients.base import (
+    BaseJSONClient,
+    DateTimeType,
+    KwargsType,
+    RegionType,
+    VariablesType,
+)
 from meteora.mixins import AllStationsEndpointMixin, VariablesHardcodedMixin
 
 # to show a progress bar in pandas/geopandas apply
@@ -120,9 +126,9 @@ class NetatmoConnect:
         client_id: str,
         client_secret: str,
         *,
-        redirect_uri: Union[str, None] = None,
-        token: Union[dict, None] = None,
-        use_cache: Union[bool, None] = None,
+        redirect_uri: str | None = None,
+        token: dict | None = None,
+        use_cache: bool | None = None,
     ) -> None:
         """Netatmo connection.
 
@@ -195,8 +201,8 @@ class NetatmoConnect:
     def get(
         self,
         url: str,
-        params: Union[Mapping, None] = None,
-        headers: Union[Mapping, None] = None,
+        params: KwargsType = None,
+        headers: KwargsType = None,
     ) -> requests.Response:
         """Send get request to url, updating the token if needed."""
         try:
@@ -383,10 +389,10 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
         client_id: str,
         client_secret: str,
         *,
-        redirect_uri: Union[str, None] = None,
-        token: Union[str, None] = None,
-        window_size: Union[int, None] = None,
-        sjoin_kws: Union[Mapping, None] = None,
+        redirect_uri: str | None = None,
+        token: str | None = None,
+        window_size: int | None = None,
+        **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize Netatmo client."""
         # ACHTUNG: CRS must be set before region
@@ -424,16 +430,16 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
         # end: split the region into windows
 
         lon_sw, lat_sw, lon_ne, lat_ne = self.region.total_bounds
-        self._public_data_kws = dict(
+        self._public_data_kwargs = dict(
             lon_sw=lon_sw,
             lat_sw=lat_sw,
             lon_ne=lon_ne,
             lat_ne=lat_ne,
         )
 
-        if sjoin_kws is None:
-            sjoin_kws = {}
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = {}
+        self.SJOIN_KWARGS = sjoin_kwargs
 
         # station data/metadata columns to keep
         self._stations_df_columns = [
@@ -516,10 +522,10 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
         variable_ids: Sequence,
         start: DateTimeType,
         end: DateTimeType,
-        scale: Union[str, None],
-        limit: Union[int, None],
-        optimize: Union[bool, None],
-        real_time: Union[bool, None],
+        scale: str | None,
+        limit: int | None,
+        optimize: bool | None,
+        real_time: bool | None,
     ) -> dict:
         # times must be in Unix time
         date_begin, date_end = (
@@ -545,7 +551,7 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
             real_time=real_time,
         )
 
-    def _ts_df_from_endpoint(self, ts_params):
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
         # we can only query one module at a time, which means that (i) we can only query
         # one station at a time and (ii) for that station, we can only query the
         # variables measured by a single module at a time, i.e., pressure in "NAMain",
@@ -721,9 +727,9 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
         start: DateTimeType,
         end: DateTimeType,
         *,
-        scale: Union[str, None] = None,
-        limit: Union[int, None] = None,
-        real_time: Union[bool, None] = None,
+        scale: str | None = None,
+        limit: int | None = None,
+        real_time: bool | None = None,
     ) -> pd.DataFrame:
         """Get time series data frame.
 
@@ -737,17 +743,17 @@ class NetatmoClient(AllStationsEndpointMixin, VariablesHardcodedMixin, BaseJSONC
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
             pandas.Timestamp.
-        scale : None or {"30min", "1hour", "3hours", "1day", "1week", "1month"}, \
-            default None
-            Temporal scale of the measurements. The default value of None returns the
-            finest scale, i.e., "30min" (30 minutes).
-        limit : None or int, default None
+        scale : {"30min", "1hour", "3hours", "1day", "1week", "1month"}, optional
+            Temporal scale of the measurements. If None, returns the finest scale, i.e.,
+            "30min" (30 minutes).
+        limit : int, optional
             Maximum number of time steps to return. If None, the maximum number allowed
             by the Netatmo API (1024) is used.
-        real_time : None or bool, default None
+        real_time : bool, optional
             A value of True returns the exact timestamps. Otherwise, when scale is
             different than the maximum, i.e., 30 minutes, timestamps are offset by half
-            of the scale.
+            of the scale. If None, the default value of False is used (in line with the
+            Netatmo API).
 
         Returns
         -------

@@ -7,7 +7,8 @@ import logging as lg
 import os
 import re
 import time
-from typing import IO, List, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import IO
 
 import geopandas as gpd
 import numpy as np
@@ -16,6 +17,7 @@ import pyproj
 import requests
 import requests_cache
 from pyogrio.errors import DataSourceError
+from pyproj.crs import CRS
 from shapely import geometry
 from shapely.geometry.base import BaseGeometry
 
@@ -33,6 +35,8 @@ __all__ = [
     "RegionType",
     "VariablesType",
     "DateTimeType",
+    "CRSType",
+    "KwargsType",
 ]
 
 
@@ -45,33 +49,18 @@ __all__ = [
 #         value_name=value_name,
 #     )
 
-RegionType = Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO]
-VariablesType = Union[str, int, List[str], List[int]]
-DateTimeType = Union[
-    datetime.date, datetime.datetime, np.datetime64, pd.Timestamp, str, int, float
-]
+RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
+VariablesType = str | int | list[str] | list[int]
+DateTimeType = (
+    datetime.date | datetime.datetime | np.datetime64 | pd.Timestamp | str | int | float
+)
+CRSType = str | dict | CRS
+KwargsType = Mapping | None
 
 
 class BaseClient(abc.ABC):
     """Meteora base client."""
 
-    # def __init__(
-    #     self,
-    #     *,
-    #     crs=None,
-    #     stations_id_name=None,
-    #     time_name=None,
-    #     geocode_to_gdf_kws=None,
-    # ):
-    #     """
-    #     Initialize an meteo station dataset.
-    #     """
-    #     if stations_id_name is None:
-    #         stations_id_name = settings.STATIONS_ID_NAME
-    #     self.stations_id_name = stations_id_name
-    #     if time_name is None:
-    #         time_name = settings.TIME_NAME
-    #     self.time_name = time_name
     def __init__(self, *args, **kwargs):
         # if use_cache is None:
         #     use_cache = settings.USE_CACHE
@@ -86,12 +75,12 @@ class BaseClient(abc.ABC):
         self._session = session
 
     @utils.abstract_attribute
-    def X_COL(self):  # pylint: disable=invalid-name
+    def X_COL(self) -> str:  # pylint: disable=invalid-name
         """Name of the column with longitude coordinates."""
         pass
 
     @utils.abstract_attribute
-    def Y_COL(self):  # pylint: disable=invalid-name
+    def Y_COL(self) -> str:  # pylint: disable=invalid-name
         """Name of the column with latitude coordinates."""
         pass
 
@@ -101,23 +90,22 @@ class BaseClient(abc.ABC):
         pass
 
     @property
-    def region(self) -> Union[gpd.GeoDataFrame, None]:
+    def region(self) -> gpd.GeoDataFrame | None:
         """The region as a GeoDataFrame."""
         return self._region
 
     @region.setter
     def region(
         self,
-        region: Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO],
+        region: RegionType,
     ):
         self._region = self._process_region_arg(region)
 
     def _process_region_arg(
         self,
-        region: Union[str, Sequence, gpd.GeoSeries, gpd.GeoDataFrame, os.PathLike, IO],
-        *,
-        geocode_to_gdf_kws: Union[dict, None] = None,
-    ) -> Union[gpd.GeoDataFrame, None]:
+        region: RegionType,
+        **geocode_to_gdf_kwargs: KwargsType,
+    ) -> gpd.GeoDataFrame | None:
         """Process the region argument.
 
         Parameters
@@ -127,13 +115,13 @@ class BaseClient(abc.ABC):
             -  A string with a place name (Nominatim query) to geocode.
             -  A sequence with the west, south, east and north bounds.
             -  A geometric object, e.g., shapely geometry, or a sequence of geometric
-               objects. In such a case, the value will be passed as the `data` argument
-               of the GeoSeries constructor, and needs to be in the same CRS as the one
+               objects. In such a case, the value is passed as the `data` argument of
+               the GeoSeries constructor, and needs to be in the same CRS as the one
                used by the client's class (i.e., the `CRS` class attribute).
             -  A geopandas geo-series or geo-data frame.
             -  A filename or URL, a file-like object opened in binary ('rb') mode, or a
                Path object that will be passed to `geopandas.read_file`.
-        geocode_to_gdf_kws : dict or None, optional
+        geocode_to_gdf_kwargs : dict, optional
             Keyword arguments to pass to `geocode_to_gdf` if `region` is a string
             corresponding to a place name (Nominatim query).
 
@@ -189,19 +177,19 @@ class BaseClient(abc.ABC):
                     #                 )
                     #                 return
 
-                    if geocode_to_gdf_kws is None:
-                        geocode_to_gdf_kws = {}
-                    region = ox.geocode_to_gdf(region, **geocode_to_gdf_kws).iloc[:1]
+                    if geocode_to_gdf_kwargs is None:
+                        geocode_to_gdf_kwargs = {}
+                    region = ox.geocode_to_gdf(region, **geocode_to_gdf_kwargs).iloc[:1]
 
         return region.to_crs(self.CRS)
 
     @property
-    def request_headers(self):
+    def request_headers(self) -> dict:
         """Request headers."""
         return {}
 
     @property
-    def request_params(self):
+    def request_params(self) -> dict:
         """Request parameters."""
         return {}
 
@@ -209,9 +197,9 @@ class BaseClient(abc.ABC):
         self,
         url: str,
         *,
-        params: Union[Mapping, None] = None,
-        headers: Union[Mapping, None] = None,
-        request_kws: Union[Mapping, None] = None,
+        params: KwargsType = None,
+        headers: KwargsType = None,
+        **request_kwargs: KwargsType,
     ) -> requests.Response:
         """Get response for the url (from the cache or from the API).
 
@@ -225,9 +213,9 @@ class BaseClient(abc.ABC):
         headers : dict, optional
             Headers to pass to the request. They will be added to the default headers
             set in the `request_headers` property.
-        request_kws : dict, optional
+        request_kwargs : dict, optional
             Additional keyword arguments to pass to `requests.get`. If None, the value
-            from `settings.REQUEST_KWS` will be used.
+            from `settings.REQUEST_KWARGS` is used.
 
         Returns
         -------
@@ -236,15 +224,17 @@ class BaseClient(abc.ABC):
         """
         _params = self.request_params.copy()
         _headers = self.request_headers.copy()
-        _request_kws = settings.REQUEST_KWS.copy()
+        _request_kwargs = settings.REQUEST_KWARGS.copy()
         if params is not None:
             _params.update(params)
         if headers is not None:
             _headers.update(headers)
-        if request_kws is not None:
-            _request_kws.update(request_kws)
+        if request_kwargs is not None:
+            _request_kwargs.update(request_kwargs)
 
-        return self._session.get(url, params=_params, headers=_headers, **_request_kws)
+        return self._session.get(
+            url, params=_params, headers=_headers, **_request_kwargs
+        )
 
     @abc.abstractmethod
     def _get_content_from_response(self, response: requests.Response):
@@ -253,11 +243,11 @@ class BaseClient(abc.ABC):
     def _get_content_from_url(
         self,
         url: str,
-        params: Union[Mapping, None] = None,
-        headers: Union[Mapping, None] = None,
-        request_kws: Union[Mapping, None] = None,
-        pause: Union[int, None] = None,
-        error_pause: Union[int, None] = None,
+        params: KwargsType = None,
+        headers: KwargsType = None,
+        request_kwargs: KwargsType = None,
+        pause: int | None = None,
+        error_pause: int | None = None,
     ):
         """Get the response content from a given URL.
 
@@ -271,24 +261,24 @@ class BaseClient(abc.ABC):
         headers : dict, optional
             Headers to pass to the request. They will be added to the default headers
             set in the `request_headers` property.
-        request_kws : dict, optional
+        request_kwargs : dict, optional
             Additional keyword arguments to pass to `requests.get`. If None, the value
-            from `settings.REQUEST_KWS` will be used.
+            from `settings.REQUEST_KWARGS` is used.
         pause : int, optional
             How long to pause before request, in seconds. If None, the value from
-            `settings.PAUSE` will be used.
+            `settings.PAUSE` is used.
         error_pause : int, optional
             How long to pause in seconds before re-trying request if error. If None, the
-            value from `settings.ERROR_PAUSE` will be used.
+            value from `settings.ERROR_PAUSE` is used.
 
         Returns
         -------
         response_content
             Response content.
         """
-        response = self._get(
-            url, params=params, headers=headers, request_kws=request_kws
-        )
+        if request_kwargs is None:
+            request_kwargs = {}
+        response = self._get(url, params=params, headers=headers, **request_kwargs)
         sc = response.status_code
         try:
             response_content = self._get_content_from_response(response)
@@ -310,7 +300,7 @@ class BaseClient(abc.ABC):
                     url,
                     params=params,
                     headers=headers,
-                    request_kws=request_kws,
+                    request_kwargs=request_kwargs,
                     pause=pause,
                     error_pause=error_pause,
                 )
@@ -324,16 +314,18 @@ class BaseClient(abc.ABC):
         return response_content
 
     @utils.abstract_attribute
-    def _ts_endpoint(self):
+    def _ts_endpoint(self) -> str:
         pass
 
-    def _ts_params(self, variable_ids, *args, **kwargs):
+    def _ts_params(self, variable_ids, *args, **kwargs) -> dict:
         return {}
 
-    def _post_process_ts_df(self, ts_df):
+    def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
         return ts_df.apply(pd.to_numeric, axis="columns").sort_index()
 
-    def _rename_variables_cols(self, ts_df, variable_id_ser):
+    def _rename_variables_cols(
+        self, ts_df: pd.DataFrame, variable_id_ser: pd.Series
+    ) -> pd.DataFrame:
         # TODO: avoid this if the user provided variable codes (in which case the dict
         # maps variable codes to variable codes)?
         # also keep only columns of requested variables
@@ -344,7 +336,7 @@ class BaseClient(abc.ABC):
             }
         )
 
-    def _ts_df_from_endpoint(self, ts_params):
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
         # perform request
         response_content = self._get_content_from_url(
             self._ts_endpoint, params=ts_params
@@ -353,7 +345,7 @@ class BaseClient(abc.ABC):
         # process response content into a time series data frame
         return self._ts_df_from_content(response_content)
 
-    def _get_ts_df(self, variables, *args, **kwargs):
+    def _get_ts_df(self, variables: VariablesType, *args, **kwargs) -> pd.DataFrame:
         # process the variables arg
         variable_id_ser = self._get_variable_id_ser(variables)
 

@@ -1,12 +1,18 @@
 """Meteocat client."""
 
-from typing import Mapping, Union
+from collections.abc import Mapping
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType, VariablesType
+from meteora.clients.base import (
+    BaseJSONClient,
+    DateTimeType,
+    KwargsType,
+    RegionType,
+    VariablesType,
+)
 from meteora.mixins import (
     AllStationsEndpointMixin,
     APIKeyHeaderMixin,
@@ -61,25 +67,25 @@ class MeteocatClient(
     _time_col = TIME_COL
 
     def __init__(
-        self, region: RegionType, api_key: str, sjoin_kws: Union[Mapping, None] = None
+        self, region: RegionType, api_key: str, **sjoin_kwargs: KwargsType
     ) -> None:
         """Initialize Meteocat client."""
         self.region = region
         self._api_key = api_key
-        if sjoin_kws is None:
-            sjoin_kws = settings.SJOIN_KWS.copy()
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = settings.SJOIN_KWARGS.copy()
+        self.SJOIN_KWARGS = sjoin_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
 
-    def _stations_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.json_normalize(response_content)
 
-    def _variables_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _variables_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.json_normalize(response_content)
 
-    def _ts_df_from_content(self, response_content):
+    def _ts_df_from_content(self, response_content: Mapping):
         # process response
         response_df = pd.json_normalize(response_content)
         # filter stations

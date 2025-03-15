@@ -9,7 +9,7 @@ class APIKeyMixin(ABC):
     """API key mixin."""
 
     @abstract_attribute
-    def _api_key(self):
+    def _api_key(self) -> str:
         # https://stackoverflow.com/questions/23831510/abstract-attribute-not-property
         pass
 
@@ -32,11 +32,11 @@ class APIKeyParamMixin(APIKeyMixin):
 
     @property
     @abstractmethod
-    def _api_key_param_name(self):
+    def _api_key_param_name(self) -> str:
         pass
 
     @property
-    def request_params(self):
+    def request_params(self) -> dict:
         """Request parameters."""
         try:
             return self._request_params

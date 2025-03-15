@@ -1,12 +1,19 @@
 """Agrometeo client."""
 
-from typing import Any, Mapping, Union
+from collections.abc import Mapping, Sequence
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
-from meteora.clients.base import BaseJSONClient, DateTimeType, RegionType, VariablesType
+from meteora.clients.base import (
+    BaseJSONClient,
+    CRSType,
+    DateTimeType,
+    KwargsType,
+    RegionType,
+    VariablesType,
+)
 from meteora.mixins import AllStationsEndpointMixin, VariablesEndpointMixin
 
 # API endpoints
@@ -118,8 +125,9 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
     def __init__(
         self,
         region: RegionType,
-        crs: Any = None,
-        sjoin_kws: Union[Mapping, None] = None,
+        *,
+        crs: CRSType | None = None,
+        **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize Agrometeo client."""
         # ACHTUNG: CRS must be either EPSG:4326 or EPSG:21781
@@ -138,17 +146,17 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             )
 
         self.region = region
-        if sjoin_kws is None:
-            sjoin_kws = settings.SJOIN_KWS.copy()
-        self.SJOIN_KWS = sjoin_kws
+        if sjoin_kwargs is None:
+            sjoin_kwargs = settings.SJOIN_KWARGS.copy()
+        self.SJOIN_KWARGS = sjoin_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
 
-    def _stations_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.DataFrame(response_content["data"]).set_index(self._stations_id_col)
 
-    def _variables_df_from_content(self, response_content: dict) -> pd.DataFrame:
+    def _variables_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         variables_df = pd.json_normalize(response_content["data"])
         # ACHTUNG: need to strip strings, at least in variables name column. Note
         # that *it seems* that the integer type of variable code column is inferred
@@ -156,7 +164,14 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         variables_df[VARIABLES_NAME_COL] = variables_df[VARIABLES_NAME_COL].str.strip()
         return variables_df
 
-    def _ts_params(self, variable_ids, start, end, scale=None, measurement=None):
+    def _ts_params(
+        self,
+        variable_ids: Sequence,
+        start: DateTimeType,
+        end: DateTimeType,
+        scale: str | None = None,
+        measurement: str | None = None,
+    ) -> dict:
         # process date args
         start_date = pd.Timestamp(start).strftime(API_DT_FMT)
         end_date = pd.Timestamp(end).strftime(API_DT_FMT)
@@ -179,7 +194,7 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             "stations": ",".join(_stations_ids),
         }
 
-    def _ts_df_from_content(self, response_content):
+    def _ts_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         # parse the response as a data frame
         ts_df = pd.json_normalize(response_content["data"]).set_index(self._time_col)
         ts_df.index = pd.to_datetime(ts_df.index)
@@ -213,8 +228,8 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
         start: DateTimeType,
         end: DateTimeType,
         *,
-        scale: Union[str, None] = None,
-        measurement: Union[str, None] = None,
+        scale: str | None = None,
+        measurement: str | None = None,
     ) -> pd.DataFrame:
         """Get time series data frame.
 
@@ -228,12 +243,13 @@ class AgrometeoClient(AllStationsEndpointMixin, VariablesEndpointMixin, BaseJSON
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
             pandas.Timestamp.
-        scale : None or {"hour", "day", "month", "year"}, default None
-            Temporal scale of the measurements. The default value of None returns the
-            finest scale, i.e., 10 minutes.
-        measurement : None or {"min", "avg", "max"}, default None
+        scale : {"hour", "day", "month", "year"}, optional
+            Temporal scale of the measurements. If None, returns the finest scale, i.e.,
+            10 minutes.
+        measurement : {"min", "avg", "max"}, optional
             Whether the measurement values correspond to the minimum, average or maximum
-            value for the required temporal scale. Ignored if `scale` is None.
+            value for the required temporal scale. If None, returns the average. Ignored
+            if `scale` is None.
 
         Returns
         -------

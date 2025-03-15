@@ -10,7 +10,6 @@ import sys
 import unicodedata
 from contextlib import redirect_stdout
 from pathlib import Path
-from typing import Union
 
 import pandas as pd
 
@@ -47,14 +46,14 @@ def dms_to_decimal(ser: pd.Series) -> pd.Series:
     return decimal
 
 
-def ts(*, style: str = "datetime", template: Union[str, None] = None) -> str:
+def ts(*, style: str = "datetime", template: str | None = None) -> str:
     """Get current timestamp as string.
 
     Parameters
     ----------
     style : str {"datetime", "date", "time"}
         Format the timestamp with this built-in template.
-    template : str
+    template : str, optional
         If not None, format the timestamp with this template instead of one of the
         built-in styles.
 
@@ -117,9 +116,9 @@ def _get_logger(level: int, name: str, filename: str) -> lg.Logger:
 def log(
     message: str,
     *,
-    level: Union[int, None] = None,
-    name: Union[str, None] = None,
-    filename: Union[str, None] = None,
+    level: int | None = None,
+    name: str | None = None,
+    filename: str | None = None,
 ) -> None:
     """Write a message to the logger.
 
@@ -130,12 +129,14 @@ def log(
     ----------
     message : str
         The message to log.
-    level : int
-        One of Python's logger.level constants.
-    name : str
-        Name of the logger.
-    filename : str
-        Name of the log file, without file extension.
+    level : int, optional
+        One of Python's logger.level constants. If None, the value from
+        `settings.LOG_LEVEL` is used.
+    name : str, optional
+        Name of the logger. If None, the value from `settings.LOG_NAME` is used.
+    filename : str, optional
+        Name of the log file, without file extension. If None, the value from
+        `settings.LOG_FILENAME` is used.
     """
     if level is None:
         level = settings.LOG_LEVEL

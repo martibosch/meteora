@@ -12,7 +12,7 @@ class StationsEndpointMixin(ABC):
     """Stations endpoint mixin."""
 
     @abstract_attribute
-    def _stations_endpoint(self):
+    def _stations_endpoint(self) -> str:
         pass
 
     def _get_stations_df(self) -> pd.DataFrame:
@@ -77,8 +77,8 @@ class AllStationsEndpointMixin(StationsEndpointMixin):
 
         # filter the stations
         # TODO: do we need to copy the dict to avoid reference issues?
-        _sjoin_kws = self.SJOIN_KWS.copy()
+        _sjoin_kwargs = self.SJOIN_KWARGS.copy()
         # predicate = _sjoin_kws.pop("predicate", SJOIN_PREDICATE)
-        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kws)[
+        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kwargs)[
             stations_gdf.columns
         ]
