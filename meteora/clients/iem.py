@@ -137,7 +137,26 @@ class IEMClient(
     _variables_label_col = VARIABLES_LABEL_COL
 
     def __init__(self, region: RegionType, **sjoin_kwargs: KwargsType) -> None:
-        """Initialize ASOS 1 minute Iowa Environmental Mesonet (IEM) client."""
+        """Initialize Iowa Environmental Mesonet (IEM) client.
+
+        Parameters
+        ----------
+        region : str, Sequence, GeoSeries, GeoDataFrame, PathLike, or IO
+            The region to process. This can be either:
+            -  A string with a place name (Nominatim query) to geocode.
+            -  A sequence with the west, south, east and north bounds.
+            -  A geometric object, e.g., shapely geometry, or a sequence of geometric
+               objects. In such a case, the value will be passed as the `data` argument
+               of the GeoSeries constructor, and needs to be in the same CRS as the one
+               used by the client's class (i.e., the `CRS` class attribute).
+            -  A geopandas geo-series or geo-data frame.
+            -  A filename or URL, a file-like object opened in binary ('rb') mode, or a
+               Path object that will be passed to `geopandas.read_file`.
+        sjoin_kwargs : dict, optional
+            Keyword arguments to pass to the `geopandas.sjoin` function when filtering
+            the stations within the region. If None, the value from
+            `settings.SJOIN_KWARGS` is used.
+        """
         self.region = region
         if sjoin_kwargs is None:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
