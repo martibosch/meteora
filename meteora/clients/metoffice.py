@@ -68,7 +68,6 @@ class MetOfficeClient(
         self,
         region: RegionType,
         api_key: str,
-        res_param: str | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize MetOffice client.
@@ -98,9 +97,7 @@ class MetOfficeClient(
         if sjoin_kwargs is None:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
-        if res_param is None:
-            res_param = "hourly"
-        self.res_param_dict = {"res": res_param}
+        self.res_param_dict = {"res": "hourly"}
 
         # need to call super().__init__() to set the cache
         super().__init__()
