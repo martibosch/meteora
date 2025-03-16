@@ -30,6 +30,63 @@ CRSType = str | dict | CRS
 KwargsType = Mapping | None
 
 
+########################################################################################
+# geo utils
+def dms_to_decimal(ser: pd.Series) -> pd.Series:
+    """Convert a series from degrees, minutes, seconds (DMS) to decimal degrees."""
+    degrees = ser.str[0:2].astype(int)
+    minutes = ser.str[3:4].astype(int)
+    seconds = ser.str[5:6].astype(int)
+    direction = ser.str[-1]
+
+    decimal = degrees + minutes / 60 + seconds / 3600
+    decimal = decimal.where(direction.isin(["N", "E"]), -decimal)
+
+    return decimal
+
+
+########################################################################################
+# time series utils
+def long_to_wide(
+    ts_df: pd.DataFrame, *, variables: VariablesType | None = None
+) -> pd.DataFrame:
+    """Convert a time series data frame from long (default) to wide format.
+
+    Parameters
+    ----------
+    ts_df : pd.DataFrame
+        Long form data frame with a time series of measurements (second-level index) at
+        each station (first-level index) for each variable (column).
+    variables : str, int or list-like of str or int, optional
+        Target variables, which must be columns in `ts_df`.
+
+    Returns
+    -------
+    wide_ts_df : pd.DataFrame
+        Wide form data frame with a time series of measurements (index) for each
+        variable (first-level column index) at each station (second-level column index).
+        If there is only one variable, the column index is a single level featuring the
+        stations.
+    """
+    if variables is None:
+        variables = ts_df.columns
+    if not pd.api.types.is_list_like(variables):
+        variables = [variables]
+
+    if len(variables) == 1:
+        values = variables[0]
+    else:
+        # use a series to get the column multi-index name
+        values = pd.Series(variables, name="variables")
+    return (
+        ts_df.reset_index()
+        .pivot(columns=ts_df.index.names[0], index=ts_df.index.names[1], values=values)
+        .sort_index()
+    )
+
+
+########################################################################################
+# abstract attribute
 # `DummyAttribute` and `abstract_attribute` below are hardcoded from
 # github.com/rykener/better-abc to avoid relying on an unmaintained library that is not
 # in conda-forge
@@ -47,19 +104,8 @@ def abstract_attribute(obj=None):
     return obj
 
 
-def dms_to_decimal(ser: pd.Series) -> pd.Series:
-    """Convert a series from degrees, minutes, seconds (DMS) to decimal degrees."""
-    degrees = ser.str[0:2].astype(int)
-    minutes = ser.str[3:4].astype(int)
-    seconds = ser.str[5:6].astype(int)
-    direction = ser.str[-1]
-
-    decimal = degrees + minutes / 60 + seconds / 3600
-    decimal = decimal.where(direction.isin(["N", "E"]), -decimal)
-
-    return decimal
-
-
+########################################################################################
+# logging
 def ts(*, style: str = "datetime", template: str | None = None) -> str:
     """Get current timestamp as string.
 

@@ -28,14 +28,14 @@ __all__ = [
 ]
 
 
-# def _long_ts_df(ts_df, station_id_name, time_name, value_name):
-#     """Transform time series data frame from wide (default) to long format."""
-#     return pd.melt(
-#         ts_df.reset_index(),
-#         id_vars=time_name,
-#         var_name=station_id_name,
-#         value_name=value_name,
-#     )
+def _long_ts_df(ts_df, station_id_name, time_name, value_name):
+    """Transform time series data frame from wide (default) to long format."""
+    return pd.melt(
+        ts_df.reset_index(),
+        id_vars=time_name,
+        var_name=station_id_name,
+        value_name=value_name,
+    )
 
 
 class BaseClient(RegionMixin, abc.ABC):
