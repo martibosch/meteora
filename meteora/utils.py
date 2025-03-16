@@ -12,7 +12,7 @@ import unicodedata
 from collections.abc import Mapping, Sequence
 from contextlib import redirect_stdout
 from pathlib import Path
-from typing import IO
+from typing import IO, TypeVar
 
 import geopandas as gpd
 import numpy as np
@@ -21,6 +21,12 @@ from pyproj.crs import CRS
 
 from meteora import settings
 
+try:
+    import xarray as xr
+    import xvec  # noqa: F401
+except ImportError:
+    xr = None
+
 RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
 VariablesType = str | int | list[str] | list[int]
 DateTimeType = (
@@ -28,6 +34,10 @@ DateTimeType = (
 )
 CRSType = str | dict | CRS
 KwargsType = Mapping | None
+if xr is not None:
+    CubeType = xr.Dataset
+else:
+    CubeType = TypeVar("CubeType")
 
 
 ########################################################################################
@@ -82,6 +92,58 @@ def long_to_wide(
         ts_df.reset_index()
         .pivot(columns=ts_df.index.names[0], index=ts_df.index.names[1], values=values)
         .sort_index()
+    )
+
+
+def long_to_cube(
+    ts_df: pd.DataFrame,
+    stations_gdf: gpd.GeoDataFrame,
+    *,
+    stations_gdf_id_col: str | None = None,
+) -> CubeType:
+    """Convert a time series data frame and station locations to a vector data cube.
+
+    A vector data cube is an n-D array with at least one dimension indexed by vector
+    geometries. In Python, this is represented as an xarray Dataset (or DataArray)
+    object with an indexed dimension with vector geometries set using xvec.
+
+    Parameters
+    ----------
+    ts_df : pd.DataFrame
+        Long form data frame with a time series of measurements (second-level index) at
+        each station (first-level index) for each variable (column).
+    stations_gdf : gpd.GeoDataFrame
+        The stations data as a GeoDataFrame.
+    stations_gdf_id_col : str, optional
+        The column in `stations_gdf` that matches the first-level index of `ts_df`. If
+        None, the first-level index name of `ts_df` is used (however, it may not be
+        an actual column in `stations_gdf`, in which case a KeyError is raised).
+
+    Returns
+    -------
+    ts_cube : xr.Dataset
+        The vector data cube with the time series of measurements for each station. The
+        stations are indexed by their geometry.
+    """
+    # get the stations id column in the time series data frame
+    stations_ts_df_id_col = ts_df.index.names[0]
+    # get the stations id column in the GeoDataFrame
+    if stations_gdf_id_col is None:
+        stations_gdf_id_col = stations_ts_df_id_col
+    # convert data frame to xarray
+    ts_ds = ts_df.to_xarray()
+    # assign the stations geometries as indexed dimension
+    return (
+        ts_ds.assign_coords(
+            **{
+                stations_ts_df_id_col: stations_gdf.set_index(stations_gdf_id_col).loc[
+                    ts_ds[stations_ts_df_id_col].values
+                ]["geometry"]
+            }
+        )
+        # .rename({stations_ts_df_id_col: "geometry"})
+        # .xvec.set_geom_indexes("geometry", crs=stations_gdf.crs)
+        .xvec.set_geom_indexes(stations_ts_df_id_col, crs=stations_gdf.crs)
     )
 
 
