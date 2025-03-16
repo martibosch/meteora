@@ -45,10 +45,28 @@ def override_settings(module, **kwargs):
 
 
 def test_utils():
+    # geo utils
     # dms to dd
     dms_ser = pd.Series(["413120N"])
     dd_ser = utils.dms_to_decimal(dms_ser)
     assert is_numeric_dtype(dd_ser)
+
+    # time series utils
+    # long to wide
+    ts_df = pd.read_csv(
+        path.join(tests_data_dir, "ts-df.csv"),
+        index_col=["Station_ID", "time"],
+        parse_dates=True,
+        date_format="%Y-%m-%d %H:%M:%S",
+    )
+    wide_ts_df = utils.long_to_wide(ts_df)
+    # test wide data frame form
+    assert isinstance(wide_ts_df.columns, pd.MultiIndex)
+    assert isinstance(wide_ts_df.index, pd.DatetimeIndex)
+    # with only one variable, we should have only one column level
+    wide_ts_df = utils.long_to_wide(ts_df, variables=["temperature"])
+    assert len(wide_ts_df.columns.names) == 1
+    assert isinstance(wide_ts_df.index, pd.DatetimeIndex)
 
     # logger
     def test_logging():
