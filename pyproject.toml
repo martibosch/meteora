@@ -68,6 +68,10 @@ test = [
   "requests-mock",
   "ruff"
 ]
+xvec = [
+  "xarray",
+  "xvec"
+]
 
 [project.urls]
 Repository = "https://github.com/martibosch/meteora"
@@ -176,7 +180,8 @@ conda_deps = [
 ]
 extras = [
   "ox",
-  "test"
+  "test",
+  "xvec"
 ]
 whitelist_externals = [
   "pytest"
