@@ -22,6 +22,7 @@ dependencies = [
   "geopandas>=1.0.0",
   "matplotlib",
   "polars",
+  "pooch",
   "pyarrow",
   "requests",
   "requests-cache",

@@ -34,6 +34,7 @@ DateTimeType = (
 )
 CRSType = str | dict | CRS
 KwargsType = Mapping | None
+PathType = str | os.PathLike
 if xr is not None:
     CubeType = xr.Dataset
 else:
@@ -78,21 +79,19 @@ def long_to_wide(
         If there is only one variable, the column index is a single level featuring the
         stations.
     """
+    # despite ruff rule PD010, use unstack which is both simpler and faster
+    # https://docs.astral.sh/ruff/rules/pandas-use-of-dot-pivot-or-unstack
+    rename_col_level = True
     if variables is None:
         variables = ts_df.columns
-    if not pd.api.types.is_list_like(variables):
-        variables = [variables]
-
-    if len(variables) == 1:
-        values = variables[0]
-    else:
-        # use a series to get the column multi-index name
-        values = pd.Series(variables, name="variables")
-    return (
-        ts_df.reset_index()
-        .pivot(columns=ts_df.index.names[0], index=ts_df.index.names[1], values=values)
-        .sort_index()
-    )
+    if pd.api.types.is_list_like(variables) and len(variables) == 1:
+        variables = variables[0]
+        rename_col_level = False
+    wide_ts_df = ts_df[variables].unstack(level=ts_df.index.names[0])
+    # rename the variables column level (if we have it - i.e., multivariate case)
+    if rename_col_level:
+        wide_ts_df = wide_ts_df.rename_axis(columns={None: "variable"})
+    return wide_ts_df
 
 
 def long_to_cube(

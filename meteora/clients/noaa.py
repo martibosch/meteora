@@ -1,22 +1,36 @@
 """National Oceanic And Atmospheric Administration (NOAA) client."""
 
-from typing import Sequence
+import shutil
+import tempfile
+from collections.abc import Sequence
 
 import dask
 import pandas as pd
 import polars as pl
+import pooch
 import pyproj
 from dask import diagnostics
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, PathType, RegionType, VariablesType
+
+# disable pooch warnings when providing `None` as "known_hash"
+logger = pooch.get_logger()
+logger.setLevel("WARNING")
+
 
 # API endpoints
 BASE_URL = "https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly"
-GHCNH_STATIONS_ENDPOINT = f"{BASE_URL}/doc/ghcnh-station-list.txt"
+GHCNH_STATIONS_ENDPOINT = f"{BASE_URL}/doc/ghcnh-station-list.csv"
 TS_ENDPOINT = f"{BASE_URL}/access/by-station/" + "GHCNh_{station_id}_por.psv"
+
+# for pooch
+# TODO: how often can it change? how to properly update it if it does?
+STATIONS_LIST_KNOWN_HASH = (
+    "6b837d8d953aa6ebc172755864e549518944e7bec15b2196ee191219587a96f5"
+)
 
 # useful constants
 STATIONS_ID_COL = "id"
@@ -36,14 +50,14 @@ GHCNH_STATIONS_COLUMNS = [
 ]
 GHCNH_STATIONS_COLSPECS = [
     (0, 11),
-    (13, 20),
-    (22, 30),
-    (32, 37),
-    (39, 40),
-    (42, 71),
-    (73, 75),
-    (77, 79),
-    (81, 85),
+    (12, 21),
+    (22, 32),
+    (33, 40),
+    (41, 44),
+    (45, 76),
+    (77, 81),
+    (82, 86),
+    (87, 93),
 ]
 
 # see section "IV. List of elements/variable" and appendix A of the GHCNh documentation
@@ -108,6 +122,8 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
     def __init__(
         self,
         region: RegionType,
+        *,
+        pooch_dir: PathType | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize GHCN hourly client."""
@@ -116,13 +132,36 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
 
+        # set pooch directory for caching file downloads
+        if pooch_dir is None:
+            pooch_dir = tempfile.mkdtemp()
+            self._tmp_dir = True
+        self.pooch_dir = pooch_dir
+        # self.pooch = pooch.Pooch(self.working_dir, BASE_URL)
+        self.pooch_kwargs = {"path": self.pooch_dir}
+
         # need to call super().__init__() to set the cache
         super().__init__()
 
+    def __del__(self) -> None:
+        """Destructor to clean up temporary files."""
+        if getattr(self, "_tmp_dir", False):
+            shutil.rmtree(self.pooch_dir)
+
     def _get_stations_df(self) -> pd.DataFrame:
         """Get all stations."""
+        try:
+            # ACHTUNG: we are not using `self.pooch_kwargs` to set the path to download
+            # files, because the stations file path can be reused independently of the
+            # region, so it is useful to cache it globally
+            stations_filepath = pooch.retrieve(
+                self._stations_endpoint, STATIONS_LIST_KNOWN_HASH
+            )
+        except ValueError:
+            # sha hash mismatch, probably because of updates in the station list
+            stations_filepath = pooch.retrieve(self._stations_endpoint, None)
         return pd.read_fwf(
-            self._stations_endpoint,
+            stations_filepath,
             colspecs=GHCNH_STATIONS_COLSPECS,
             names=GHCNH_STATIONS_COLUMNS,
         )
@@ -144,9 +183,14 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
 
         # use dask to parallelize requests
         def _process_station_ts_df(station_id):
+            station_ts_filepath = pooch.retrieve(
+                self._ts_endpoint.format(station_id=station_id),
+                None,
+                **self.pooch_kwargs,
+            )
             ts_df = (
                 pl.scan_csv(
-                    self._ts_endpoint.format(station_id=station_id),
+                    station_ts_filepath,
                     separator="|",
                     has_header=True,
                 )
