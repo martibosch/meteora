@@ -16,12 +16,6 @@ from meteora import settings, utils
 from meteora.mixins import RegionMixin
 from meteora.utils import KwargsType, VariablesType
 
-try:
-    import osmnx as ox
-except ImportError:
-    ox = None
-
-
 __all__ = [
     "BaseJSONClient",
     "BaseTextClient",
