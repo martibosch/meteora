@@ -10,10 +10,12 @@ hidden:
 maxdepth: 1
 ---
 
-user-guide/asos-example
+user-guide/overview
+user-guide/data-structures
 ```
 
-- [ASOS example](https://meteora.readthedocs.io/en/latest/user-guide/asos-example.html)
+- [Overview of key features](https://meteora.readthedocs.io/en/latest/user-guide/overview.html)
+- [Data structures](https://meteora.readthedocs.io/en/latest/user-guide/data-structures.html)
 
 ## Selecting a region
 

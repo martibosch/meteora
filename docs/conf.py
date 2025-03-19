@@ -32,3 +32,6 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # exclude patterns from sphinx-build
 exclude_patterns = ["_build", "**.ipynb_checkpoints"]
+
+# do NOT execute notebooks
+nbsphinx_execute = "never"

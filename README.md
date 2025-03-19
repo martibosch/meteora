@@ -9,27 +9,31 @@
 
 # Meteora
 
-Pythonic interface to access data from meteorological stations. Key features:
+Pythonic interface to access observations from meteorological stations. Key features:
 
-- easily stream data [from multiple providers (e.g., Automated Surface/Weather Observing Systems (ASOS/AWOS), MetOffice...)](https://meteora.readthedocs.io/en/latest/supported-providers.html) into pandas data frames.
+- easily stream meteorological observations [from multiple providers, from global (e.g., Global Historical Climatology Network hourly (GHCNh)) and regional (e.g., MetOffice) networks to citizen weather stations (e.g., Netatmo)](https://meteora.readthedocs.io/en/latest/supported-providers.html) into pandas data frames.
 - user-friendly arguments to filter data by region, variables or date ranges.
-- request caching with [requests-cache](https://github.com/requests-cache/requests-cache) to avoid re-downloading data and help bypassing API limits.
+- request and download caching with [requests-cache](https://github.com/requests-cache/requests-cache) and [pooch](https://github.com/fatiando/pooch) to avoid re-downloading data and help bypassing API limits.
 
 ## Overview
 
 Meteora provides a set of provider-specific clients to get observations from meteorological stations. For instance, it can be used to stream [the one-minute ASOS data](https://madis.ncep.noaa.gov/madis_OMO.shtml) from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/asos/1min.phtml) into a pandas data frame:
 
 ```python
-from meteora.clients import ASOSOneMinIEMClient
+from meteora.clients import GHCNHourlyClient
 
-region = "Oregon"
-variables = ["temperature", "pressure", "precipitation", "surface_wind_speed"]
-start = "2021-08-13"
-end = "2021-08-16"
+region = "Davos, Switzerland"
+variables = ["temperature", "precipitation", "surface_wind_speed"]
+start = "12-11-2021"
+end = "12-12-2021"
 
-client = ASOSOneMinIEMClient(region=region)
-ts_df = client.get_ts_df(variables, start=start, end=end)
+client = GHCNHourlyClient(region)
+ts_df = client.get_ts_df(variables, start, end)
 ts_df.head()
+```
+
+```
+[########################################] | 100% Completed | 16.94 s
 ```
 
 <div>
@@ -39,14 +43,12 @@ ts_df.head()
       <th></th>
       <th></th>
       <th>temperature</th>
-      <th>pressure</th>
       <th>precipitation</th>
       <th>surface_wind_speed</th>
     </tr>
     <tr>
-      <th>station</th>
-      <th>valid(UTC)</th>
-      <th></th>
+      <th>Station_ID</th>
+      <th>time</th>
       <th></th>
       <th></th>
       <th></th>
@@ -54,40 +56,35 @@ ts_df.head()
   </thead>
   <tbody>
     <tr>
-      <th rowspan="5" valign="top">AST</th>
-      <th>2021-08-13 00:00:00</th>
-      <td>68.0</td>
-      <td>29.942</td>
+      <th rowspan="5" valign="top">SZM00006784</th>
+      <th>2021-12-11 00:00:00</th>
+      <td>-4.7</td>
       <td>0.0</td>
-      <td>10.0</td>
+      <td>5.1</td>
     </tr>
     <tr>
-      <th>2021-08-13 00:01:00</th>
-      <td>67.0</td>
-      <td>29.942</td>
+      <th>2021-12-11 01:00:00</th>
+      <td>-4.8</td>
       <td>0.0</td>
-      <td>10.0</td>
+      <td>5.1</td>
     </tr>
     <tr>
-      <th>2021-08-13 00:02:00</th>
-      <td>67.0</td>
-      <td>29.942</td>
+      <th>2021-12-11 02:00:00</th>
+      <td>-4.8</td>
       <td>0.0</td>
-      <td>10.0</td>
+      <td>3.6</td>
     </tr>
     <tr>
-      <th>2021-08-13 00:03:00</th>
-      <td>67.0</td>
-      <td>29.942</td>
+      <th>2021-12-11 03:00:00</th>
+      <td>-4.8</td>
       <td>0.0</td>
-      <td>9.0</td>
+      <td>3.6</td>
     </tr>
     <tr>
-      <th>2021-08-13 00:04:00</th>
-      <td>68.0</td>
-      <td>29.942</td>
+      <th>2021-12-11 04:00:00</th>
+      <td>-4.7</td>
       <td>0.0</td>
-      <td>8.0</td>
+      <td>3.1</td>
     </tr>
   </tbody>
 </table>
@@ -99,10 +96,12 @@ We can also get the station locations using the `stations_gdf` property:
 import contextily as cx
 
 ax = client.stations_gdf.plot()
-cx.add_basemap(ax, crs=client.stations_gdf.crs)
+cx.add_basemap(ax, crs=client.stations_gdf.crs, attribution=False)
 ```
 
-![oregon-stations](https://github.com/martibosch/meteora/raw/main/docs/figures/oregon-stations.png)
+![davos-stations](https://github.com/martibosch/meteora/raw/main/docs/figures/davos-stations.png)
+
+*(C) OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France*
 
 See [the user guide](https://meteora.readthedocs.io/en/latest/user-guide.html) for more details about the features of Meteora as well as the [list of supported providers](https://meteora.readthedocs.io/en/latest/supported-providers.html).
 
