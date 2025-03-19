@@ -195,16 +195,20 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
                     has_header=True,
                 )
                 .with_columns(
-                    pl.datetime(*[pl.col(col) for col in TS_DATETIME_COLS]).alias(
-                        self._time_col
-                    )
+                    # return null for invalid dates instead of raising a `ComputeError`
+                    # (needed because of invalid dates in GHCNh data)
+                    pl.datetime(
+                        *[pl.col(col) for col in TS_DATETIME_COLS], ambiguous="null"
+                    ).alias("time")
                 )
-                .select(cols_to_keep + [self._time_col])
-            ).filter(
-                pl.col(self._time_col).is_between(
-                    ts_params["start"],
-                    ts_params["end"],
-                    closed="both",
+                .select(cols_to_keep + ["time"])
+                .filter(
+                    pl.col("time").is_not_null()
+                    & pl.col("time").is_between(
+                        ts_params["start"],
+                        ts_params["end"],
+                        closed="both",
+                    )
                 )
             )
             return ts_df.collect().to_pandas()
