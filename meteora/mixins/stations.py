@@ -5,6 +5,7 @@ from abc import ABC
 import geopandas as gpd
 import pandas as pd
 
+from meteora import settings
 from meteora.utils import abstract_attribute
 
 
@@ -13,6 +14,11 @@ class StationsEndpointMixin(ABC):
 
     @abstract_attribute
     def _stations_endpoint(self) -> str:
+        pass
+
+    @abstract_attribute
+    def _stations_gdf_id_col(self) -> str:
+        """Column with the station IDs in the `stations_gdf` returned by the API."""
         pass
 
     def _get_stations_df(self) -> pd.DataFrame:
@@ -58,5 +64,10 @@ class StationsEndpointMixin(ABC):
         try:
             return self._stations_gdf
         except AttributeError:
-            self._stations_gdf = self._get_stations_gdf()
+            # rename here because some clients may override `_get_stations_gdf`
+            self._stations_gdf = (
+                self._get_stations_gdf()
+                .rename(columns={self._stations_gdf_id_col: settings.STATIONS_ID_COL})
+                .set_index(settings.STATIONS_ID_COL)
+            )
             return self._stations_gdf

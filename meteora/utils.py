@@ -97,8 +97,6 @@ def long_to_wide(
 def long_to_cube(
     ts_df: pd.DataFrame,
     stations_gdf: gpd.GeoDataFrame,
-    *,
-    stations_gdf_id_col: str | None = None,
 ) -> CubeType:
     """Convert a time series data frame and station locations to a vector data cube.
 
@@ -113,10 +111,6 @@ def long_to_cube(
         each station (first-level index) for each variable (column).
     stations_gdf : gpd.GeoDataFrame
         The stations data as a GeoDataFrame.
-    stations_gdf_id_col : str, optional
-        The column in `stations_gdf` that matches the first-level index of `ts_df`. If
-        None, the first-level index name of `ts_df` is used (however, it may not be
-        an actual column in `stations_gdf`, in which case a KeyError is raised).
 
     Returns
     -------
@@ -126,16 +120,13 @@ def long_to_cube(
     """
     # get the stations id column in the time series data frame
     stations_ts_df_id_col = ts_df.index.names[0]
-    # get the stations id column in the GeoDataFrame
-    if stations_gdf_id_col is None:
-        stations_gdf_id_col = stations_ts_df_id_col
     # convert data frame to xarray
     ts_ds = ts_df.to_xarray()
     # assign the stations geometries as indexed dimension
     return (
         ts_ds.assign_coords(
             **{
-                stations_ts_df_id_col: stations_gdf.set_index(stations_gdf_id_col).loc[
+                stations_ts_df_id_col: stations_gdf.loc[
                     ts_ds[stations_ts_df_id_col].values
                 ]["geometry"]
             }

@@ -24,7 +24,9 @@ VARIABLES_ENDPOINT = TS_ENDPOINT = f"{BASE_URL}/observacion/convencional/todas"
 # useful constants
 # ACHTUNG: in Aemet, the station id col is "indicativo" in the stations endpoint but
 # "idema" in the data endpoint
-STATIONS_ID_COL = "idema"
+STATIONS_GDF_ID_COL = "indicativo"
+TS_DF_STATIONS_ID_COL = "idema"
+TS_DF_TIME_COL = "fint"
 VARIABLES_ID_COL = "id"
 ECV_DICT = {
     "precipitation": "prec",
@@ -34,7 +36,6 @@ ECV_DICT = {
     "temperature": "ta",
     "water_vapour": "hr",
 }
-TIME_COL = "fint"
 
 
 class AemetClient(
@@ -52,15 +53,16 @@ class AemetClient(
 
     # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
-    _variables_endpoint = VARIABLES_ENDPOINT
     _ts_endpoint = TS_ENDPOINT
+    _variables_endpoint = VARIABLES_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
 
     # auth constants
     _api_key_param_name = "api_key"
@@ -139,12 +141,9 @@ class AemetClient(
         # contains the JSON data
         ts_df = pd.read_json(response_content["datos"], encoding="latin1")
         # filter only stations from the region
-        # TODO: how to handle better the "indicativo" column name? i.e., the stations id
-        # column is "idema" in the observation data frame but "indicativo" in the
-        # stations data frame.
         return ts_df[
-            ts_df[self._stations_id_col].isin(self.stations_gdf["indicativo"])
-        ].set_index([self._stations_id_col, self._time_col])
+            ts_df[self._ts_df_stations_id_col].isin(self.stations_gdf.index)
+        ].set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
 
     def get_ts_df(
         self,

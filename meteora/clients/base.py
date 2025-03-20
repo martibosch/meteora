@@ -53,6 +53,16 @@ class BaseClient(RegionMixin, abc.ABC):
         """CRS of the data source."""
         pass
 
+    @utils.abstract_attribute
+    def _ts_df_time_col(self) -> str:
+        """Column with the timestamps in the `ts_df` returned by the API."""
+        pass
+
+    @utils.abstract_attribute
+    def _ts_df_stations_id_col(self) -> str:
+        """Column with the station IDs in the `ts_df` returned by the API."""
+        pass
+
     @property
     def request_headers(self) -> dict:
         """Request headers."""
@@ -188,7 +198,7 @@ class BaseClient(RegionMixin, abc.ABC):
         pass
 
     def _ts_params(self, variable_ids, *args, **kwargs) -> dict:
-        return {}
+        return {"variable_ids": variable_ids, **kwargs}
 
     def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
         return ts_df.apply(pd.to_numeric, axis="columns").sort_index()
@@ -236,8 +246,17 @@ class BaseClient(RegionMixin, abc.ABC):
         # variable codes in the column names).
         ts_df = self._rename_variables_cols(ts_df, variable_id_ser)
 
-        # apply a generic post-processing function
-        return self._post_process_ts_df(ts_df)
+        # apply a generic post-processing function (by default, ensuring numeric dtypes
+        # and sorting)
+        ts_df = self._post_process_ts_df(ts_df)
+
+        # rename stations and id labels in multi-level index
+        return ts_df.rename_axis(
+            index={
+                self._ts_df_stations_id_col: settings.STATIONS_ID_COL,
+                self._ts_df_time_col: settings.TIME_COL,
+            }
+        )
 
 
 class BaseJSONClient(BaseClient):

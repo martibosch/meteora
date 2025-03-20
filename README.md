@@ -47,7 +47,7 @@ ts_df.head()
       <th>surface_wind_speed</th>
     </tr>
     <tr>
-      <th>Station_ID</th>
+      <th>station_id</th>
       <th>time</th>
       <th></th>
       <th></th>

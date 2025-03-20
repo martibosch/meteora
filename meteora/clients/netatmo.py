@@ -32,10 +32,12 @@ TS_ENDPOINT = f"{BASE_URL}/api/getmeasure"
 REDIRECT_URI = "https://dev.netatmo.com/apps"
 
 # useful constants
-STATIONS_ID_COL = "id"
+STATIONS_GDF_ID_COL = "id"
+# there is no label for time on the returned json for `ts_df`, we generate them
+TS_DF_STATIONS_ID_COL = "station_id"
+TS_DF_TIME_COL = "time"
 VARIABLES_ID_COL = "code"
 VARIABLES_LABEL_COL = "description"
-TIME_COL = "time"  # there is no label for time on the returned json, we generate it
 
 # DATETIME_FORMAT = "%Y-%m-%dT%H:%M"
 
@@ -371,12 +373,13 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
     _ts_endpoint = TS_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     _variables_id_col = VARIABLES_ID_COL
     _variables_label_col = VARIABLES_LABEL_COL
     _variables_dict = VARIABLES_DICT
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
 
     def __init__(
         self,
@@ -458,7 +461,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
 
         # station data/metadata columns to keep
         self._stations_df_columns = [
-            self._stations_id_col,
+            self._stations_gdf_id_col,
             self.X_COL,
             self.Y_COL,
             "timezone",
@@ -528,8 +531,9 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         # use groupby-first to drop the duplicated stations
         return (
             _stations_df[_stations_df.columns.intersection(self._stations_df_columns)]
-            .groupby(self._stations_id_col)
+            .groupby(self._stations_gdf_id_col)
             .first()
+            .reset_index()
         )
 
     def _ts_params(
@@ -603,11 +607,13 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
             chunk_df = pd.DataFrame(response_chunk["value"], columns=module_vars)
             try:
                 return chunk_df.assign(
-                    time=pd.date_range(
-                        start=pd.to_datetime(response_chunk["beg_time"], unit="s"),
-                        periods=len(response_chunk["value"]),
-                        freq=f"{response_chunk['step_time']}s",
-                    ),
+                    **{
+                        self._ts_df_time_col: pd.date_range(
+                            start=pd.to_datetime(response_chunk["beg_time"], unit="s"),
+                            periods=len(response_chunk["value"]),
+                            freq=f"{response_chunk['step_time']}s",
+                        ),
+                    }
                 )
             except KeyError:
                 # assume that only one observation was returned, so there are only the
@@ -680,7 +686,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                                         for response_chunk in response_data
                                     ],
                                     ignore_index=True,
-                                ).assign(**{self._stations_id_col: station_id})
+                                ).assign(**{self._ts_df_stations_id_col: station_id})
                             )
                     except TypeError:
                         # print("typeerror", response_json)
@@ -715,7 +721,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                                 # TODO: DRY with the return statement at the end of the
                                 # method
                                 return pd.concat(ts_dfs, ignore_index=True).set_index(
-                                    [self._stations_id_col, self._time_col]
+                                    [self._ts_df_stations_id_col, self._ts_df_time_col]
                                 )
                             else:
                                 # return empty data frame
@@ -733,7 +739,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
             )
 
         return pd.concat(ts_dfs, ignore_index=True).set_index(
-            [self._stations_id_col, self._time_col]
+            [self._ts_df_stations_id_col, self._ts_df_time_col]
         )
 
     def get_ts_df(

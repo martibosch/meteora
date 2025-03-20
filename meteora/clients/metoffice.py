@@ -24,7 +24,9 @@ VARIABLES_ENDPOINT = TS_ENDPOINT = f"{BASE_URL}/val/wxobs/all/json/all"
 # useful constants
 # ACHTUNG: in MetOffice, the station id col is "id" in the stations endpoint but "i" in
 # the data endpoint
-STATIONS_ID_COL = "id"
+STATIONS_GDF_ID_COL = "id"
+TS_DF_STATIONS_ID_COL = "i"
+TS_DF_TIME_COL = "$"
 VARIABLES_ID_COL = "name"
 ECV_DICT = {
     # "precipitation": "prec",  # NO PRECIPITATION DATA IS PROVIDED
@@ -34,7 +36,6 @@ ECV_DICT = {
     "temperature": "T",
     "water_vapour": "H",
 }
-TIME_COL = "$"
 
 
 class MetOfficeClient(
@@ -53,14 +54,12 @@ class MetOfficeClient(
     _ts_endpoint = TS_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
-    # ACHTUNG: in MetOffice, the station id col is "id" in the stations endpoint but "i"
-    # in the time series endpoint
-    _ts_station_id_col = "i"
 
     # auth constants
     _api_key_param_name = "key"
@@ -130,6 +129,17 @@ class MetOfficeClient(
             self._variables_df = self._variables_df_from_content(response_content)
             return self._variables_df
 
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        # perform request
+        response_content = self._get_content_from_url(
+            self._ts_endpoint, params=ts_params
+        )
+
+        # process response content into a time series data frame
+        # ACHGUNG: we are only overriding this method to pass the extra positional
+        # argument `variable_id_ser` to `_ts_df_from_content`
+        return self._ts_df_from_content(response_content, ts_params["variable_ids"])
+
     def _ts_df_from_content(
         self, response_content: Mapping, variable_id_ser: pd.Series
     ) -> pd.DataFrame:
@@ -149,11 +159,7 @@ class MetOfficeClient(
         # process the response
         df = pd.json_normalize(ts_list)
         # first, filter by stations of interest
-        df = df[
-            df[self._ts_station_id_col].isin(
-                self.stations_gdf[self._stations_id_col].values
-            )
-        ]
+        df = df[df[self._ts_df_stations_id_col].isin(self.stations_gdf.index)]
         # process the observations in the filtered location
         ts_df = pd.concat(
             [
@@ -162,14 +168,14 @@ class MetOfficeClient(
                         pd.DataFrame(obs_dict["Rep"])
                         for obs_dict in station_records[::-1]
                     ]
-                ).assign(**{self._ts_station_id_col: station_id})
+                ).assign(**{self._ts_df_stations_id_col: station_id})
                 for station_id, station_records in df["Period"].items()
             ]
         )
 
         # compute the timestamp of each observation (the "$" column contains the minutes
         # before `latest_obs_time`
-        ts_df["time"] = ts_df[self._time_col].apply(
+        ts_df[self._ts_df_time_col] = ts_df[self._ts_df_time_col].apply(
             lambda dt: latest_obs_time - datetime.timedelta(minutes=int(dt))
         )
 
@@ -181,7 +187,7 @@ class MetOfficeClient(
             except ValueError:
                 pass
         # select only target variable columns and convert into long data frame
-        _index_cols = [self._ts_station_id_col, "time"]
+        _index_cols = [self._ts_df_stations_id_col, self._ts_df_time_col]
         return (
             ts_df[variable_id_ser]
             .assign(**{_index_col: ts_df[_index_col] for _index_col in _index_cols})
@@ -207,36 +213,6 @@ class MetOfficeClient(
             Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
-        # ACHTUNG: we cannot reuse the base `_get_ts_df` method here because we need to
-        # pass the list of variables to `_ts_df_from_content`.
-        # TODO: explore if there is a better way to do this, e.g., `_ts_df_from_content`
-        # takes no extra arguments but returns the data frame form that is most natural
-        # to the API response, i.e., in this case, a "wide" data frame. Also maybe
-        # implement mixins for clients which (unlike MetOffice) accept date range
-        # arguments in the time series endpoint
-
-        # process the variables arg
-        variable_id_ser = self._get_variable_id_ser(variables)
-
-        # prepare request
-        ts_params = self._ts_params(variable_id_ser)
-
-        # perform request
         # disable cache since the endpoint returns the latest 24h of data
         with self._session.cache_disabled():
-            response_content = self._get_content_from_url(
-                self._ts_endpoint, params=ts_params
-            )
-
-        # process response content into a time series data frame
-        ts_df = self._ts_df_from_content(response_content, variable_id_ser)
-
-        # TODO: the part below is embarrassingly DRY-able, i.e., hard copied from
-        # `BaseClient._get_ts_df`
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        ts_df = self._rename_variables_cols(ts_df, variable_id_ser)
-
-        # apply a generic post-processing function
-        return self._post_process_ts_df(ts_df)
+            return self._get_ts_df(variables)

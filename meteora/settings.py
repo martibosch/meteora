@@ -5,8 +5,8 @@ import logging as lg
 import requests_cache
 
 # core
-# STATIONS_ID_NAME = "station_id"
-TIME_NAME = "time"
+STATIONS_ID_COL = "station_id"
+TIME_COL = "time"
 SJOIN_KWARGS = {"how": "inner", "predicate": "intersects"}
 
 # utils
