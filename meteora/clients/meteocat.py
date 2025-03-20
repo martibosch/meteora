@@ -21,7 +21,9 @@ VARIABLES_ENDPOINT = f"{BASE_URL}/variables/mesurades/metadades"
 TS_ENDPOINT = f"{BASE_URL}/variables/mesurades"
 
 # useful constants
-STATIONS_ID_COL = "codi"
+STATIONS_GDF_ID_COL = "codi"
+TS_DF_STATIONS_ID_COL = "codi"
+TS_DF_TIME_COL = "data"
 # VARIABLES_NAME_COL = "nom"
 VARIABLES_ID_COL = "codi"
 ECV_DICT = {
@@ -33,7 +35,6 @@ ECV_DICT = {
     "temperature": 32,  # "Temperatura",
     "water_vapour": 33,  # "Humitat relativa",
 }
-TIME_COL = "data"
 
 
 class MeteocatClient(
@@ -55,11 +56,12 @@ class MeteocatClient(
     _ts_endpoint = TS_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
 
     def __init__(
         self, region: RegionType, api_key: str, **sjoin_kwargs: KwargsType
@@ -105,9 +107,7 @@ class MeteocatClient(
         # process response
         response_df = pd.json_normalize(response_content)
         # filter stations
-        response_df = response_df[
-            response_df["codi"].isin(self.stations_gdf[self._stations_id_col])
-        ]
+        response_df = response_df[response_df["codi"].isin(self.stations_gdf.index)]
         # extract json observed data, i.e.,  the "variables" column into a list of data
         # frames and concatenate them into a single data frame
         ts_df = pd.concat(
@@ -116,8 +116,8 @@ class MeteocatClient(
             ).tolist()
         )
         # add the station id column matching the observations
-        ts_df[self._stations_id_col] = (
-            response_df[self._stations_id_col]
+        ts_df[self._ts_df_stations_id_col] = (
+            response_df[self._ts_df_stations_id_col]
             .repeat(
                 response_df.apply(
                     lambda row: len(row["variables"][0]["lectures"]), axis=1
@@ -138,8 +138,8 @@ class MeteocatClient(
         # ACHTUNG: do not sort the index here
         # note that we are renaming a series
         return ts_df.assign(
-            **{self._time_col: pd.to_datetime(ts_df[self._time_col])}
-        ).set_index([self._stations_id_col, self._time_col])[values_col]
+            **{self._ts_df_time_col: pd.to_datetime(ts_df[self._ts_df_time_col])}
+        ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])[values_col]
 
     # def _get_date_ts_df(
     #     self,
@@ -173,6 +173,34 @@ class MeteocatClient(
     #     response_content = self._get_content_from_url(request_url)
     #     return self._ts_df_from_content(response_content).rename(variable_id)
 
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        # the API only allows returning data for a given day and variable so we have to
+        # iterate over the date range and variables to obtain data for all days
+        date_range = pd.date_range(
+            start=ts_params["start"], end=ts_params["end"], freq="D"
+        )
+        return pd.concat(
+            [
+                pd.concat(
+                    [
+                        # self._get_date_ts_df(variable_id, date)
+                        self._ts_df_from_content(
+                            self._get_content_from_url(
+                                f"{self._ts_endpoint}/{variable_id}/"
+                                f"{date.year}/{date.month:02}/{date.day:02}"
+                            )
+                        ).rename(variable_id)
+                        for variable_id in ts_params["variable_ids"]
+                    ],
+                    axis="columns",
+                    ignore_index=False,
+                )
+                for date in date_range
+            ],
+            axis="index",
+            ignore_index=False,
+        )
+
     def get_ts_df(
         self,
         variables: VariablesType,
@@ -198,38 +226,8 @@ class MeteocatClient(
             Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
-        # process the variables arg
-        variable_id_ser = self._get_variable_id_ser(variables)
-
-        # the API only allows returning data for a given day and variable so we have to
-        # iterate over the date range and variables to obtain data for all days
-        date_range = pd.date_range(start=start, end=end, freq="D")
-        ts_df = pd.concat(
-            [
-                pd.concat(
-                    [
-                        # self._get_date_ts_df(variable_id, date)
-                        self._ts_df_from_content(
-                            self._get_content_from_url(
-                                f"{self._ts_endpoint}/{variable_id}/"
-                                f"{date.year}/{date.month:02}/{date.day:02}"
-                            )
-                        ).rename(variable_id)
-                        for variable_id in variable_id_ser
-                    ],
-                    axis="columns",
-                    ignore_index=False,
-                )
-                for date in date_range
-            ],
-            axis="index",
-            ignore_index=False,
+        return self._get_ts_df(
+            variables,
+            start=start,
+            end=end,
         )
-
-        # ensure that we return the variable column names as provided by the user in the
-        # `variables` argument (e.g., if the user provided variable codes, use
-        # variable codes in the column names).
-        ts_df = self._rename_variables_cols(ts_df, variable_id_ser)
-
-        # apply a generic post-processing function
-        return self._post_process_ts_df(ts_df)

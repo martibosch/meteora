@@ -20,7 +20,8 @@ BASE_URL = "https://mesonet.agron.iastate.edu"
 # )
 
 # useful constants
-STATIONS_ID_COL = "id"
+STATIONS_GDF_ID_COL = "id"
+TS_DF_STATIONS_ID_COL = "station"
 VARIABLES_ID_COL = "code"
 VARIABLES_LABEL_COL = "description"
 
@@ -59,7 +60,7 @@ ONEMIN_ECV_DICT = {
     "surface_wind_direction": "drct",
     "temperature": "tmpf",
 }
-ONEMIN_TIME_COL = "valid(UTC)"
+ONEMIN_TS_DF_TIME_COL = "valid(UTC)"
 
 # METAR/ASOS https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?help
 METAR_STATIONS_ENDPOINT = f"{BASE_URL}/geojson/network/AZOS.geojson"
@@ -115,7 +116,7 @@ METAR_ECV_DICT = {
     "temperature": "tmpf",
     "water_vapor": "relh",
 }
-METAR_TIME_COL = "valid"
+METAR_TS_DF_TIME_COL = "valid"
 
 
 class IEMClient(
@@ -127,7 +128,8 @@ class IEMClient(
     CRS = pyproj.CRS("epsg:4326")
 
     # data frame label constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
     _variables_id_col = VARIABLES_ID_COL
     _variables_label_col = VARIABLES_LABEL_COL
 
@@ -195,7 +197,7 @@ class IEMClient(
             "month2": end.month,
             "day2": end.day,
             self._vars_param: ",".join(variable_ids),
-            "station": ",".join(self.stations_gdf[self._stations_id_col]),
+            "station": ",".join(self.stations_gdf.index),
         }
 
     def _ts_df_from_content(self, response_content: io.StringIO) -> pd.DataFrame:
@@ -204,8 +206,10 @@ class IEMClient(
             na_values="M",
         )
         return (
-            ts_df.assign(**{self._time_col: pd.to_datetime(ts_df[self._time_col])})
-            .groupby(["station", self._time_col])
+            ts_df.assign(
+                **{self._ts_df_time_col: pd.to_datetime(ts_df[self._ts_df_time_col])}
+            )
+            .groupby(["station", self._ts_df_time_col])
             .first(skipna=True)
         )
 
@@ -251,9 +255,9 @@ class ASOSOneMinIEMClient(IEMClient):
     _ts_endpoint = ONEMIN_TS_ENDPOINT
 
     # data frame labels constants
+    _ts_df_time_col = ONEMIN_TS_DF_TIME_COL
     _variables_dict = ONEMIN_VARIABLES_DICT
     _ecv_dict = ONEMIN_ECV_DICT
-    _time_col = ONEMIN_TIME_COL
     _vars_param = "vars"
 
 
@@ -265,7 +269,7 @@ class METARASOSIEMClient(IEMClient):
     _ts_endpoint = METAR_TS_ENDPOINT
 
     # data frame labels constants
+    _ts_df_time_col = METAR_TS_DF_TIME_COL
     _variables_dict = METAR_VARIABLES_DICT
     _ecv_dict = METAR_ECV_DICT
-    _time_col = METAR_TIME_COL
     _vars_param = "data"

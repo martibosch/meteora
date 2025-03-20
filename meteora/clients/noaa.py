@@ -33,10 +33,14 @@ STATIONS_LIST_KNOWN_HASH = (
 )
 
 # useful constants
-STATIONS_ID_COL = "id"
+STATIONS_GDF_ID_COL = "id"
+# ACHTUNG: note that in the time series data frame the station column label is "Station
+# ID" whereas in the stations data frame it is "id".
+TS_DF_STATIONS_ID_COL = "Station_ID"
+TS_DF_TIME_COL = "time"
+TS_DATETIME_COLS = ["Year", "Month", "Day", "Hour", "Minute"]
 VARIABLES_ID_COL = "code"
 VARIABLES_LABEL_COL = "description"
-TIME_COL = "time"  # there is no label for time on the returned json, we generate it
 GHCNH_STATIONS_COLUMNS = [
     "id",
     "latitude",
@@ -92,11 +96,6 @@ ECV_DICT = {
     "water_vapour": "relative_humidity",
 }
 
-# ACHTUNG: note that in the time series data frame the station column label is "Station
-# ID" whereas in the stations data frame it is "id".
-TS_STATION_ID_COL = "Station_ID"
-TS_DATETIME_COLS = ["Year", "Month", "Day", "Hour", "Minute"]
-
 
 class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextClient):
     """NOAA GHCN hourly client."""
@@ -112,12 +111,13 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
     _ts_endpoint = TS_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     _variables_id_col = VARIABLES_ID_COL
     _variables_label_col = VARIABLES_LABEL_COL
     _variables_dict = VARIABLES_DICT
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
 
     def __init__(
         self,
@@ -179,7 +179,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         """Get time series data frame from endpoint."""
         # we override this method because we need a separate request for each station
         variable_cols = list(ts_params["variable_ids"])
-        cols_to_keep = variable_cols + [TS_STATION_ID_COL]
+        cols_to_keep = variable_cols + [self._ts_df_stations_id_col]
 
         # use dask to parallelize requests
         def _process_station_ts_df(station_id):
@@ -215,7 +215,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
 
         tasks = [
             dask.delayed(_process_station_ts_df)(station_id)
-            for station_id in self.stations_gdf[self._stations_id_col]
+            for station_id in self.stations_gdf.index
         ]
         with diagnostics.ProgressBar():
             ts_dfs = dask.compute(*tasks)
@@ -230,7 +230,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         return pd.concat(
             [_drop_empty_object_columns(ts_df) for ts_df in ts_dfs if not ts_df.empty],
             axis="rows",
-        ).set_index([TS_STATION_ID_COL, self._time_col])
+        ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
 
     def get_ts_df(
         self,

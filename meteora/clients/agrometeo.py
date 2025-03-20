@@ -24,15 +24,9 @@ LV03_CRS = pyproj.CRS("epsg:21781")
 GEOM_COL_DICT = {LONLAT_CRS: ["long_dec", "lat_dec"], LV03_CRS: ["lat_ch", "long_ch"]}
 DEFAULT_CRS = LV03_CRS
 # stations column used by the Agrometeo API (do not change)
-STATIONS_API_ID_COL = "id"
-# stations column used to index the data (e.g., time-series dataframe) by the client's
-# class (can be any column that is unique to each station, e.g., name or id).
-# The docstring would read as:
-# stations_id_col : str, optional
-#     Column of `stations_gdf` that will be used in the returned data frame to identify
-#     the stations. If None, the value from `STATIONS_ID_COL` will be used.
-# STATIONS_ID_COL = "name"
-STATIONS_ID_COL = "id"
+STATIONS_GDF_ID_COL = "id"
+TS_DF_STATIONS_ID_COL = "id"
+TS_DF_TIME_COL = "date"
 # variables name column
 VARIABLES_NAME_COL = "name.en"
 # variables code column
@@ -95,7 +89,6 @@ ECV_DICT = {
     "temperature": 1,  # "Temperature 2m above ground",
     "water_vapour": 4,  # "Relative humidity",
 }
-TIME_COL = "date"
 API_DT_FMT = "%Y-%m-%d"
 SCALE = "none"
 MEASUREMENT = "avg"
@@ -106,15 +99,16 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
 
     # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
-    _variables_endpoint = VARIABLES_ENDPOINT
     _ts_endpoint = TS_ENDPOINT
+    _variables_endpoint = VARIABLES_ENDPOINT
 
     # data frame labels constants
-    _stations_id_col = STATIONS_ID_COL
+    _stations_gdf_id_col = STATIONS_GDF_ID_COL
+    _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
+    _ts_df_time_col = TS_DF_TIME_COL
     _variables_id_col = VARIABLES_ID_COL
     # _variables_name_col = VARIABLES_NAME_COL
     _ecv_dict = ECV_DICT
-    _time_col = TIME_COL
 
     def __init__(
         self,
@@ -171,7 +165,7 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
         super().__init__()
 
     def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
-        return pd.DataFrame(response_content["data"]).set_index(self._stations_id_col)
+        return pd.DataFrame(response_content["data"])
 
     def _variables_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         variables_df = pd.json_normalize(response_content["data"])
@@ -213,9 +207,11 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
 
     def _ts_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         # parse the response as a data frame
-        ts_df = pd.json_normalize(response_content["data"]).set_index(self._time_col)
+        ts_df = pd.json_normalize(response_content["data"]).set_index(
+            self._ts_df_time_col
+        )
         ts_df.index = pd.to_datetime(ts_df.index)
-        ts_df.index.name = self._time_col
+        ts_df.index.name = self._ts_df_time_col
 
         # ts_df.columns = self.stations_gdf[STATIONS_ID_COL]
         # ACHTUNG: note that agrometeo returns the data indexed by keys of the form
@@ -225,7 +221,7 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
             ts_df.columns.str.split("_")
             .str[:-1]
             .map(tuple)
-            .rename([self._stations_id_col, "variable"])
+            .rename([self._ts_df_stations_id_col, "variable"])
         )
         # convert station and variable ids to integer
         # ts_df.columns = ts_df.columns.set_levels(
@@ -237,7 +233,9 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
             )
 
         # convert to long form and return it
-        return ts_df.stack(level=self._stations_id_col, future_stack=True).swaplevel()
+        return ts_df.stack(
+            level=self._ts_df_stations_id_col, future_stack=True
+        ).swaplevel()
 
     def get_ts_df(
         self,

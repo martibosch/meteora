@@ -164,6 +164,7 @@ class BaseClientTest:
         if isinstance(self.client, StationsEndpointMixin):
             stations_gdf = self.client.stations_gdf
             assert len(stations_gdf) >= 1
+            self.assertEqual(stations_gdf.index.name, settings.STATIONS_ID_COL)
 
     def test_variables(self):
         if isinstance(self.client, VariablesEndpointMixin):
@@ -194,6 +195,8 @@ class BaseClientTest:
             # test that index is sorted (note that we need to test it as a multi-index
             # because otherwise the time index alone is not unique in long data frames
             assert ts_df.index.is_monotonic_increasing
+            # test index labels
+            assert ts_df.index.names == [settings.STATIONS_ID_COL, settings.TIME_COL]
 
 
 class APIKeyClientTest(BaseClientTest):
