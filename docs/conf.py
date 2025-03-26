@@ -6,7 +6,7 @@ import sys
 project = "Meteora"
 author = "Martí Bosch"
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 version = __version__
 release = __version__
 
