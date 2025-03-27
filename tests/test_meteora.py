@@ -60,7 +60,7 @@ def test_utils():
     # long to wide
     ts_df = pd.read_csv(
         path.join(tests_data_dir, "ts-df.csv"),
-        index_col=["Station_ID", "time"],
+        index_col=["station_id", "time"],
         parse_dates=True,
         date_format="%Y-%m-%d %H:%M:%S",
     )
@@ -74,27 +74,16 @@ def test_utils():
     assert isinstance(wide_ts_df.index, pd.DatetimeIndex)
 
     # long to cube (xvec)
-    stations_gdf = gpd.read_file(path.join(tests_data_dir, "stations.gpkg"))
-    # the test data (ts_df and stations_gdf) is from GHCNh, where the stations id column
-    # is "Station_ID" in ts_df and "id" in stations_gdf
-    stations_ts_df_id_col = "Station_ID"
-    stations_gdf_id_col = "id"
-    with pytest.raises(KeyError):
-        # attempting to convert with a mismatching station id column between ts_df and
-        # stations_gdf raises a KeyError
-        utils.long_to_cube(ts_df, stations_gdf)
-        # if stations_gdf does not cover all stations in ts_df a KeyError is also raised
-        utils.long_to_cube(
-            ts_df, stations_gdf.iloc[:2], stations_gdf_id_col=stations_gdf_id_col
-        )
-        # attempting to convert from the wide form also raises a KeyError
-        utils.wide_to_cube(
-            wide_ts_df, stations_gdf, stations_gdf_id_col=stations_gdf_id_col
-        )
-    # test proper conversion
-    ts_cube = utils.long_to_cube(
-        ts_df, stations_gdf, stations_gdf_id_col=stations_gdf_id_col
+    stations_gdf = gpd.read_file(path.join(tests_data_dir, "stations.gpkg")).set_index(
+        settings.STATIONS_ID_COL
     )
+    with pytest.raises(KeyError):
+        # if stations_gdf does not cover all stations in ts_df a KeyError is also raised
+        utils.long_to_cube(ts_df, stations_gdf.iloc[:2])
+        # attempting to convert from the wide form also raises a KeyError
+        utils.wide_to_cube(wide_ts_df, stations_gdf)
+    # test proper conversion
+    ts_cube = utils.long_to_cube(ts_df, stations_gdf)
     # test an xarray dataset is returned
     assert isinstance(ts_cube, xr.Dataset)
     # test that the time column is in the coordinates
@@ -103,8 +92,8 @@ def test_utils():
     assert all([var in ts_cube.data_vars for var in ts_df.columns])
     # test that it has a dimension with geometry and that it is labeled using the
     # stations id column in ts_df
-    assert stations_ts_df_id_col in ts_cube.xvec.geom_coords
-    assert stations_ts_df_id_col in ts_cube.xvec.geom_coords_indexed
+    assert settings.STATIONS_ID_COL in ts_cube.xvec.geom_coords
+    assert settings.STATIONS_ID_COL in ts_cube.xvec.geom_coords_indexed
 
     # logger
     def test_logging():

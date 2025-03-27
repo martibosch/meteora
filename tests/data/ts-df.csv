@@ -1,4 +1,4 @@
-Station_ID,time,temperature,water_vapour
+station_id,time,temperature,water_vapour
 SZI0000LSMP,2021-12-11 00:20:00,2.0,81.0
 SZI0000LSMP,2021-12-11 00:50:00,2.0,81.0
 SZI0000LSMP,2021-12-11 01:20:00,2.0,81.0

@@ -181,7 +181,7 @@ whitelist_externals = [
 
 [tool.tox.env_run_base]
 commands = [
-  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests", "{posargs}"]
+  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests"]
 ]
 conda_deps = [
   "gdal>=3.3"
