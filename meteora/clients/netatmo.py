@@ -8,8 +8,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyproj
-import requests
-from oauthlib.oauth2 import TokenExpiredError
 from requests_cache import CacheMixin
 from requests_oauthlib import OAuth2Session
 from shapely import geometry
@@ -194,84 +192,6 @@ class NetatmoConnect:
                 client_secret=client_secret,
                 code=auth_code,
             )
-
-    def get(
-        self,
-        url: str,
-        params: KwargsType = None,
-        headers: KwargsType = None,
-    ) -> requests.Response:
-        """Send get request to url, updating the token if needed."""
-        try:
-            response = self._session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        except TokenExpiredError:
-            # get a new token
-            print(self._session.auto_refresh_url)
-            print(self._session.token)
-            token = self._session.refresh_token(
-                # self.session.auto_refresh_url,
-                OAUTH2_TOKEN_ENDPOINT,
-                grant_type="refresh_token",
-                refresh_token=self._session.token["refresh_token"],
-                client_id=self.client_id,
-                client_secret=self.client_secret,
-            )
-            # update the session
-            if isinstance(self._session, CachedOAuth2Session):
-                self._session = CachedOAuth2Session(
-                    token=token,
-                    **self.cache_kwargs,
-                    **self.oauth_kwargs,
-                )
-            else:  # OAuth2Session
-                self._session = OAuth2Session(
-                    token=token,
-                    **self.oauth_kwargs,
-                )
-            # retry the request
-            response = self._session.get(
-                url,
-                params=params,
-                headers=headers,
-            )
-        # try:
-        #     response.raise_for_status()
-        # except exceptions.HTTPError as e:
-        #     print(e)
-        #     utils.log(
-        #         f"Auto refresh is set, attempting to refresh at "
-        #         "{self.session.auto_refresh_url}.",
-        #         level=lg.DEBUG,
-        #     )
-
-        #     # TODO: how to manage refresh token args?
-        #     auth = None
-        #     kwargs = {}
-        #     token = self.session.refresh_token(
-        #         self.session.auto_refresh_url, auth=auth, **kwargs
-        #     )
-
-        #     # # TODO: dump token to a file?
-        #     # def token_saver(token):
-        #     #     with open(token_filepath, "w") as dst:
-        #     #         json.dump(token, dst)
-
-        #     # log.debug(
-        #     #     "Updating token to %s using %s.", token, self.session.token_updater
-        #     # )
-        #     # self.session.token_updater(token)
-
-        #     # TODO: how to manage add token args?
-        #     method = "get"
-        #     headers = None
-        #     url, headers, data = self.session._client.add_token(
-        #         url, http_method=method, body=data, headers=headers
-        #     )
-        return response
 
 
 ## response/data processing
