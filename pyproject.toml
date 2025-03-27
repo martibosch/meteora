@@ -61,6 +61,10 @@ doc = [
 ox = [
   "osmnx"
 ]
+qc = [
+  "seaborn",
+  "statsmodels"
+]
 test = [
   "coverage[toml]",
   "pytest",
@@ -177,13 +181,14 @@ whitelist_externals = [
 
 [tool.tox.env_run_base]
 commands = [
-  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests"]
+  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests", "{posargs}"]
 ]
 conda_deps = [
   "gdal>=3.3"
 ]
 extras = [
   "ox",
+  "qc",
   "test",
   "xvec"
 ]

@@ -12,10 +12,12 @@ maxdepth: 1
 
 user-guide/overview
 user-guide/data-structures
+user-guide/netatmo-qc
 ```
 
 - [Overview of key features](https://meteora.readthedocs.io/en/latest/user-guide/overview.html)
 - [Data structures](https://meteora.readthedocs.io/en/latest/user-guide/data-structures.html)
+- [Netatmo citizen weather stations (CWS) and quality checks (QC)](https://meteora.readthedocs.io/en/latest/user-guide/netatmo-qc.html)
 
 ## Selecting a region
 

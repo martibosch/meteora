@@ -8,6 +8,8 @@ import unittest
 from os import path
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
 import osmnx as ox
 import pandas as pd
 import pytest
@@ -15,7 +17,7 @@ import requests_mock
 import xarray as xr
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
-from meteora import settings, utils
+from meteora import qc, settings, utils
 from meteora.clients import (
     AemetClient,
     AgrometeoClient,
@@ -142,6 +144,121 @@ def test_region_arg():
         client = AgrometeoClient(region=region)
         stations_gdf = client.stations_gdf
         assert len(stations_gdf) >= 1
+
+
+def test_qc():
+    # read a wide ts df
+    ts_df = pd.read_csv(
+        path.join(tests_data_dir, "wide-ts-df.csv"), index_col="time", parse_dates=True
+    )
+
+    # test comparison lineplot
+    discard_stations = ts_df.columns[:2]
+    # check that there are four lines in the plot (2 mean + 2 CI lines)
+    assert len(qc.comparison_lineplot(ts_df, discard_stations).lines) == 4
+    # test that if we plot discarded stations individually, we get a line for each
+    # discarded station (plus two for the kept ones, i.e., the mean and CI lines)
+    assert (
+        len(qc.comparison_lineplot(ts_df, discard_stations).lines)
+        == len(discard_stations) + 2
+    )
+    # test that we can plot in a given axis
+    fig, ax = plt.subplots()
+    assert len(ax.lines) == 0
+    qc.comparison_lineplot(ts_df, discard_stations, ax=ax)
+    assert len(ax.lines) == 4
+
+    # test mislocated stations
+    # generate a random gdf with the same stations as ts_df
+    stations_gser = gpd.GeoSeries(
+        gpd.points_from_xy(
+            np.random.rand(len(ts_df.columns)), np.random.rand(len(ts_df.columns))
+        ),
+        index=ts_df.columns,
+        crs=4326,
+    )
+    # duplicate some station location
+    src_station = ts_df.columns[0]
+    dst_station = ts_df.columns[1]
+    stations_gser.loc[src_station] = stations_gser.loc[dst_station]
+    # test that we get the duplicated stations
+    mislocated_stations = qc.get_mislocated_stations(stations_gser)
+    for station in [src_station, dst_station]:
+        assert station in mislocated_stations
+
+    # test unreliable stations
+    unreliable_stations = qc.get_unreliable_stations(ts_df)
+    assert len(unreliable_stations) >= 0
+    # test threshold (default is 0.2)
+    # test that a higher threshold returns at most the same stations
+    assert len(qc.get_unreliable_stations(ts_df, unreliable_threshold=0.3)) <= len(
+        unreliable_stations
+    )
+    # test that a lower threshold returns at least the same stations
+    assert len(qc.get_unreliable_stations(ts_df, unreliable_threshold=0.1)) >= len(
+        unreliable_stations
+    )
+    # test that we get an empty list if we set the threshold to 1
+    assert qc.get_unreliable_stations(ts_df, unreliable_threshold=1 == [])
+
+    # test elevation adjustment
+    # generate a random elevation series with stations as index
+    station_elevation_ser = pd.Series(
+        np.random.rand(len(ts_df.columns)) * 100, index=ts_df.columns
+    )
+    # adjust with the default lapse rate (0.0065)
+    adj_ts_df = qc.elevation_adjustment(ts_df, station_elevation_ser)
+    # test that the adjusted ts_df has the same shape and indexing
+    assert adj_ts_df.shape == ts_df.shape
+    assert adj_ts_df.index.equals(ts_df.index)
+    assert adj_ts_df.columns.equals(ts_df.columns)
+    # test that a higher lapse rate increases (strict) the range of the adjusted values
+    # technically this may not work with elevations smaller than 1
+    high_adj_ts_df = qc.elevation_adjustment(
+        ts_df, station_elevation_ser, atmospheric_lapse_rate=0.2
+    )
+    assert adj_ts_df.min().min() > high_adj_ts_df.min().min()
+    assert adj_ts_df.max().max() < high_adj_ts_df.max().max()
+
+    # test outlier detection
+    outlier_stations = qc.get_outlier_stations(ts_df)
+    assert len(outlier_stations) >= 0
+    # test tail range (default high_alpha=0.95, low_alpha=0.01)
+    # test that a smaller tail range returns at least the same stations
+    assert len(qc.get_outlier_stations(ts_df, low_alpha=0.1, high_alpha=0.9)) >= len(
+        outlier_stations
+    )
+    # test that a bigger tail range returns at most the same stations
+    assert len(qc.get_outlier_stations(ts_df, low_alpha=0.01, high_alpha=0.99)) <= len(
+        outlier_stations
+    )
+    # test station outlier threshold (default 0.2)
+    # test that a higher outlier threshold returns at most the same stations
+    station_outlier_threshold = 0.3
+    assert len(
+        qc.get_outlier_stations(
+            ts_df, station_outlier_threshold=station_outlier_threshold
+        )
+    ) <= len(outlier_stations)
+    # test that a lower outlier threshold returns at least the same stations
+    assert len(
+        qc.get_outlier_stations(
+            ts_df, station_outlier_threshold=station_outlier_threshold
+        )
+    ) >= len(outlier_stations)
+
+    # test indoor station detection
+    indoor_stations = qc.get_indoor_stations(ts_df)
+    assert len(indoor_stations) >= 0
+    # test correlation threshold (default 0.9)
+    # test that a higher threshold returns at least the same stations
+    assert len(
+        qc.get_indoor_stations(ts_df, station_indoor_corr_threshold=0.95)
+    ) >= len(indoor_stations)
+    # test that a lower threshold returns at most the same stations
+    assert len(
+        qc.get_indoor_stations(ts_df, station_indoor_corr_threshold=0.85)
+    ) <= len(indoor_stations)
 
 
 class BaseClientTest:
