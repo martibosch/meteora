@@ -1,5 +1,37 @@
 # History
 
+## [v0.4.0] - 2025-03-27
+
+### :boom: BREAKING CHANGES
+
+- due to [`efcb356`](https://github.com/martibosch/meteora/commit/efcb356c6af506537c3ea6336baf46e0f73f75e8) - stations gdf and ts df id col as abstract attrs and settings *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  stations gdf and ts df id col as abstract attrs and settings
+
+- due to [`7466e5c`](https://github.com/martibosch/meteora/commit/7466e5c82045f87a93a07c029c185a6281b83e6f) - filter ts range in agrometeo - TODO: find a better approach *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  filter ts range in agrometeo - TODO: find a better approach
+
+### :sparkles: New Features
+
+- [`e29a4a2`](https://github.com/martibosch/meteora/commit/e29a4a2746b7684791434c201cb5f0b834e10ecf) - long_to_wide function for time series data frames in utils *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9d77eff`](https://github.com/martibosch/meteora/commit/9d77eff9ab897be9bf08c533c244ae652a2d62a8) - added `long_to_cube` utils function *(commit by [@martibosch](https://github.com/martibosch))*
+- [`efcb356`](https://github.com/martibosch/meteora/commit/efcb356c6af506537c3ea6336baf46e0f73f75e8) - stations gdf and ts df id col as abstract attrs and settings *(commit by [@martibosch](https://github.com/martibosch))*
+- [`5c5e69f`](https://github.com/martibosch/meteora/commit/5c5e69f8bf79f9b406beac9d8b35791f0885294b) - split Netatmo ts requests in time range to respect API limits *(commit by [@martibosch](https://github.com/martibosch))*
+- [`deaf616`](https://github.com/martibosch/meteora/commit/deaf616b81eb892168897a4565160a9afc9907e2) - QC module plus Netatmo+QC example notebook *(commit by [@martibosch](https://github.com/martibosch))*
+- [`fb3c78d`](https://github.com/martibosch/meteora/commit/fb3c78dca2182f541fd1a99a302c1bbbb3cd70a2) - netatmo progress_apply from init to stations_gdf, more logging *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`76473ae`](https://github.com/martibosch/meteora/commit/76473ae23b2d9a63dab2fce69f76b95c14ba4b8b) - pl set null invalid dates then ignore (avoid errors in ghcnh) *(commit by [@martibosch](https://github.com/martibosch))*
+- [`a183f95`](https://github.com/martibosch/meteora/commit/a183f95a0dc6a2602841ffe2915ab20578ec3895) - drop stale osmnx import in base client *(commit by [@martibosch](https://github.com/martibosch))*
+- [`7466e5c`](https://github.com/martibosch/meteora/commit/7466e5c82045f87a93a07c029c185a6281b83e6f) - filter ts range in agrometeo - TODO: find a better approach *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :recycle: Refactors
+
+- [`9b60e79`](https://github.com/martibosch/meteora/commit/9b60e798b863ae51d9b71e39c64ae8f2e78f826a) - use `pd.DataFrame.unstack` in `long_to_wide` *(commit by [@martibosch](https://github.com/martibosch))*
+- [`7fa3145`](https://github.com/martibosch/meteora/commit/7fa3145f6a1686c70a413f2b88f12a720d400044) - remove stale `NetatmoConnect.get` method *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.3.0] - 2025-03-16
 
 ### :boom: BREAKING CHANGES
@@ -55,3 +87,4 @@
   \[v0.1.1\]: https://github.com/martibosch/meteora/compare/v0.1.0...v0.1.1
   \[v0.2.0\]: https://github.com/martibosch/meteora/compare/v0.1.1...v0.2.0
   \[v0.3.0\]: https://github.com/martibosch/meteora/compare/v0.2.0...v0.3.0
+  \[v0.4.0\]: https://github.com/martibosch/meteora/compare/v0.3.0...v0.4.0
