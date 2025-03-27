@@ -272,6 +272,17 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
             Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
-        return self._get_ts_df(
+        ts_df = self._get_ts_df(
             variables, start, end, scale=scale, measurement=measurement
         )
+        # filter time range, otherwise, for some reason, agrometeo API includes one day
+        # after
+        return ts_df.loc[
+            (
+                slice(None),
+                ts_df.index.get_level_values(settings.TIME_COL)
+                .to_series()
+                .between(start, end, inclusive="both"),
+            ),
+            :,
+        ]
