@@ -100,6 +100,16 @@ GETMEASURE_REAL_TIME = False
 WINDOW_SIZE = 0.1  # degrees
 TEN_SECONDS_REQUESTS_LIMIT = 50  # requests
 HOURLY_REQUESTS_LIMIT = 500  # requests
+# to convert the "scale" parameter in `getmeasure` to a pandas frequency alias
+# https://pandas.pydata.org/docs/user_guide/timeseries.html#timeseries-offset-aliases
+SCALE_TO_FREQ_DICT = {
+    "30min": "30min",
+    "1hour": "h",
+    "3hours": "3h",
+    "1day": "D",
+    "1week": "W",
+    "1month": "ME",
+}
 
 PAUSE = 1
 TIMEOUT = 180
@@ -466,11 +476,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         optimize: bool | None,
         real_time: bool | None,
     ) -> dict:
-        # times must be in Unix time
-        date_begin, date_end = (
-            int(pd.Timestamp(date).timestamp()) for date in [start, end]
-        )
-        # process the other `getmeasure` parameters
+        # process `getmeasure` parameters
         if scale is None:
             scale = GETMEASURE_SCALE
         if limit is None:
@@ -482,8 +488,8 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
 
         return dict(
             variable_ids=variable_ids,
-            date_begin=date_begin,
-            date_end=date_end,
+            date_begin=start,
+            date_end=end,
             scale=scale,
             limit=limit,
             optimize=optimize,
@@ -508,10 +514,36 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
             if not module_var_dict[module_type]:
                 del module_var_dict[module_type]
 
+        # get the time range and split it into chunks based on the "limit" and "scale"
+        # parameters
+        scale = _ts_params["scale"]
+        limit = _ts_params["limit"]
+        # use pop to remove the date_begin and date_end keys from the dict (they will be
+        # added to each chunk's request)
+        time_range = pd.date_range(
+            pd.Timestamp(_ts_params.pop("date_begin")),
+            pd.Timestamp(_ts_params.pop("date_end")),
+            freq=SCALE_TO_FREQ_DICT[scale],
+        )
+        if len(time_range) >= limit:
+            utils.log(
+                f"The queried time range ({len(time_range)}) and scale ({scale}) exceed"
+                f" the limit of measurements per request ({limit}). The requests will "
+                f"be split into chunks of {limit} periods.",
+                level=lg.INFO,
+            )
+        # times must be in Unix time
+        time_range_chunks = [
+            (chunk_range[0].timestamp(), chunk_range[-1].timestamp())
+            for chunk_range in np.array_split(
+                time_range, np.ceil(len(time_range) / limit)
+            )
+        ]
+
         # get the number of requests and warn (if needed) about API limits
         n_requests = sum(
             [
-                len(self.stations_gdf[module_type].dropna())
+                len(self.stations_gdf[module_type].dropna()) * len(time_range_chunks)
                 for module_type in module_var_dict
             ]
         )
@@ -545,111 +577,113 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         n_nodata_modules = 0
         with tqdm(total=n_requests) as pbar:
             for module_type, module_vars in module_var_dict.items():
+                _params = dict(type=",".join(module_vars)) | _ts_params
                 for station_id, module_id in (
                     self.stations_gdf[module_type].dropna().items()
                 ):
-                    # # get the module id
-                    # module_id = self.stations_gdf.loc[station_id, module_type]
-                    # get the observations
-                    # print(
-                    #     station_id, module_id, scale, module_vars
-                    # )
-                    _params = (
-                        dict(
-                            device_id=station_id,
-                            module_id=module_id,
-                            type=",".join(module_vars),
+                    _params["device_id"] = station_id
+                    _params["module_id"] = module_id
+                    for start, end in time_range_chunks:
+                        _params["date_begin"] = start
+                        _params["date_end"] = end
+
+                        response_json = self._get_content_from_url(
+                            self._ts_endpoint,
+                            params=_params,
                         )
-                        | _ts_params
-                    )
 
-                    response_json = self._get_content_from_url(
-                        self._ts_endpoint,
-                        params=_params,
-                    )
-
-                    try:
-                        response_data = response_json["body"]
-                        if response_data == []:
-                            # TODO: log this? maybe not because logs become too verbose
-                            # utils.log(
-                            #     f"The request for station {station_id} and module "
-                            #     f"{module_id} returned no data. This suggests that "
-                            #     "the module was not set up at the time of the "
-                            #     "requested date range.",
-                            #     level=lg.INFO,
-                            # )
-                            # # remove cached request
-                            # # TODO: DRY get url from a dedicated method also called
-                            # # from `_get_content_from_url`?
-                            # try:
-                            #     self._session.cache.delete(
-                            #         urls=[
-                            #             requests.Request(
-                            #                 "get", self._ts_endpoint, params=_params
-                            #             )
-                            #             .prepare()
-                            #             .url
-                            #         ]
-                            #     )
-                            # except AttributeError:
-                            #     # the client is not using a cache
-                            #
-                            n_nodata_modules += 1
-                        else:
-                            ts_dfs.append(
-                                pd.concat(
-                                    [
-                                        _process_response_chunk(
-                                            response_chunk, module_vars
-                                        )
-                                        for response_chunk in response_data
-                                    ],
-                                    ignore_index=True,
-                                ).assign(**{self._ts_df_stations_id_col: station_id})
-                            )
-                    except TypeError:
-                        # print("typeerror", response_json)
-                        # TODO: manage this error
-                        pass
-                    except IndexError:
-                        # print("indexerror", response_json)
-                        # TODO: manage this error
-                        pass
-                    except KeyError:
-                        if response_json["error"]["message"] == "Device not found":
-                            # print(response_json["error"])
+                        try:
+                            response_data = response_json["body"]
+                            if response_data == []:
+                                # # TODO: log this? maybe not because logs become too
+                                # # verbose
+                                # utils.log(
+                                #     f"The request for station {station_id} and module"
+                                #     f" {module_id} returned no data. This suggests "
+                                #     "that the module was not set up at the time of "
+                                #     "the requested date range.",
+                                #     level=lg.INFO,
+                                # )
+                                # # remove cached request
+                                # # TODO: DRY get url from a dedicated method also
+                                # # called from `_get_content_from_url`?
+                                # try:
+                                #     self._session.cache.delete(
+                                #         urls=[
+                                #             requests.Request(
+                                #                 "get",
+                                #                 self._ts_endpoint,
+                                #                 params=_params
+                                #             )
+                                #             .prepare()
+                                #             .url
+                                #         ]
+                                #     )
+                                # except AttributeError:
+                                #     # the client is not using a cache
+                                #
+                                n_nodata_modules += 1
+                            else:
+                                ts_dfs.append(
+                                    pd.concat(
+                                        [
+                                            _process_response_chunk(
+                                                response_chunk, module_vars
+                                            )
+                                            for response_chunk in response_data
+                                        ],
+                                        ignore_index=True,
+                                    ).assign(
+                                        **{self._ts_df_stations_id_col: station_id}
+                                    )
+                                )
+                        except TypeError:
+                            # print("typeerror", response_json)
                             # TODO: manage this error
                             pass
-                        else:
-                            log_msg = (
-                                "API limit reached, returning records for"
-                                f" {len(ts_dfs)} modules"
-                            )
-                            if n_nodata_modules > 0:
-                                log_msg += (
-                                    f" (plus {n_nodata_modules} modules with no records"
-                                    " for the requested time range)."
-                                )
+                        except IndexError:
+                            # print("indexerror", response_json)
+                            # TODO: manage this error
+                            pass
+                        except KeyError:
+                            if response_json["error"]["message"] == "Device not found":
+                                # print(response_json["error"])
+                                # TODO: manage this error
+                                pass
                             else:
-                                log_msg += "."
-                            utils.log(
-                                log_msg,
-                                level=lg.WARNING,
-                            )
-                            if ts_dfs:
-                                # TODO: DRY with the return statement at the end of the
-                                # method
-                                return pd.concat(ts_dfs, ignore_index=True).set_index(
-                                    [self._ts_df_stations_id_col, self._ts_df_time_col]
+                                log_msg = (
+                                    "API limit reached, returning records for"
+                                    f" {len(ts_dfs)} modules"
                                 )
-                            else:
-                                # return empty data frame
-                                # TODO: catch the subsequent KeyError in
-                                # `BaseClient._rename_variables_cols` and raise a more
-                                # informative message
-                                return pd.DataFrame()
-                    pbar.update(1)
+                                if n_nodata_modules > 0:
+                                    log_msg += (
+                                        f" (plus {n_nodata_modules} modules with no "
+                                        "records for the requested time range)."
+                                    )
+                                else:
+                                    log_msg += "."
+                                utils.log(
+                                    log_msg,
+                                    level=lg.WARNING,
+                                )
+                                if ts_dfs:
+                                    # TODO: DRY with the return statement at the end of
+                                    # the method
+                                    return pd.concat(
+                                        ts_dfs, ignore_index=True
+                                    ).set_index(
+                                        [
+                                            self._ts_df_stations_id_col,
+                                            self._ts_df_time_col,
+                                        ]
+                                    )
+                                else:
+                                    # return empty data frame
+                                    # TODO: catch the subsequent KeyError in
+                                    # `BaseClient._rename_variables_cols` and raise a
+                                    # more informative message
+                                    return pd.DataFrame()
+                        pbar.update(1)
 
         if n_nodata_modules > 0:
             utils.log(

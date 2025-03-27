@@ -315,8 +315,8 @@ class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
         with requests_mock.Mocker() as m:
             with open(path.join(tests_data_dir, "netatmo-stations.json")) as src:
                 m.get(
-                    "https://api.netatmo.com/api/getpublicdata?lon_sw=1.1635994&lat_sw=41.4"
-                    "8811&lon_ne=1.2635994000000002&lat_ne=41.58811",
+                    "https://api.netatmo.com/api/getpublicdata?lon_sw=1.1635994&"
+                    "lat_sw=41.48811&lon_ne=1.2635994000000002&lat_ne=41.58811",
                     json=json.load(src),
                 )
             super().test_stations()
@@ -325,10 +325,11 @@ class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
         with requests_mock.Mocker() as m:
             with open(path.join(tests_data_dir, "netatmo-time-series.json")) as src:
                 m.get(
-                    "https://api.netatmo.com/api/getmeasure?device_id=70%3Aee%3A50%3A74%3A2"
-                    "a%3Aba&module_id=02%3A00%3A00%3A73%3Ae0%3A7e&type=temperature%2Chumidi"
-                    "ty&date_begin=1734825600&date_end=1734912000&scale=30min&limit=1024&op"
-                    "timize=true&real_time=false",
+                    "https://api.netatmo.com/api/getmeasure?type=temperature%2Chumidity"
+                    "&scale=30min&limit=1024&optimize=True&real_time=False&"
+                    "device_id=70%3Aee%3A50%3A74%3A2a%3Aba&"
+                    "module_id=02%3A00%3A00%3A73%3Ae0%3A7e&"
+                    "date_begin=1734825600.0&date_end=1734912000.0",
                     json=json.load(src),
                 )
             super().test_time_series()
