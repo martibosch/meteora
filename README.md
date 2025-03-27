@@ -11,13 +11,13 @@
 
 Pythonic interface to access observations from meteorological stations. Key features:
 
-- easily stream meteorological observations [from multiple providers, from global (e.g., Global Historical Climatology Network hourly (GHCNh)) and regional (e.g., MetOffice) networks to citizen weather stations (e.g., Netatmo)](https://meteora.readthedocs.io/en/latest/supported-providers.html) into pandas data frames.
+- easily stream meteorological observations [from multiple providers, from global (e.g., GHCNh) and regional (e.g., MetOffice) networks to citizen weather stations (e.g., Netatmo)](https://meteora.readthedocs.io/en/latest/supported-providers.html) into pandas data frames.
 - user-friendly arguments to filter data by region, variables or date ranges.
 - request and download caching with [requests-cache](https://github.com/requests-cache/requests-cache) and [pooch](https://github.com/fatiando/pooch) to avoid re-downloading data and help bypassing API limits.
 
 ## Overview
 
-Meteora provides a set of provider-specific clients to get observations from meteorological stations. For instance, it can be used to stream [the one-minute ASOS data](https://madis.ncep.noaa.gov/madis_OMO.shtml) from the [Iowa Environmental Mesonet](https://mesonet.agron.iastate.edu/request/asos/1min.phtml) into a pandas data frame:
+Meteora provides a set of provider-specific clients to get observations from meteorological stations. For instance, it can be used to stream data from [the Global Historical Climatology Network hourly (GHCNh)](https://www.ncei.noaa.gov/products/global-historical-climatology-network-hourly) into a pandas data frame:
 
 ```python
 from meteora.clients import GHCNHourlyClient
