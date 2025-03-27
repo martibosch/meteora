@@ -1,5 +1,11 @@
 # History
 
+## [v0.4.1] - 2025-03-27
+
+### :bug: Bug Fixes
+
+- [`f8a1815`](https://github.com/martibosch/meteora/commit/f8a18152d5883cf5b8c2673b6758a52717004674) - utils tests for standardized time/station cols; no posargs *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.4.0] - 2025-03-27
 
 ### :boom: BREAKING CHANGES
@@ -88,3 +94,4 @@
   \[v0.2.0\]: https://github.com/martibosch/meteora/compare/v0.1.1...v0.2.0
   \[v0.3.0\]: https://github.com/martibosch/meteora/compare/v0.2.0...v0.3.0
   \[v0.4.0\]: https://github.com/martibosch/meteora/compare/v0.3.0...v0.4.0
+  \[v0.4.1\]: https://github.com/martibosch/meteora/compare/v0.4.0...v0.4.1
