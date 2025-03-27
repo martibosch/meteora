@@ -380,7 +380,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                     "xmax": flat_grid_x + window_size,
                     "ymax": flat_grid_y + window_size,
                 }
-            ).progress_apply(lambda row: geometry.box(*row), axis=1),
+            ).apply(lambda row: geometry.box(*row), axis=1),
             crs=self.CRS,
         )
         # end: split the region into windows
@@ -430,7 +430,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                         for station_record in response_json["body"]
                     ],
                 )
-                for response_json in self.region_window_gser.apply(
+                for response_json in self.region_window_gser.progress_apply(
                     # for response_json, _ in self.region_window_gser.apply(
                     # lambda window: self._perform_request(
                     #     STATIONS_ENDPOINT,
@@ -595,33 +595,14 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                         try:
                             response_data = response_json["body"]
                             if response_data == []:
-                                # # TODO: log this? maybe not because logs become too
-                                # # verbose
-                                # utils.log(
-                                #     f"The request for station {station_id} and module"
-                                #     f" {module_id} returned no data. This suggests "
-                                #     "that the module was not set up at the time of "
-                                #     "the requested date range.",
-                                #     level=lg.INFO,
-                                # )
-                                # # remove cached request
-                                # # TODO: DRY get url from a dedicated method also
-                                # # called from `_get_content_from_url`?
-                                # try:
-                                #     self._session.cache.delete(
-                                #         urls=[
-                                #             requests.Request(
-                                #                 "get",
-                                #                 self._ts_endpoint,
-                                #                 params=_params
-                                #             )
-                                #             .prepare()
-                                #             .url
-                                #         ]
-                                #     )
-                                # except AttributeError:
-                                #     # the client is not using a cache
-                                #
+                                # TODO: is this logging level too verbose?
+                                utils.log(
+                                    f"The request for station {station_id} and module"
+                                    f" {module_id} returned no data. This suggests "
+                                    "that the module was not set up at the time of "
+                                    "the requested date range.",
+                                    level=lg.INFO,
+                                )
                                 n_nodata_modules += 1
                             else:
                                 ts_dfs.append(
