@@ -162,9 +162,9 @@ requires = [
 
 [tool.tox.env.lint]
 commands = [
-  "python -m build",
-  "sphinx-build docs docs/_build",
-  "twine check dist/*"
+  ["python", "-m", "build"],
+  ["sphinx-build", "docs", "docs/_build"],
+  ["twine", "check", "dist/*"]
 ]
 extras = [
   "dev",
