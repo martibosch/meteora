@@ -36,6 +36,7 @@ jobs:
             python=${{ matrix.python-version }}
             tox
             tox-gh
+            ${{ matrix.python-version == '3.13' && 'ipython' || '' }}
             ${{ matrix.python-version == '3.13' && 'pandoc' || '' }}
 
       - name: get API keys from secrets

@@ -1,0 +1,7 @@
+.nbinput, .nboutput {
+    font-size: .95em
+}
+
+.nbinput .prompt, .nboutput .prompt {
+    display: none
+}

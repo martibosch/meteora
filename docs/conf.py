@@ -36,3 +36,9 @@ exclude_patterns = ["_build", "**.ipynb_checkpoints"]
 
 # do NOT execute notebooks
 nbsphinx_execute = "never"
+
+
+# no prompts in rendered notebooks
+# https://github.com/microsoft/torchgeo/pull/783
+html_static_path = ["_static"]
+html_css_files = ["notebooks.css"]
