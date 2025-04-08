@@ -3,12 +3,13 @@
 import os
 import sys
 
+import pkg_resources
+
 project = "Meteora"
 author = "Martí Bosch"
 
-__version__ = "0.4.1"
-version = __version__
-release = __version__
+release = pkg_resources.get_distribution("meteora").version
+version = ".".join(release.split(".")[:2])
 
 extensions = [
     "myst_parser",

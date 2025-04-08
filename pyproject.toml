@@ -53,6 +53,7 @@ doc = [
   "myst-parser",
   "nbsphinx",
   "pydata-sphinx-theme",
+  "setuptools",
   "sphinx",
   "sphinxemoji"
 ]
@@ -87,9 +88,6 @@ skip = "CHANGELOG.md"
 major_version_zero = true
 name = "cz_conventional_commits"
 tag_format = "v$version"
-version_files = [
-  "docs/conf.py"
-]
 version_provider = "pep621"
 version_scheme = "semver"
 
