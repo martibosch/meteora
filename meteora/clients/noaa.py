@@ -1,20 +1,18 @@
 """National Oceanic And Atmospheric Administration (NOAA) client."""
 
-import shutil
-import tempfile
 from collections.abc import Sequence
 
 import dask
 import pandas as pd
-import polars as pl
 import pooch
 import pyproj
+import requests
 from dask import diagnostics
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
-from meteora.utils import DateTimeType, KwargsType, PathType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
 logger = pooch.get_logger()
@@ -24,7 +22,7 @@ logger.setLevel("WARNING")
 # API endpoints
 BASE_URL = "https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly"
 GHCNH_STATIONS_ENDPOINT = f"{BASE_URL}/doc/ghcnh-station-list.csv"
-TS_ENDPOINT = f"{BASE_URL}/access/by-station/" + "GHCNh_{station_id}_por.psv"
+TS_ENDPOINT = f"{BASE_URL}/access/by-year/" + "{year}/psv/GHCNh_{station_id}_{year}.psv"
 
 # for pooch
 # TODO: how often can it change? how to properly update it if it does?
@@ -36,9 +34,8 @@ STATIONS_LIST_KNOWN_HASH = (
 STATIONS_GDF_ID_COL = "id"
 # ACHTUNG: note that in the time series data frame the station column label is "Station
 # ID" whereas in the stations data frame it is "id".
-TS_DF_STATIONS_ID_COL = "Station_ID"
-TS_DF_TIME_COL = "time"
-TS_DATETIME_COLS = ["Year", "Month", "Day", "Hour", "Minute"]
+TS_DF_STATIONS_ID_COL = "STATION"
+TS_DF_TIME_COL = "DATE"
 VARIABLES_ID_COL = "code"
 VARIABLES_LABEL_COL = "description"
 GHCNH_STATIONS_COLUMNS = [
@@ -123,7 +120,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         self,
         region: RegionType,
         *,
-        pooch_dir: PathType | None = None,
+        pooch_kwargs: KwargsType | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize GHCN hourly client."""
@@ -132,21 +129,12 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
 
-        # set pooch directory for caching file downloads
-        if pooch_dir is None:
-            pooch_dir = tempfile.mkdtemp()
-            self._tmp_dir = True
-        self.pooch_dir = pooch_dir
-        # self.pooch = pooch.Pooch(self.working_dir, BASE_URL)
-        self.pooch_kwargs = {"path": self.pooch_dir}
+        if pooch_kwargs is None:
+            pooch_kwargs = {}
+        self.pooch_kwargs = pooch_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
-
-    def __del__(self) -> None:
-        """Destructor to clean up temporary files."""
-        if getattr(self, "_tmp_dir", False):
-            shutil.rmtree(self.pooch_dir)
 
     def _get_stations_df(self) -> pd.DataFrame:
         """Get all stations."""
@@ -179,58 +167,64 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         """Get time series data frame from endpoint."""
         # we override this method because we need a separate request for each station
         variable_cols = list(ts_params["variable_ids"])
-        cols_to_keep = variable_cols + [self._ts_df_stations_id_col]
+        cols_to_keep = (
+            [self._ts_df_stations_id_col] + [self._ts_df_time_col] + variable_cols
+        )
+        start = ts_params["start"]
+        end = ts_params["end"]
+        requested_years = set(range(start.year, end.year + 1))
+
+        # def _process_station_ts_df(year, station_id):
+        #     try:
+        #         station_ts_filepath = pooch.retrieve(
+        #             self._ts_endpoint.format(year=year, station_id=station_id),
+        #             None,
+        #             **self.pooch_kwargs,
+        #         )
+        #     except requests.HTTPError:
+        #         return pd.DataFrame()
+        #     ts_df = pd.read_csv(station_ts_filepath, sep="|")[cols_to_keep]
+        #     ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
+        #     return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
+
+        # ts_df = pd.concat(
+        #     [
+        #         _process_station_ts_df(year, station_id)
+        #         for station_id in self.stations_gdf.index
+        #         for year in requested_years
+        #     ]
+        # )
 
         # use dask to parallelize requests
-        def _process_station_ts_df(station_id):
-            station_ts_filepath = pooch.retrieve(
-                self._ts_endpoint.format(station_id=station_id),
-                None,
-                **self.pooch_kwargs,
-            )
-            ts_df = (
-                pl.scan_csv(
-                    station_ts_filepath,
-                    separator="|",
-                    has_header=True,
+        def _process_station_ts_df(year, station_id):
+            try:
+                station_ts_filepath = pooch.retrieve(
+                    self._ts_endpoint.format(year=year, station_id=station_id),
+                    None,
+                    **self.pooch_kwargs,
                 )
-                .with_columns(
-                    # return null for invalid dates instead of raising a `ComputeError`
-                    # (needed because of invalid dates in GHCNh data)
-                    pl.datetime(
-                        *[pl.col(col) for col in TS_DATETIME_COLS], ambiguous="null"
-                    ).alias("time")
-                )
-                .select(cols_to_keep + ["time"])
-                .filter(
-                    pl.col("time").is_not_null()
-                    & pl.col("time").is_between(
-                        ts_params["start"],
-                        ts_params["end"],
-                        closed="both",
-                    )
-                )
-            )
-            return ts_df.collect().to_pandas()
+            except requests.HTTPError:
+                # TODO: log?
+                return pd.DataFrame()
+            ts_df = pd.read_csv(station_ts_filepath, sep="|", usecols=cols_to_keep)
+            ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
+            return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
 
         tasks = [
-            dask.delayed(_process_station_ts_df)(station_id)
+            dask.delayed(_process_station_ts_df)(year, station_id)
             for station_id in self.stations_gdf.index
+            for year in requested_years
         ]
         with diagnostics.ProgressBar():
             ts_dfs = dask.compute(*tasks)
 
-        # concat only data frames with non-empty data for the requested variables
-        def _drop_empty_object_columns(ts_df):
-            df_objects = ts_df.select_dtypes(object)
-            return ts_df[
-                ts_df.columns.difference(df_objects.columns[df_objects.isna().all()])
-            ]
+        return pd.concat(ts_dfs).set_index(
+            [self._ts_df_stations_id_col, self._ts_df_time_col]
+        )
 
-        return pd.concat(
-            [_drop_empty_object_columns(ts_df) for ts_df in ts_dfs if not ts_df.empty],
-            axis="rows",
-        ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
+    def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
+        # no need to sort the index given the way the data has been requested
+        return ts_df.apply(pd.to_numeric, axis="columns")
 
     def get_ts_df(
         self,
