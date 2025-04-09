@@ -46,8 +46,8 @@ else:
 def dms_to_decimal(ser: pd.Series) -> pd.Series:
     """Convert a series from degrees, minutes, seconds (DMS) to decimal degrees."""
     degrees = ser.str[0:2].astype(int)
-    minutes = ser.str[3:4].astype(int)
-    seconds = ser.str[5:6].astype(int)
+    minutes = ser.str[2:4].astype(int)
+    seconds = ser.str[4:6].astype(int)
     direction = ser.str[-1]
 
     decimal = degrees + minutes / 60 + seconds / 3600
