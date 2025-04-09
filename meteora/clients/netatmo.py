@@ -289,7 +289,40 @@ def _process_station_record(station_record: dict) -> dict:
 
 
 class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClient):
-    """Netatmo client."""
+    """Netatmo client.
+
+    Parameters
+    ----------
+    region : str, Sequence, GeoSeries, GeoDataFrame, PathLike, or IO
+        The region to process. This can be either:
+
+        -  A string with a place name (Nominatim query) to geocode.
+        -  A sequence with the west, south, east and north bounds.
+        -  A geometric object, e.g., shapely geometry, or a sequence of geometric
+           objects. In such a case, the value will be passed as the `data` argument of
+           the GeoSeries constructor, and needs to be in the same CRS as the one used by
+           the client's class (i.e., the `CRS` class attribute).
+        -  A geopandas geo-series or geo-data frame.
+        -  A filename or URL, a file-like object opened in binary ('rb') mode, or a Path
+           object that will be passed to `geopandas.read_file`.
+    client_id, client_secret : str
+        Client ID and secret of the Netatmo API, used to authenticate the client, i.e.,
+        to obtain and refresh tokens.
+    redirect_uri : str, optional
+        Redirect URI for the Netatmo app, used for the "Authorization code" grant type
+        authentication (by default). Ignored if `token` is provided. If None, the value
+        from `settings.REDIRECT_URI` is used.
+    token : dict, optional
+        Token dictionary with the keys "access_token" and "refresh_token".
+    window_size : numeric, optional
+        Window size (square side, in degrees) to split the region into non-overlapping
+        windows (to bypass Netatmo API limits). If None, the value from
+        `clients.netatmo.WINDOW_SIZE` is used.
+    sjoin_kwargs : dict, optional
+        Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
+        stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
+        used.
+    """
 
     # geom constant
     X_COL = "lon"
@@ -319,38 +352,10 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         *,
         redirect_uri: str | None = None,
         token: str | None = None,
-        window_size: int | None = None,
+        window_size: float | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
-        """Initialize Netatmo client.
-
-        Parameters
-        ----------
-        region : str, Sequence, GeoSeries, GeoDataFrame, PathLike, or IO
-            The region to process. This can be either:
-            -  A string with a place name (Nominatim query) to geocode.
-            -  A sequence with the west, south, east and north bounds.
-            -  A geometric object, e.g., shapely geometry, or a sequence of geometric
-               objects. In such a case, the value will be passed as the `data` argument
-               of the GeoSeries constructor, and needs to be in the same CRS as the one
-               used by the client's class (i.e., the `CRS` class attribute).
-            -  A geopandas geo-series or geo-data frame.
-            -  A filename or URL, a file-like object opened in binary ('rb') mode, or a
-               Path object that will be passed to `geopandas.read_file`.
-        client_id, client_secret : str
-            Client ID and secret of the Netatmo API, used to authenticate the client,
-            i.e., to obtain and refresh tokens.
-        redirect_uri : str, optional
-            Redirect URI for the Netatmo app, used for the "Authorization code" grant
-            type authentication (by default). Ignored if `token` is provided. If None,
-            the value from `settings.REDIRECT_URI` is used.
-        token : dict, optional
-            Token dictionary with the keys "access_token" and "refresh_token".
-        sjoin_kwargs : dict, optional
-            Keyword arguments to pass to the `geopandas.sjoin` function when filtering
-            the stations within the region. If None, the value from
-            `settings.SJOIN_KWARGS` is used.
-        """
+        """Initialize Netatmo client."""
         # ACHTUNG: CRS must be set before region
         self.region = region
 
