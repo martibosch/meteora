@@ -9,7 +9,6 @@ authors = [
   {email = "marti.bosch@epfl.ch", name = "Martí Bosch"}
 ]
 classifiers = [
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
@@ -32,9 +31,8 @@ name = "meteora"
 readme = "README.md"
 requires-python = ">=3.10"
 version = "0.4.1"
-
-[project.license]
-text = "GPL-3.0"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 
 [project.optional-dependencies]
 cx = [
