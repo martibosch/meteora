@@ -150,21 +150,19 @@ env_list = [
   "3.11",
   "3.12",
   "3.13",
-  "lint"
+  "build"
 ]
 requires = [
   "tox>=4.19"
 ]
 
-[tool.tox.env.lint]
+[tool.tox.env.build]
 commands = [
   ["python", "-m", "build"],
-  ["sphinx-build", "docs", "docs/_build"],
   ["twine", "check", "dist/*"]
 ]
 extras = [
   "dev",
-  "doc",
   "test"
 ]
 whitelist_externals = [
@@ -202,5 +200,5 @@ whitelist_externals = [
 ]
 "3.13" = [
   "3.13",
-  "lint"
+  "build"
 ]
