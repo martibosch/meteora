@@ -33,73 +33,34 @@ ts_df.head()
 ```
 
 ```
-[########################################] | 100% Completed | 16.94 s
+[########################################] | 100% Completed | 925.68 ms
 ```
 
-<div>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th></th>
-      <th>temperature</th>
-      <th>precipitation</th>
-      <th>surface_wind_speed</th>
-    </tr>
-    <tr>
-      <th>station_id</th>
-      <th>time</th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th rowspan="5" valign="top">SZM00006784</th>
-      <th>2021-12-11 00:00:00</th>
-      <td>-4.7</td>
-      <td>0.0</td>
-      <td>5.1</td>
-    </tr>
-    <tr>
-      <th>2021-12-11 01:00:00</th>
-      <td>-4.8</td>
-      <td>0.0</td>
-      <td>5.1</td>
-    </tr>
-    <tr>
-      <th>2021-12-11 02:00:00</th>
-      <td>-4.8</td>
-      <td>0.0</td>
-      <td>3.6</td>
-    </tr>
-    <tr>
-      <th>2021-12-11 03:00:00</th>
-      <td>-4.8</td>
-      <td>0.0</td>
-      <td>3.6</td>
-    </tr>
-    <tr>
-      <th>2021-12-11 04:00:00</th>
-      <td>-4.7</td>
-      <td>0.0</td>
-      <td>3.1</td>
-    </tr>
-  </tbody>
-</table>
-</div>
+| station_id  | time                | temperature | precipitation | surface_wind_speed |
+| ----------- | ------------------- | ----------- | ------------- | ------------------ |
+| SZI0000LSMP | 2021-12-11 00:20:00 | 2.0         | NaN           | 4.6                |
+| SZI0000LSMP | 2021-12-11 00:50:00 | 2.0         | NaN           | 5.1                |
+| SZI0000LSMP | 2021-12-11 01:20:00 | 2.0         | NaN           | 4.6                |
+| SZI0000LSMP | 2021-12-11 01:50:00 | 2.0         | NaN           | 3.6                |
+| SZI0000LSMP | 2021-12-11 02:20:00 | 2.0         | NaN           | 4.6                |
 
 We can also get the station locations using the `stations_gdf` property:
 
 ```python
 import contextily as cx
 
-ax = client.stations_gdf.plot()
+ax = client.stations_gdf.assign(
+    T_mean=ts_df.groupby("station_id")["temperature"].mean()
+).plot(
+    "T_mean",
+    cmap="winter",
+    legend=True,
+    legend_kwds={"label": "$\overline{T} \; [\circ C]$"},
+)
 cx.add_basemap(ax, crs=client.stations_gdf.crs, attribution=False)
 ```
 
-![davos-stations](https://github.com/martibosch/meteora/raw/main/docs/figures/davos-stations.png)
+![vaud-stations-t-mean](https://github.com/martibosch/meteora/raw/main/docs/figures/vaud-stations-t-mean.png)
 
 *(C) OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France*
 
