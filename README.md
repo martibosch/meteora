@@ -22,7 +22,7 @@ Meteora provides a set of provider-specific clients to get observations from met
 ```python
 from meteora.clients import GHCNHourlyClient
 
-region = "Davos, Switzerland"
+region = "Canton de Vaud, Switzerland"
 variables = ["temperature", "precipitation", "surface_wind_speed"]
 start = "12-11-2021"
 end = "12-12-2021"
@@ -39,10 +39,10 @@ ts_df.head()
 | station_id  | time                | temperature | precipitation | surface_wind_speed |
 | ----------- | ------------------- | ----------- | ------------- | ------------------ |
 | SZI0000LSMP | 2021-12-11 00:20:00 | 2.0         | NaN           | 4.6                |
-| SZI0000LSMP | 2021-12-11 00:50:00 | 2.0         | NaN           | 5.1                |
-| SZI0000LSMP | 2021-12-11 01:20:00 | 2.0         | NaN           | 4.6                |
-| SZI0000LSMP | 2021-12-11 01:50:00 | 2.0         | NaN           | 3.6                |
-| SZI0000LSMP | 2021-12-11 02:20:00 | 2.0         | NaN           | 4.6                |
+|             | 2021-12-11 00:50:00 | 2.0         | NaN           | 5.1                |
+|             | 2021-12-11 01:20:00 | 2.0         | NaN           | 4.6                |
+|             | 2021-12-11 01:50:00 | 2.0         | NaN           | 3.6                |
+|             | 2021-12-11 02:20:00 | 2.0         | NaN           | 4.6                |
 
 We can also get the station locations using the `stations_gdf` property:
 
@@ -55,7 +55,7 @@ ax = client.stations_gdf.assign(
     "T_mean",
     cmap="winter",
     legend=True,
-    legend_kwds={"label": "$\overline{T} \; [\circ C]$"},
+    legend_kwds={"label": "$\overline{T} \; [\circ C]$", "shrink": 0.5},
 )
 cx.add_basemap(ax, crs=client.stations_gdf.crs, attribution=False)
 ```
