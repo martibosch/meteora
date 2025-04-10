@@ -1,5 +1,19 @@
 # History
 
+## [v0.5.0] - 2025-04-10
+
+### :sparkles: New Features
+
+- [`5df1c84`](https://github.com/martibosch/meteora/commit/5df1c84f98e276772a9886a0ab6e99f391d36b92) - use yearly ghcnh files with pandas (drop polars/pyarrow) *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`783c027`](https://github.com/martibosch/meteora/commit/783c027c3d9da8b62732bd7d43cde70d05fe4ad2) - dms to decimal conversion (for aemet) *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :wrench: Chores
+
+- [`34d6684`](https://github.com/martibosch/meteora/commit/34d66849e5467f1dc93311b85229d23b57557990) - update project license in pyproject.toml *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.4.1] - 2025-03-27
 
 ### :bug: Bug Fixes
@@ -95,3 +109,4 @@
   \[v0.3.0\]: https://github.com/martibosch/meteora/compare/v0.2.0...v0.3.0
   \[v0.4.0\]: https://github.com/martibosch/meteora/compare/v0.3.0...v0.4.0
   \[v0.4.1\]: https://github.com/martibosch/meteora/compare/v0.4.0...v0.4.1
+  \[v0.5.0\]: https://github.com/martibosch/meteora/compare/v0.4.1...v0.5.0
