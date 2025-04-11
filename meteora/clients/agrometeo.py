@@ -278,12 +278,13 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
         )
         # filter time range, otherwise, for some reason, agrometeo API includes one day
         # after
+        # TODO: dry with Meteocat, perhaps a global approach in the base client
         return ts_df.loc[
             (
                 slice(None),
                 ts_df.index.get_level_values(settings.TIME_COL)
                 .to_series()
-                .between(start, end, inclusive="both"),
+                .between(pd.Timestamp(start), pd.Timestamp(end), inclusive="both"),
             ),
             :,
         ]

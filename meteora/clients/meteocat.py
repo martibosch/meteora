@@ -227,8 +227,19 @@ class MeteocatClient(
             Long form data frame with a time series of measurements (second-level index)
             at each station (first-level index) for each variable (column).
         """
-        return self._get_ts_df(
+        ts_df = self._get_ts_df(
             variables,
             start=start,
             end=end,
         )
+        # filter time range to avoid including a full day after
+        # TODO: dry with Agrometeo, perhaps a global approach in the base client
+        return ts_df.loc[
+            (
+                slice(None),
+                ts_df.index.get_level_values(settings.TIME_COL)
+                .to_series()
+                .between(pd.Timestamp(start), pd.Timestamp(end), inclusive="both"),
+            ),
+            :,
+        ]
