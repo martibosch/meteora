@@ -117,10 +117,44 @@ TIMEOUT = 180
 
 # utils
 ## auth
+def _browser_fetch_token(session, client_secret):
+    auth_url, state = session.authorization_url(AUTHORIZATION_ENDPOINT)
+    # TODO: automate getting the auth code? e.g., stackoverflow.com/questions/76783429
+    webbrowser.open(auth_url)
+    auth_code = input("Enter authorization code: ")
+    _ = session.fetch_token(
+        # self.session.auto_refresh_url,
+        OAUTH2_TOKEN_ENDPOINT,
+        client_secret=client_secret,
+        code=auth_code,
+    )
+
+
 class CachedOAuth2Session(CacheMixin, OAuth2Session):
     """Session with features from both CachedSession and OAuth2Session."""
 
-    pass
+    def get(
+        self, url: str, params: KwargsType, *, headers: KwargsType, **kwargs: KwargsType
+    ):
+        """Send get request, cache only non-empty responses and retry for empty ones."""
+        response = CacheMixin.get(self, url, params, headers=headers, **kwargs)
+        # ACHTUNG: this is Netatmo-specific
+        response_json = response.json()
+        if "body" in response_json:
+            pass
+        elif "error" in response_json:
+            error_code = response_json["error"].get("code", None)
+            if error_code == 1:
+                # Access token is missing
+                _browser_fetch_token(self, self._client_secret)
+                # retry
+                return self.get(url, params, headers=headers, **kwargs)
+            # elif error_code == 26
+            # {'error': {'code': 26, 'message': 'User usage reached'}}
+            else:
+                # TODO: log instead of ValueError?
+                raise ValueError(f"Received {response_json}")
+        return response
 
 
 class NetatmoConnect:
@@ -184,24 +218,17 @@ class NetatmoConnect:
             session = CachedOAuth2Session(
                 token=token, **self.cache_kwargs, **self.oauth_kwargs
             )
+            # TODO: better way to get the client secret in `CachedOAuth2Session`?
+            session._client_secret = client_secret
         else:
             session = OAuth2Session(
                 token=token,
                 **self.oauth_kwargs,
             )
+            if session.token:
+                # session.token is either None or {}
+                _browser_fetch_token(session, client_secret)
         self._session = session
-        if redirect_uri:
-            # TODO: automate getting the auth code?
-            # e.g., see stackoverflow.com/questions/76783429
-            auth_url, state = self._session.authorization_url(AUTHORIZATION_ENDPOINT)
-            webbrowser.open(auth_url)
-            auth_code = input("Enter authorization code: ")
-            _ = self._session.fetch_token(
-                # self.session.auto_refresh_url,
-                OAUTH2_TOKEN_ENDPOINT,
-                client_secret=client_secret,
-                code=auth_code,
-            )
 
 
 ## response/data processing
@@ -427,6 +454,29 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
     def _get_stations_df(self) -> pd.DataFrame:
         # use this to drop the measurements
         # we need the module ids to then query for the observations
+        def _station_records_from_window(window):
+            params = dict(
+                lon_sw=window.bounds[0],
+                lat_sw=window.bounds[1],
+                lon_ne=window.bounds[2],
+                lat_ne=window.bounds[3],
+            )
+            response_json = self._get_content_from_url(
+                self._stations_endpoint,
+                params=params,
+            )
+            if "body" in response_json:
+                return response_json
+            else:
+                # TODO: log returned error in response
+                # e.g., {'error': {'code': 2, 'message': 'Invalid access token'}}
+                # TODO: retry?
+                utils.log(
+                    f"No stations returned for bounding box: {params}",
+                    level=lg.WARNING,
+                )
+                return None
+
         _stations_df = pd.concat(
             [
                 pd.DataFrame(
