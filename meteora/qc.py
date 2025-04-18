@@ -223,21 +223,11 @@ def get_outlier_stations(
 
     low_z = norm.ppf(low_alpha)
     high_z = norm.ppf(high_alpha)
-    # nonnan_df = ~ts_df.isna()
-    # outlier_df = (
-    #     ~ts_df.apply(z_score, axis="columns").apply(
-    #         lambda z: z.between(low_z, high_z, inclusive="neither"),
-    #         axis="columns"
-    #     )
-    #     & nonnan_df
-    # )
-    # prop_outlier_ser = outlier_df.sum() / nonnan_df.sum()
-    prop_outlier_ser = (
-        ~ts_df.apply(lambda x: (x - x.median()) / scale.qn_scale(x)).apply(
-            lambda z: z.between(low_z, high_z, inclusive="neither")
-        )
-    ).sum() / len(ts_df.index)
-
+    prop_outlier_ser = ts_df.sub(ts_df.median(axis="columns"), axis="rows").div(
+        ts_df.apply(scale.qn_scale, axis="columns"), axis="rows"
+    ).apply(lambda z: ~z.between(low_z, high_z, inclusive="neither")).sum() / len(
+        ts_df.index
+    )
     outlier_station_ser = prop_outlier_ser > station_outlier_threshold
     return list(outlier_station_ser[outlier_station_ser].index)
 
