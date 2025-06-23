@@ -11,7 +11,7 @@ repos:
       - id: check-yaml
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.4.1
+    rev: v4.8.3
     hooks:
       - id: commitizen
 
@@ -38,13 +38,13 @@ repos:
         args: ["--in-place"]
 
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.36.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: ["-d relaxed"]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.31.3
+    rev: 0.33.1
     hooks:
       - id: check-github-workflows
 
@@ -54,7 +54,7 @@ repos:
       - id: actionlint
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
 
@@ -67,7 +67,7 @@ repos:
         args: ["--skip=docs/user-guide/*.ipynb,tests/data/*.json"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
+    rev: v0.12.0
     hooks:
       - id: ruff
         args: ["--fix"]
