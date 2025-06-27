@@ -90,10 +90,13 @@ def test_utils():
     assert ts_df.index.names[1] in ts_cube.coords
     # test that the variable columns are in the data_vars
     assert all([var in ts_cube.data_vars for var in ts_df.columns])
-    # test that it has a dimension with geometry and that it is labeled using the
-    # stations id column in ts_df
-    assert settings.STATIONS_ID_COL in ts_cube.xvec.geom_coords
-    assert settings.STATIONS_ID_COL in ts_cube.xvec.geom_coords_indexed
+    # test that it has a dimension with geometry
+    assert "geometry" in ts_cube.xvec.geom_coords
+    assert "geometry" in ts_cube.xvec.geom_coords_indexed
+    # test that there is a coordinate with the station ids and that all its values are
+    # in the stations_gdf index
+    assert settings.STATIONS_ID_COL in ts_cube.coords
+    assert set(ts_cube[settings.STATIONS_ID_COL].values) <= set(stations_gdf.index)
 
     # logger
     def test_logging():

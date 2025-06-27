@@ -122,18 +122,22 @@ def long_to_cube(
     stations_ts_df_id_col = ts_df.index.names[0]
     # convert data frame to xarray
     ts_ds = ts_df.to_xarray()
-    # assign the stations geometries as indexed dimension
+    # get only the station ids and geometries from the stations at `ts_df`
+    stations_gser = stations_gdf.loc[ts_ds[stations_ts_df_id_col].values]["geometry"]
     return (
-        ts_ds.assign_coords(
-            **{
-                stations_ts_df_id_col: stations_gdf.loc[
-                    ts_ds[stations_ts_df_id_col].values
-                ]["geometry"]
+        # assign the stations geometries as indexed dimension for xvec
+        ts_ds.assign_coords({stations_ts_df_id_col: stations_gser.values})
+        .rename({stations_ts_df_id_col: "geometry"})
+        .xvec.set_geom_indexes("geometry", crs=stations_gdf.crs)
+        # add station id labels as dimensionless coordinates associated to the geometry
+        .assign_coords(
+            {
+                stations_ts_df_id_col: (
+                    "geometry",
+                    stations_gser.index,
+                )
             }
         )
-        # .rename({stations_ts_df_id_col: "geometry"})
-        # .xvec.set_geom_indexes("geometry", crs=stations_gdf.crs)
-        .xvec.set_geom_indexes(stations_ts_df_id_col, crs=stations_gdf.crs)
     )
 
 

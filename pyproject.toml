@@ -72,7 +72,7 @@ test = [
 ]
 xvec = [
   "xarray",
-  "xvec"
+  "xvec>=0.5.0" # need at least v0.5.0 for categorical plots with custom cmap
 ]
 
 [project.urls]
