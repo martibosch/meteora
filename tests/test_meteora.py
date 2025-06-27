@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import osmnx as ox
 import pandas as pd
+import pook
 import pytest
-import requests_mock
 import xarray as xr
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
@@ -343,14 +343,71 @@ class OAuth2ClientTest(BaseClientTest):
 class AemetClientTest(APIKeyParamClientTest, unittest.TestCase):
     client_cls = AemetClient
     region = "Catalunya"
-    api_key = os.environ["AEMET_API_KEY"]
-    variable_codes = ["ta", "pres"]
+    api_key = os.getenv("AEMET_API_KEY", "")
+    # ACHTUNG: the test data that we have for AEMET does NOT include the "pressure"
+    # variable even though this is a listed variable in the AEMET API, which probably
+    # means that the test data stations do NOT have that variable - TODO: raise an
+    # informative error if the variable is not available for the specified stations
+    variables = ["temperature", "precipitation"]
+    variable_codes = ["ta", "prec"]
+
+    @pook.on
+    def test_all(self):
+        # test stations, variables and time series in the same method because we need
+        # to mock the same requests
+        with open(path.join(tests_data_dir, "aemet-stations.json")) as src:
+            response_dict = json.load(src)
+            pook.get(
+                f"{AemetClient._stations_endpoint}?api_key={self.api_key}",
+                response_json=response_dict,
+                persist=True,
+            )
+        with open(path.join(tests_data_dir, "aemet-stations-datos.json")) as src:
+            pook.get(response_dict["datos"], response_json=json.load(src), persist=True)
+        super().test_stations()
+
+        with open(path.join(tests_data_dir, "aemet-var-ts.json")) as src:
+            response_dict = json.load(src)
+            pook.get(
+                f"{AemetClient._variables_endpoint}?api_key={self.api_key}",
+                response_json=response_dict,
+                persist=True,
+            )
+        with open(path.join(tests_data_dir, "aemet-var-ts-metadatos.json")) as src:
+            pook.get(
+                response_dict["metadatos"],
+                response_json=json.load(src),
+            )
+
+        with open(path.join(tests_data_dir, "aemet-var-ts-datos.json")) as src:
+            pook.get(
+                response_dict["datos"],
+                response_json=json.load(src),
+            )
+
+        # test stations
+        super().test_stations()
+
+        # test variables
+        # variables_df = self.client.variables_df
+        assert len(self.client.variables_df) >= 1
+
+        # test time series
+        self.client.get_ts_df(self.variables)
+        # ACHTUNG: for some reason (internal to Aemet's API), we get more stations
+        # from the stations endpoint than from the time series endpoint, so the
+        # assertions of the `test_time_series` method would fail
+        # super().test_time_series()
+
+    # the tests are already done in `test_all` so we override it here with empty methods
+    def test_stations(self):
+        pass
+
+    def test_variables(self):
+        pass
 
     def test_time_series(self):
-        self.client.get_ts_df(self.variables)
-        # ACHTUNG: for some reason (internal to Aemet's API), we get more stations from
-        # the stations endpoint than from the data endpoint, so the assertions of the
-        # `test_time_series` method would fail
+        pass
 
 
 class AgrometeoClientTest(BaseClientTest, unittest.TestCase):
@@ -417,28 +474,28 @@ class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
     #         )
     #         super().setUp()
 
+    @pook.on
     def test_stations(self):
-        with requests_mock.Mocker() as m:
-            with open(path.join(tests_data_dir, "netatmo-stations.json")) as src:
-                m.get(
-                    "https://api.netatmo.com/api/getpublicdata?lon_sw=1.1635994&"
-                    "lat_sw=41.48811&lon_ne=1.2635994000000002&lat_ne=41.58811",
-                    json=json.load(src),
-                )
-            super().test_stations()
+        with open(path.join(tests_data_dir, "netatmo-stations.json")) as src:
+            pook.get(
+                "https://api.netatmo.com/api/getpublicdata?lon_sw=1.1635994&"
+                "lat_sw=41.48811&lon_ne=1.2635994000000002&lat_ne=41.58811",
+                response_json=json.load(src),
+            )
+        super().test_stations()
 
+    @pook.on
     def test_time_series(self):
-        with requests_mock.Mocker() as m:
-            with open(path.join(tests_data_dir, "netatmo-time-series.json")) as src:
-                m.get(
-                    "https://api.netatmo.com/api/getmeasure?type=temperature%2Chumidity"
-                    "&scale=30min&limit=1024&optimize=True&real_time=False&"
-                    "device_id=70%3Aee%3A50%3A74%3A2a%3Aba&"
-                    "module_id=02%3A00%3A00%3A73%3Ae0%3A7e&"
-                    "date_begin=1734825600.0&date_end=1734912000.0",
-                    json=json.load(src),
-                )
-            super().test_time_series()
+        with open(path.join(tests_data_dir, "netatmo-time-series.json")) as src:
+            pook.get(
+                "https://api.netatmo.com/api/getmeasure?type=temperature%2Chumidity"
+                "&scale=30min&limit=1024&optimize=True&real_time=False&"
+                "device_id=70%3Aee%3A50%3A74%3A2a%3Aba&"
+                "module_id=02%3A00%3A00%3A73%3Ae0%3A7e&"
+                "date_begin=1734825600.0&date_end=1734912000.0",
+                response_json=json.load(src),
+            )
+        super().test_time_series()
 
 
 class GHCNHourlyClientTest(BaseClientTest, unittest.TestCase):

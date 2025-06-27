@@ -1,0 +1,17 @@
+[ {
+  "latitud" : "415224N",
+  "provincia" : "LLEIDA",
+  "altitud" : "520",
+  "indicativo" : "9724X",
+  "nombre" : "OS DE BALAGUER",
+  "indsinop" : "",
+  "longitud" : "004522E"
+}, {
+  "latitud" : "413326N",
+  "provincia" : "TARRAGONA",
+  "altitud" : "657",
+  "indicativo" : "9726E",
+  "nombre" : "LLORAC",
+  "indsinop" : "",
+  "longitud" : "011834E"
+} ]
