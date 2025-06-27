@@ -31,35 +31,13 @@ STATIONS_LIST_KNOWN_HASH = (
 )
 
 # useful constants
-STATIONS_GDF_ID_COL = "id"
+STATIONS_GDF_ID_COL = "GHCN_ID"
 # ACHTUNG: note that in the time series data frame the station column label is "Station
 # ID" whereas in the stations data frame it is "id".
 TS_DF_STATIONS_ID_COL = "STATION"
 TS_DF_TIME_COL = "DATE"
 VARIABLES_ID_COL = "code"
 VARIABLES_LABEL_COL = "description"
-GHCNH_STATIONS_COLUMNS = [
-    "id",
-    "latitude",
-    "longitude",
-    "elevation",
-    "state",
-    "name",
-    "gsn_flag",
-    "hcn_crn_flag",
-    "wmo_id",
-]
-GHCNH_STATIONS_COLSPECS = [
-    (0, 11),
-    (12, 21),
-    (22, 32),
-    (33, 40),
-    (41, 44),
-    (45, 76),
-    (77, 81),
-    (82, 86),
-    (87, 93),
-]
 
 # see section "IV. List of elements/variable" and appendix A of the GHCNh documentation
 # www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/
@@ -122,8 +100,8 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
 
     # ACHTUNG: many constants are set in `GHCNH_STATIONS_COLUMNS` above
     # geom constants
-    X_COL = "longitude"
-    Y_COL = "latitude"
+    X_COL = "LONGITUDE"
+    Y_COL = "LATITUDE"
     CRS = pyproj.CRS("epsg:4326")
 
     # API endpoints
@@ -171,11 +149,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         except ValueError:
             # sha hash mismatch, probably because of updates in the station list
             stations_filepath = pooch.retrieve(self._stations_endpoint, None)
-        return pd.read_fwf(
-            stations_filepath,
-            colspecs=GHCNH_STATIONS_COLSPECS,
-            names=GHCNH_STATIONS_COLUMNS,
-        )
+        return pd.read_csv(stations_filepath)
 
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
