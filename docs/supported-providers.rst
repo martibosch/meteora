@@ -11,6 +11,7 @@ Agrometeo        |:switzerland:|          |:white_check_mark:| Yes   |:white_che
                  Switzerland
 ASOS 1-min (IEM) |:us:| USA               |:white_check_mark:| Yes   |:white_check_mark:| None
 ASOS/METAR (IEM) |:earth_africa:| Global  |:white_check_mark:| Yes   |:white_check_mark:| None
+AWEL             |:switzerland:| Zurich   |:white_check_mark:| Yes   |:white_check_mark:| None
 GHCNh (NOAA)     |:earth_africa:| Global  |:white_check_mark:| Yes   |:white_check_mark:| None
 Meteocat         Catalonia                |:white_check_mark:| Yes   |:key:| API key (free)
 MetOffice        |:great_britain:| United |:clock1:| Latest 24h only |:key:| API key (free)

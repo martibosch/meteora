@@ -2,6 +2,7 @@
 
 from meteora.clients.aemet import AemetClient
 from meteora.clients.agrometeo import AgrometeoClient
+from meteora.clients.awel import AWELClient
 from meteora.clients.iem import ASOSOneMinIEMClient, METARASOSIEMClient
 from meteora.clients.meteocat import MeteocatClient
 from meteora.clients.metoffice import MetOfficeClient

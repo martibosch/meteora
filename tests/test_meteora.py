@@ -22,6 +22,7 @@ from meteora.clients import (
     AemetClient,
     AgrometeoClient,
     ASOSOneMinIEMClient,
+    AWELClient,
     GHCNHourlyClient,
     METARASOSIEMClient,
     MeteocatClient,
@@ -417,6 +418,16 @@ class AgrometeoClientTest(BaseClientTest, unittest.TestCase):
     client_cls = AgrometeoClient
     region = "Pully, Switzerland"
     variable_codes = [1, 18]
+    start_date = "2022-03-22"
+    end_date = "2022-03-23"
+    ts_df_args = [start_date, end_date]
+
+
+class AWELClientTest(BaseClientTest, unittest.TestCase):
+    client_cls = AWELClient
+    region = "Zürich, Switzerland"
+    variables = ["temperature", "water_vapour"]
+    variable_codes = ["temperature", "humidity"]
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
