@@ -1,5 +1,27 @@
 # History
 
+## [v0.6.0] - 2025-06-30
+
+### :sparkles: New Features
+
+- [`4290ec2`](https://github.com/martibosch/meteora/commit/4290ec2e8a451a38cf764a14b45d0c9e2c4e40e5) - **netatmo**: dont fetch token for cache, better API error handling *(commit by [@martibosch](https://github.com/martibosch))*
+- [`1816790`](https://github.com/martibosch/meteora/commit/18167906c895a5826c2b9a318d2f3948f7bf1da3) - update GHCNh client to new station list csv format *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9390cee`](https://github.com/martibosch/meteora/commit/9390cee6d67050a7a33e18a47ff52d760497dd4e) - add station ids as dimensionless coords in vector data cubes *(commit by [@martibosch](https://github.com/martibosch))*
+- [`89938d5`](https://github.com/martibosch/meteora/commit/89938d544b93b7fb43e8673baa4fc7f2a4f335c9) - added AWEL client *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`3a66ddf`](https://github.com/martibosch/meteora/commit/3a66ddf8390ce0d0764176a29b94ac52d7eff482) - filter ts_df date range using pd.Timestamp (also in Meteocat) *(commit by [@martibosch](https://github.com/martibosch))*
+- [`b938939`](https://github.com/martibosch/meteora/commit/b9389396d615e9799a22de249877a206950ce79f) - correct axis aggregation in outlier detection *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :recycle: Refactors
+
+- [`6f07086`](https://github.com/martibosch/meteora/commit/6f070860bb6615e2d125874e5303e163a731d7ad) - stations_gdf in BaseClient with \_stations_gdf_id_col attr *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :white_check_mark: Tests
+
+- [`69ce3d7`](https://github.com/martibosch/meteora/commit/69ce3d7af592d43565ae25ed84ceb438bd833da8) - mock requests with pook also for AEMET *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.5.0] - 2025-04-10
 
 ### :sparkles: New Features
@@ -110,3 +132,4 @@
   \[v0.4.0\]: https://github.com/martibosch/meteora/compare/v0.3.0...v0.4.0
   \[v0.4.1\]: https://github.com/martibosch/meteora/compare/v0.4.0...v0.4.1
   \[v0.5.0\]: https://github.com/martibosch/meteora/compare/v0.4.1...v0.5.0
+  \[v0.6.0\]: https://github.com/martibosch/meteora/compare/v0.5.0...v0.6.0
