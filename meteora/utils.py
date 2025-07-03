@@ -3,13 +3,12 @@
 Based on osmnx utils and downloader modules.
 """
 
-import datetime
 import datetime as dt
 import logging as lg
 import os
 import sys
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import redirect_stdout
 from pathlib import Path
 from typing import IO, TypeVar
@@ -29,9 +28,7 @@ except ImportError:
 
 RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
 VariablesType = str | int | list[str] | list[int]
-DateTimeType = (
-    datetime.date | datetime.datetime | np.datetime64 | pd.Timestamp | str | int | float
-)
+DateTimeType = dt.date | dt.datetime | np.datetime64 | pd.Timestamp | str | int | float
 CRSType = str | dict | CRS
 KwargsType = Mapping | None
 PathType = str | os.PathLike
@@ -39,6 +36,7 @@ if xr is not None:
     CubeType = xr.Dataset
 else:
     CubeType = TypeVar("CubeType")
+AggFuncType = str | Callable | None
 
 
 ########################################################################################
@@ -57,7 +55,7 @@ def dms_to_decimal(ser: pd.Series) -> pd.Series:
 
 
 ########################################################################################
-# time series utils
+# data structure utils
 def long_to_wide(
     ts_df: pd.DataFrame, *, variables: VariablesType | None = None
 ) -> pd.DataFrame:
@@ -139,6 +137,159 @@ def long_to_cube(
             }
         )
     )
+
+
+########################################################################################
+# meteo utils
+def get_heatwave_periods(
+    ts_df: pd.DataFrame,
+    *,
+    heatwave_t_threshold: float | None = None,
+    heatwave_n_consecutive_days: int | None = None,
+    station_agg_func: AggFuncType = None,
+    inter_station_agg_func: AggFuncType = None,
+) -> list[tuple[dt.date, dt.date]]:
+    """Get the heatwave periods from a time series of temperature measurements.
+
+    A heatwave is defined as a period of at least `heatwave_n_consecutive_days` days
+    with a temperature above `heatwave_t_threshold`.
+
+    Parameters
+    ----------
+    ts_df : pd.DataFrame
+        Data frame with a time series of temperature measurements at each station, in
+        long or wide format.
+    heatwave_t_threshold : float, optional
+        The temperature threshold for a heatwave, in units of `ts_df`. If not provided,
+        the value from `settings.HEATWAVE_T_THRESHOLD` is used.
+    heatwave_n_consecutive_days : int, optional
+        The number of consecutive days above the mean temperature threshold for the
+        corresponding period to be  considered a heatwave. If not provided, the value
+        from `settings.HEATWAVE_N_CONSECUTIVE_DAYS` is used.
+    station_agg_func, inter_station_agg_func : str or function, optional
+        How to respectively aggregate the daily temperature measurements at each station
+        and the aggregated daily temperature measurements across all stations. Must be a
+        string function name or a callable function, which will be passed as the `func`
+        argument of `pandas.core.groupby.DataFrameGroupBy.agg`. If not provided, the
+        respective values from `settings.HEATWAVE_STATION_AGG_FUNC` and
+        `settings.HEATWAVE_INTER_STATION_AGG_FUNC` are used.
+
+    Returns
+    -------
+    heatwave_range_df : pd.DataFrame
+        Data frame with the heatwave start and end dates as columns, indexed by the
+        heatwave event identifier.
+    """
+    # if using a multi-index, assume that it is a long-form data frame so transform it
+    if isinstance(ts_df.index, pd.MultiIndex):
+        # ACHTUNG: we are assuming that there is a single column with the temperature
+        ts_df = long_to_wide(ts_df, variables=ts_df.columns[0])
+
+    # process arguments
+    if heatwave_t_threshold is None:
+        heatwave_t_threshold = settings.HEATWAVE_T_THRESHOLD
+    if heatwave_n_consecutive_days is None:
+        heatwave_n_consecutive_days = settings.HEATWAVE_N_CONSECUTIVE_DAYS
+    if station_agg_func is None:
+        station_agg_func = settings.HEATWAVE_STATION_AGG_FUNC
+    if inter_station_agg_func is None:
+        inter_station_agg_func = settings.HEATWAVE_INTER_STATION_AGG_FUNC
+
+    # find consecutive days above threshold
+    # day_agg_ts_ser = getattr(
+    #     getattr(ts_df.groupby(ts_df.index.date), station_agg_func)(),
+    #     inter_station_agg_func,
+    # )(axis="columns")
+    day_agg_ts_ser = (
+        ts_df.groupby(ts_df.index.date)
+        .agg(station_agg_func)
+        .agg(inter_station_agg_func, axis="columns")
+    )
+    idx = (day_agg_ts_ser >= heatwave_t_threshold).rolling(
+        window=heatwave_n_consecutive_days, center=True
+    ).sum() >= heatwave_n_consecutive_days
+    idx = idx | idx.shift(1) | idx.shift(-1)
+
+    return [
+        (
+            dt.datetime.combine(g.index[0], dt.time.min),
+            dt.datetime.combine(g.index[-1], dt.time.max),
+        )
+        for _, g in idx.groupby(idx.ne(idx.shift()).cumsum())
+        if g.any()
+    ]
+
+
+def get_heatwave_ts_df(
+    ts_df: pd.DataFrame,
+    *,
+    heatwave_periods: list[tuple[dt.date, dt.date]] | None = None,
+    heatwave_t_threshold: float | None = None,
+    heatwave_n_consecutive_days: int | None = None,
+    station_agg_func: str | None = None,
+    inter_station_agg_func: str | None = None,
+) -> pd.DataFrame:
+    """Get a time series data frame for the heatwave periods.
+
+    A heatwave is defined as a period of at least `heatwave_n_consecutive_days` days
+    with a temperature above `heatwave_t_threshold`.
+
+    Parameters
+    ----------
+    ts_df : pd.DataFrame
+        Data frame with a time series of temperature measurements at each station, in
+        long or wide format.
+    heatwave_t_threshold : float, optional
+        The temperature threshold for a heatwave, in units of `ts_df`. If not provided,
+        the value from `settings.HEATWAVE_T_THRESHOLD` is used.
+    heatwave_n_consecutive_days : int, optional
+        The number of consecutive days above the mean temperature threshold for the
+        corresponding period to be  considered a heatwave. If not provided, the value
+        from `settings.HEATWAVE_N_CONSECUTIVE_DAYS` is used.
+    station_agg_func, inter_station_agg_func : str or function, optional
+        How to respectively aggregate the daily temperature measurements at each station
+        and the aggregated daily temperature measurements across all stations. Must be a
+        string function name or a callable function, which will be passed as the `func`
+        argument of `pandas.core.groupby.DataFrameGroupBy.agg`. If not provided, the
+        respective values from `settings.HEATWAVE_STATION_AGG_FUNC` and
+        `settings.HEATWAVE_INTER_STATION_AGG_FUNC` are used.
+
+    Returns
+    -------
+    heatwave_range_df : pd.DataFrame
+        Data frame with the heatwave start and end dates as columns, indexed by the
+        heatwave event identifier.
+    """
+    if heatwave_periods is None:
+        heatwave_periods = get_heatwave_periods(
+            ts_df,
+            heatwave_t_threshold=heatwave_t_threshold,
+            heatwave_n_consecutive_days=heatwave_n_consecutive_days,
+            station_agg_func=station_agg_func,
+            inter_station_agg_func=inter_station_agg_func,
+        )
+    if heatwave_periods:
+        return (
+            pd.concat(
+                ts_df.loc[heatwave_start:heatwave_end].assign(
+                    heatwave=f"{heatwave_start.date()}/{heatwave_end.date()}"
+                )
+                for heatwave_start, heatwave_end in heatwave_periods
+            )
+            .reset_index()
+            .set_index(["heatwave", ts_df.index.name])
+        )
+    else:
+        log(
+            "No heatwave periods found, returning empty data frame.",
+            level=lg.WARNING,
+        )
+        return pd.DataFrame(
+            columns=ts_df.columns,
+            index=pd.MultiIndex(
+                levels=[[], []], codes=[[], []], names=["heatwave", ts_df.index.name]
+            ),
+        )
 
 
 ########################################################################################
