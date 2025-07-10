@@ -1,5 +1,6 @@
 """National Oceanic And Atmospheric Administration (NOAA) client."""
 
+import logging as lg
 from collections.abc import Sequence
 
 import dask
@@ -9,7 +10,7 @@ import pyproj
 import requests
 from dask import diagnostics
 
-from meteora import settings
+from meteora import settings, utils
 from meteora.clients.base import BaseTextClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
@@ -43,7 +44,7 @@ VARIABLES_LABEL_COL = "description"
 # www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly/doc/
 # ghcnh_DOCUMENTATION.pdf
 VARIABLES_DICT = {
-    "temperature": "2 meter (circa) Above Ground Level Air (dry bulb) Temperature (⁰C "
+    "temperature": "2 meter (circa) Above Ground Level Air (dry bulb) Temperature (⁰C n"
     "to tenths)",
     "relative_humidity": "Depending on the source, relative humidity is either measured"
     " directly or calculated from air (dry bulb) temperature and dew point temperature "
@@ -215,9 +216,16 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         with diagnostics.ProgressBar():
             ts_dfs = dask.compute(*tasks)
 
-        return pd.concat(ts_dfs).set_index(
-            [self._ts_df_stations_id_col, self._ts_df_time_col]
-        )
+        try:
+            return pd.concat([ts_df for ts_df in ts_dfs if not ts_df.empty]).set_index(
+                [self._ts_df_stations_id_col, self._ts_df_time_col]
+            )
+        except ValueError:  # no objects to concatenate
+            utils.log(
+                "No data found for the requested period and stations, returning an ",
+                level=lg.WARNING,
+            )
+            return pd.DataFrame(columns=variable_cols)
 
     def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
         # no need to sort the index given the way the data has been requested
