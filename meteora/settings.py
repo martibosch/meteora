@@ -9,6 +9,9 @@ STATIONS_ID_COL = "station_id"
 TIME_COL = "time"
 SJOIN_KWARGS = {"how": "inner", "predicate": "intersects"}
 
+## netatmo
+NETATMO_ON_GET_ERROR = "log"  # or "raise"
+
 # qc
 ATMOSPHERIC_LAPSE_RATE = 0.0065
 OUTLIER_LOW_ALPHA = 0.01

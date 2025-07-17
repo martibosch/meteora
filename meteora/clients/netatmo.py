@@ -149,11 +149,15 @@ class CachedOAuth2Session(CacheMixin, OAuth2Session):
                 _browser_fetch_token(self, self._client_secret)
                 # retry
                 return self.get(url, params, headers=headers, **kwargs)
-            # elif error_code == 26
-            # {'error': {'code': 26, 'message': 'User usage reached'}}
             else:
-                # TODO: log instead of ValueError?
-                raise ValueError(f"Received {response_json}")
+                msg = f"Received {response_json} for {url} with parameters {params}"
+                if settings.NETATMO_ON_GET_ERROR == "log":
+                    utils.log(
+                        msg,
+                        level=lg.WARNING,
+                    )
+                else:  # if settings.NETATMO_ON_GET_ERROR == "raise":
+                    raise ValueError(msg)
         return response
 
 
