@@ -149,6 +149,11 @@ class CachedOAuth2Session(CacheMixin, OAuth2Session):
                 _browser_fetch_token(self, self._client_secret)
                 # retry
                 return self.get(url, params, headers=headers, **kwargs)
+            # elif error_code == 26
+            # {'error': {'code': 26, 'message': 'User usage reached'}}
+            elif error_code == 9:
+                # {'error': {'code': 9, 'message': 'Device not found'}}
+                pass
             else:
                 msg = f"Received {response_json} for {url} with parameters {params}"
                 if settings.NETATMO_ON_GET_ERROR == "log":
@@ -685,6 +690,8 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                             # print("indexerror", response_json)
                             # TODO: manage this error
                             pass
+                        # TODO: except TokenExpiredError
+                        # from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
                         except KeyError:
                             if response_json["error"]["message"] == "Device not found":
                                 # print(response_json["error"])
