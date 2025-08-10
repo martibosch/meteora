@@ -323,7 +323,7 @@ def test_qc():
     # test elevation adjustment
     # generate a random elevation series with stations as index
     station_elevation_ser = pd.Series(
-        np.random.rand(len(ts_df.columns)) * 100, index=ts_df.columns
+        np.random.rand(len(ts_df.columns)) * 100 + 1, index=ts_df.columns
     )
     # adjust with the default lapse rate (0.0065)
     adj_ts_df = qc.elevation_adjustment(ts_df, station_elevation_ser)
