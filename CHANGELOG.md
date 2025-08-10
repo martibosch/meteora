@@ -1,5 +1,18 @@
 # History
 
+## [v0.7.0] - 2025-08-10
+
+### :sparkles: New Features
+
+- [`4c57dc1`](https://github.com/martibosch/meteora/commit/4c57dc1f03fa609f568021b5554bda5ea9a0ac29) - GHCNh nodata for region/period warning - TODO: global approach *(commit by [@martibosch](https://github.com/martibosch))*
+- [`a851310`](https://github.com/martibosch/meteora/commit/a851310089b2befd72d8b340147ed8cec7c416c4) - NETATMO_ON_GET_ERROR setting *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9a5617a`](https://github.com/martibosch/meteora/commit/9a5617a3613de3fdad9fe039b64886490a537435) - heatwave detection *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9525f5e`](https://github.com/martibosch/meteora/commit/9525f5e20345a491e6a6cc01be16cbb1f78f77eb) - catch netatmo error code 9 *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :white_check_mark: Tests
+
+- [`79da984`](https://github.com/martibosch/meteora/commit/79da9845c9df5f5e01e6e67826d0154b1f626bb8) - ensure elev > 1 so that elev adj tests pass *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.6.0] - 2025-06-30
 
 ### :sparkles: New Features
@@ -133,3 +146,4 @@
   \[v0.4.1\]: https://github.com/martibosch/meteora/compare/v0.4.0...v0.4.1
   \[v0.5.0\]: https://github.com/martibosch/meteora/compare/v0.4.1...v0.5.0
   \[v0.6.0\]: https://github.com/martibosch/meteora/compare/v0.5.0...v0.6.0
+  \[v0.7.0\]: https://github.com/martibosch/meteora/compare/v0.6.0...v0.7.0
