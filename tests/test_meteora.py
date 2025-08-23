@@ -26,6 +26,7 @@ from meteora.clients import (
     GHCNHourlyClient,
     METARASOSIEMClient,
     MeteocatClient,
+    MeteoSwissClient,
     MetOfficeClient,
     NetatmoClient,
 )
@@ -581,6 +582,15 @@ class MeteocatClientTest(APIKeyHeaderClientTest, unittest.TestCase):
     region = "Conca de Barberà"
     api_key = os.environ["METEOCAT_API_KEY"]
     variable_codes = [32, 34]
+    start_date = "2022-03-22"
+    end_date = "2022-03-23"
+    ts_df_args = [start_date, end_date]
+
+
+class MeteoSwissClientTest(BaseClientTest, unittest.TestCase):
+    client_cls = MeteoSwissClient
+    region = "Pully, Switzerland"
+    variable_codes = ["tre200s0", "prestas0"]
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
