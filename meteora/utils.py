@@ -208,7 +208,6 @@ def get_heatwave_periods(
     idx = (day_agg_ts_ser >= heatwave_t_threshold).rolling(
         window=heatwave_n_consecutive_days, center=True
     ).sum() >= heatwave_n_consecutive_days
-    idx = idx | idx.shift(1) | idx.shift(-1)
 
     return [
         (
