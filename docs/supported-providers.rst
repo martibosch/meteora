@@ -14,6 +14,8 @@ ASOS/METAR (IEM) |:earth_africa:| Global  |:white_check_mark:| Yes   |:white_che
 AWEL             |:switzerland:| Zurich   |:white_check_mark:| Yes   |:white_check_mark:| None
 GHCNh (NOAA)     |:earth_africa:| Global  |:white_check_mark:| Yes   |:white_check_mark:| None
 Meteocat         Catalonia                |:white_check_mark:| Yes   |:key:| API key (free)
+MeteoSwiss       |:switzerland:|          |:white_check_mark:| Yes   |:white_check_mark:| None
+                 Switzerland
 MetOffice        |:great_britain:| United |:clock1:| Latest 24h only |:key:| API key (free)
                  Kingdom
 Netatmo          |:earth_africa:| Global  |:white_check_mark:| Yes   |:key:| API key (free)
@@ -31,6 +33,11 @@ provides `a REST API <https://opendata.aemet.es/centrodedescargas/inicio>`__ to 
 its data. To use the AEMET API, you first need to have an API key. You can get one by
 registering at `opendata.aemet.es/centrodedescargas/obtencionAPIKey
 <https://opendata.aemet.es/centrodedescargas/obtencionAPIKey>`__.
+
+AWEL
+----
+
+The `Office of Waste, Water, Energy and Air (AWEL) <https://https://www.zh.ch/de/baudirektion/amt-fuer-abfall-wasser-energie-luft.html`__ of the canton of Zurich (Switzerland) operates a network of 50 sensors that measure air temperature and humidity. The measured values `are freely available as open data (link in German) <https://opendata.swiss/en/dataset/lufttemperatur-und-luftfeuchte-lora-sensor-messwerte>`__.
 
 Agrometeo
 ---------
@@ -71,6 +78,11 @@ You can choose the “Accés ciutadà i administració” plan, which is free, o
 “Accés professionals” plan. In both cases, you need to check the box “Dades de la XEMA”
 (automated weather stations) to get access to the data used in Meteora. You will then
 receive by mail the API key.
+
+MeteoSwiss
+----------
+
+`MeteoSwiss <https://www.meteoswiss.admin.ch>`__ is the Federal Office of Meteorology and Climatology of Switzerland. Since May 2025, `"MeteoSwiss is gradually making its data accessible as Open Government Data" <https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html>`__ which `can be downloaded using a REST API <https://opendatadocs.meteoswiss.ch>`__. Meteora provides a client to `retrieve the data from the 160 stations of the SwissMetNet automatic measurement networw <https://opendatadocs.meteoswiss.ch/a-data-groundbased/a1-automatic-weather-stations>`__, which delivers data on temperature, precipitation, wind, sunshine, humidity, radiation and pressure every 10 minutes.
 
 MetOffice
 ---------

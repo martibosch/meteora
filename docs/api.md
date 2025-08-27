@@ -16,6 +16,13 @@
    :members:
 ```
 
+### AWEL
+
+```{eval-rst}
+.. automodule:: meteora.clients.awel
+   :members:
+```
+
 ### Iowa Environmental Mesonet (IEM)
 
 ```{eval-rst}
@@ -27,6 +34,13 @@
 
 ```{eval-rst}
 .. automodule:: meteora.clients.meteocat
+   :members:
+```
+
+### MeteoSwiss
+
+```{eval-rst}
+.. automodule:: meteora.clients.meteoswiss
    :members:
 ```
 
@@ -48,6 +62,20 @@
 
 ```{eval-rst}
 .. automodule:: meteora.clients.noaa
+   :members:
+```
+
+## Quality-control
+
+```{eval-rst}
+.. automodule:: meteora.qc
+   :members:
+```
+
+## Utils
+
+```{eval-rst}
+.. automodule:: meteora.utils
    :members:
 ```
 
@@ -77,12 +105,5 @@
 
 ```{eval-rst}
 .. automodule:: meteora.mixins.variables
-   :members:
-```
-
-## Utils
-
-```{eval-rst}
-.. automodule:: meteora.utils
    :members:
 ```
