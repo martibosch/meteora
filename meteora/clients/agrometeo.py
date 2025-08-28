@@ -81,13 +81,20 @@ VARIABLES_ID_COL = "id"
 # 104                 Density of sporulation
 # 105                           Leaf surface
 ECV_DICT = {
-    "precipitation": 6,  # "Precipitation",
-    "pressure": 18,  # "Real air pressure",
-    "surface_radiation_shortwave": 11,  # "Solar radiation",
-    "surface_wind_speed": 9,  # "Avg. wind speed",
-    "surface_wind_direction": 8,  # "Wind direction",
-    "temperature": 1,  # "Temperature 2m above ground",
-    "water_vapour": 4,  # "Relative humidity",
+    # precipitation
+    "precipitation": 6,  # "Precipitation"
+    # pressure
+    "pressure": 18,  # "Real air pressure"
+    # radiation budget
+    "radiation_shortwave": 11,  # "Solar radiation"
+    # temperature
+    "temperature": 1,  # "Temperature 2m above ground"
+    # water vapour
+    "dew_point": 13,  # "Dew point"
+    "relative_humidity": 4,  # "Relative humidity"
+    # wind
+    "wind_speed": 9,  # "Avg. wind speed"
+    "wind_direction": 8,  # "Wind direction"
 }
 API_DT_FMT = "%Y-%m-%d"
 SCALE = "none"

@@ -553,7 +553,7 @@ class AgrometeoClientTest(BaseClientTest, unittest.TestCase):
 class AWELClientTest(BaseClientTest, unittest.TestCase):
     client_cls = AWELClient
     region = "Zürich, Switzerland"
-    variables = ["temperature", "water_vapour"]
+    variables = ["temperature", "relative_humidity"]
     variable_codes = ["temperature", "humidity"]
     start_date = "2022-03-22"
     end_date = "2022-03-23"
@@ -610,7 +610,7 @@ class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
     client_secret = os.environ["NETATMO_CLIENT_SECRET"]
     token = {"access_token": os.environ["NETATMO_ACCESS_TOKEN"]}
     # token = None
-    variables = ["temperature", "water_vapour"]
+    variables = ["temperature", "relative_humidity"]
     variable_codes = ["temperature", "humidity"]
     start_date = "2024-12-22"
     end_date = "2024-12-23"

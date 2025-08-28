@@ -29,12 +29,18 @@ TS_DF_STATIONS_ID_COL = "i"
 TS_DF_TIME_COL = "$"
 VARIABLES_ID_COL = "name"
 ECV_DICT = {
+    # precipitation
     # "precipitation": "prec",  # NO PRECIPITATION DATA IS PROVIDED
+    # pressure
     "pressure": "P",
-    "surface_wind_speed": "S",
-    "surface_wind_direction": "D",
+    # temperature
     "temperature": "T",
-    "water_vapour": "H",
+    # water vapour
+    "dew_point": "Dp",
+    "relative_humidity": "H",
+    # wind
+    "wind_speed": "S",
+    "wind_direction": "D",
 }
 
 

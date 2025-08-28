@@ -54,11 +54,17 @@ ONEMIN_VARIABLES_DICT = {
     "precip": "1 minute precip",
 }
 ONEMIN_ECV_DICT = {
+    # precipitation
     "precipitation": "precip",
+    # pressure
     "pressure": "pres1",
-    "surface_wind_speed": "sknt",
-    "surface_wind_direction": "drct",
+    # temperature
     "temperature": "tmpf",
+    # water vapour
+    "dew_point": "dwpf",
+    # wind
+    "wind_speed": "sknt",
+    "wind_direction": "drct",
 }
 ONEMIN_TS_DF_TIME_COL = "valid(UTC)"
 
@@ -109,12 +115,18 @@ METAR_VARIABLES_DICT = {
     "p01i": "1 minute precip",
 }
 METAR_ECV_DICT = {
+    # precipitation
     "precipitation": "p01i",
+    # pressure
     "pressure": "mslp",
-    "surface_wind_speed": "sknt",
-    "surface_wind_direction": "drct",
+    # temperature
     "temperature": "tmpf",
-    "water_vapor": "relh",
+    # water vapour
+    "dew_point": "dwpf",
+    "relative_humidity": "relh",
+    # wind
+    "wind_speed": "sknt",
+    "wind_direction": "drct",
 }
 METAR_TS_DF_TIME_COL = "valid"
 

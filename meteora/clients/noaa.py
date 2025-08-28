@@ -64,12 +64,17 @@ VARIABLES_DICT = {
     "given for calm winds. (whole degrees)",
 }
 ECV_DICT = {
+    # precipitation
     "preciptation": "precipitation",
+    # pressure
     "pressure": "station_level_pressure",
-    "surface_wind_speed": "wind_speed",
-    "surface_wind_direction": "wind_direction",
+    # temperature
     "temperature": "temperature",
-    "water_vapour": "relative_humidity",
+    # water vapour
+    "relative_humidity": "relative_humidity",
+    # wind
+    "wind_speed": "wind_speed",
+    "wind_direction": "wind_direction",
 }
 
 

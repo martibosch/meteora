@@ -29,12 +29,18 @@ TS_DF_STATIONS_ID_COL = "idema"
 TS_DF_TIME_COL = "fint"
 VARIABLES_ID_COL = "id"
 ECV_DICT = {
+    # precipitation
     "precipitation": "prec",
+    # pressure
     "pressure": "pres",
-    "surface_wind_speed": "vv",
-    "surface_wind_direction": "dv",
+    # temperature
     "temperature": "ta",
-    "water_vapour": "hr",
+    # wind speed and direction
+    "wind_speed": "vv",
+    "wind_direction": "dv",
+    # water vapour
+    "dew_point": "tpr",
+    "relative_humidity": "hr",
 }
 
 

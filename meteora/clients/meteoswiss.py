@@ -42,20 +42,32 @@ TS_DF_STATIONS_ID_COL = "station_abbr"
 TS_DF_TIME_COL = "reference_timestamp"
 VARIABLES_ID_COL = "parameter_shortname"
 ECV_DICT = {
-    # "Precipitation (ten minutes total) [mm]",
+    # precipitation
+    # "Precipitation (ten minutes total) [mm]"
     "precipitation": "rre150z0",
-    # "Atmospheric pressure at barometric altitude (current value) [hPa]",
+    # pressure
+    # "Atmospheric pressure at barometric altitude (current value) [hPa]"
     "pressure": "prestas0",
-    # "Global radiation (ten minutes mean) [W/m2]",
-    "surface_radiation_shortwave": "gre000z0",
-    # "Wind speed scalar (ten minutes mean) [m/s]",
-    "surface_wind_speed": "fkl010z0",
-    # "Wind direction (ten minutes mean) [degrees]",
-    "surface_wind_direction": "dkl010z0",
-    # "Air temperature 2 m above ground (current value) [°C]",
+    # radiation budget
+    # "Global radiation (ten minutes mean) [W/m2]"
+    "radiation_shortwave": "gre000z0",
+    # "Longwave incoming radiation; ten minute mean [W/m2]"
+    "radiation_longwave_incoming": "oli000z0",
+    # "Longwave outgoing radiation; ten minute mean [W/m2]"
+    "radiation_longwave_outgoing": "olo000z0",
+    # temperature
+    # "Air temperature 2 m above ground (current value) [°C]"
     "temperature": "tre200s0",
-    # "Relative air humidity 2 m above ground (current value) [%]",
-    "water_vapour": "ure200s0",
+    # water vapour
+    # "Dew point 2 m above ground [°C]"
+    "dew_point": "tde200h0",
+    # "Relative air humidity 2 m above ground (current value) [%]"
+    "relative_humidity": "ure200s0",
+    # wind
+    # "Wind speed scalar (ten minutes mean) [m/s]",
+    "wind_speed": "fkl010z0",
+    # "Wind direction (ten minutes mean) [degrees]",
+    "wind_direction": "dkl010z0",
 }
 
 

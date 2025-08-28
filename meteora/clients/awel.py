@@ -41,7 +41,7 @@ VARIABLES_DICT = {
 }
 ECV_DICT = {
     "temperature": "temperature",
-    "water_vapour": "humidity",
+    "relative_humidity": "humidity",
 }
 
 
