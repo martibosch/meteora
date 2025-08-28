@@ -1,5 +1,16 @@
 # History
 
+## [v0.8.0] - 2025-08-28
+
+### :sparkles: New Features
+
+- [`b6fc8eb`](https://github.com/martibosch/meteora/commit/b6fc8ebfbc7cc43093d5e16d7739a10ba2d09647) - add MeteoSwiss client *(commit by [@martibosch](https://github.com/martibosch))*
+- [`ef006c5`](https://github.com/martibosch/meteora/commit/ef006c5e1b32b6dc1a9c776aec7cbf7331372638) - update/expand ECV dicts *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`52b874d`](https://github.com/martibosch/meteora/commit/52b874d12d12914b0528752779e87d9580addf2b) - do NOT add prev/next day in heatwaves *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.7.0] - 2025-08-10
 
 ### :sparkles: New Features
@@ -147,3 +158,4 @@
   \[v0.5.0\]: https://github.com/martibosch/meteora/compare/v0.4.1...v0.5.0
   \[v0.6.0\]: https://github.com/martibosch/meteora/compare/v0.5.0...v0.6.0
   \[v0.7.0\]: https://github.com/martibosch/meteora/compare/v0.6.0...v0.7.0
+  \[v0.8.0\]: https://github.com/martibosch/meteora/compare/v0.7.0...v0.8.0
