@@ -1,6 +1,6 @@
 """Office for Waste, Water, Energy and Air (AWEL) of the canton of Zurich."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import date as dt_date
 
 import pandas as pd
@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
-from meteora.mixins import VariablesHardcodedMixin
+from meteora.mixins import MultiRequestTSMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
@@ -227,3 +227,46 @@ class AWELClient(VariablesHardcodedMixin, BaseTextClient):
             at each station (first-level index) for each variable (column).
         """
         return self._get_ts_df(variables, start, end)
+
+
+class _AWELClient(MultiRequestTSMixin, AWELClient):
+    def _get_ts_request_args_iter(self, ts_params: Mapping) -> list:
+        variable_cols = list(ts_params["variable_ids"])
+        cols_to_keep = (
+            [self._ts_df_stations_id_col]
+            + [self._ts_df_time_col, SENSOR_HEIGHT_COL]
+            + variable_cols
+        )
+        start = ts_params["start"]
+        end = ts_params["end"]
+        date_range = pd.date_range(start=start, end=end, freq="MS")
+        if len(date_range) == 0:
+            date_range = [start]
+        return [(date, cols_to_keep) for date in date_range]
+
+    def _request_to_ts_df(
+        self, date: pd.Timestamp, cols_to_keep: Sequence
+    ) -> pd.DataFrame:
+        try:
+            month_ts_filepath = pooch.retrieve(
+                self._ts_endpoint.format(year=date.year, month=date.month),
+                None,
+                **self.pooch_kwargs,
+            )
+        except requests.HTTPError:
+            # TODO: log?
+            return pd.DataFrame()
+        ts_df = pd.read_csv(month_ts_filepath, sep=";", usecols=cols_to_keep)
+        # filter sensor height
+        ts_df = ts_df[ts_df[SENSOR_HEIGHT_COL] == self._sensor_height]
+        # filter stations
+        ts_df = ts_df[ts_df[self._ts_df_stations_id_col].isin(self.stations_gdf.index)]
+        # drop (station, time) duplicates (TODO: use first and reset_index?)
+        ts_df = ts_df.groupby([self._ts_df_stations_id_col, self._ts_df_time_col]).head(
+            1
+        )
+        # ensure datetime
+        ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
+        # # filter time range
+        # return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
+        return ts_df

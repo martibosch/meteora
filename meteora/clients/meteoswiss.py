@@ -1,14 +1,18 @@
 """MeteoSwiss client."""
 
 import datetime as dt
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 import pandas as pd
 import pyproj
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
-from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.mixins import (
+    MultiRequestTSMixin,
+    StationsEndpointMixin,
+    VariablesEndpointMixin,
+)
 from meteora.utils import CRSType, DateTimeType, KwargsType, RegionType, VariablesType
 
 BASE_URL = "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"
@@ -159,6 +163,7 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
 
         # TODO: better approach to ensure datetime types in `ts_params`
         start = pd.Timestamp(ts_params["start"])
+        end = pd.Timestamp(ts_params["end"])
         if start.date() > this_year_start:
             # the first requested data is after the start of the current year, so we
             # only need to query the data from the "recent" file
@@ -170,8 +175,6 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
                     )
                 ]
         else:
-            # TODO: better approach to ensure datetime types in `ts_params`
-            end = pd.Timestamp(ts_params["end"])
             # we need to query the data from at least one "historical" file (there is a
             # "historical" file for each decade, e.g., 1980-1989, 1990-1999, etc.)
             decades = []
@@ -268,3 +271,90 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
             start=start,
             end=end,
         )
+
+
+class _MeteoSwissClient(MultiRequestTSMixin, MeteoSwissClient):
+    def _get_ts_request_list(self, ts_params: Mapping) -> Iterable:
+        # the API only allows returning data for a given station so we have to iterate
+        # over the list of stations
+        # determine whether we need to access the "historical" or "recent" URL, see
+        # https://opendatadocs.meteoswiss.ch/general/download#update-frequency
+        this_year_start = dt.date(dt.datetime.now().year, 1, 1)
+
+        # TODO: better approach to ensure datetime types in `ts_params`
+        start = pd.Timestamp(ts_params["start"])
+        if start.date() > this_year_start:
+            # the first requested data is after the start of the current year, so we
+            # only need to query the data from the "recent" file
+            def _get_station_urls(station_id):
+                return [
+                    self._ts_endpoint.format(
+                        station_id=station_id,
+                        update_freq="recent",
+                    )
+                ]
+        else:
+            # TODO: better approach to ensure datetime types in `ts_params`
+            end = pd.Timestamp(ts_params["end"])
+            # we need to query the data from at least one "historical" file (there is a
+            # "historical" file for each decade, e.g., 1980-1989, 1990-1999, etc.)
+            decades = []
+            for year in range((start.year // 10) * 10, (end.year // 10) * 10 + 1, 10):
+                decades.append(f"{year}-{year + 9}")
+
+            def _get_station_decades_urls(station_id):
+                return [
+                    self._ts_endpoint.format(
+                        station_id=station_id,
+                        update_freq=f"historical_{decade}",
+                    )
+                    for decade in decades
+                ]
+
+            if end.date() < this_year_start:
+                # the last requested data is before the start of the current year, so we
+                # only need to query the data from the "historical" file of each decade
+                def _get_station_urls(station_id):
+                    return _get_station_decades_urls(station_id)
+            else:
+                # assume that we need to query both the "historical" and "recent" files
+                def _get_station_urls(station_id):
+                    return _get_station_decades_urls(station_id) + [
+                        self._ts_endpoint.format(
+                            station_id=station_id,
+                            update_freq="recent",
+                        )
+                    ]
+
+            return [
+                station_url
+                for station_id in self.stations_gdf.index.str.lower()
+                for station_url in _get_station_urls(station_id)
+            ]
+
+        def _request_to_ts_df(self, station_url: str) -> pd.DataFrame:
+            # read file into a pandas data frame
+            ts_df = self._ts_df_from_content(self._get_content_from_url(station_url))
+            # set time and station id columns as index
+            ts_df = ts_df.assign(
+                **{
+                    self._ts_df_time_col: pd.to_datetime(
+                        ts_df[self._ts_df_time_col], format="%d.%m.%Y %H:%M"
+                    )
+                }
+            ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
+            # filter time range
+            # TODO: dry with Agrometeo and Meteocat
+            time_ser = ts_df.index.get_level_values(self._ts_df_time_col).to_series()
+            tz = time_ser.dt.tz
+            return ts_df.loc[
+                (
+                    slice(None),
+                    time_ser.between(
+                        pd.Timestamp(start, tz=tz),
+                        pd.Timestamp(end, tz=tz),
+                        inclusive="both",
+                    ),
+                ),
+                :,
+            ]
