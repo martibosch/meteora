@@ -78,7 +78,7 @@ Repository = "https://github.com/martibosch/meteora"
 
 [tool.codespell]
 ignore-words-list = "convencional,pres,ser,temperatur"
-skip = "CHANGELOG.md"
+skip = "CHANGELOG.md,pixi.lock"
 
 [tool.commitizen]
 major_version_zero = true
