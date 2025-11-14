@@ -27,7 +27,6 @@ from meteora.clients import (
     METARASOSIEMClient,
     MeteocatClient,
     MeteoSwissClient,
-    MetOfficeClient,
     NetatmoClient,
 )
 from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
@@ -594,13 +593,6 @@ class MeteoSwissClientTest(BaseClientTest, unittest.TestCase):
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
-
-
-class MetOfficeClientTest(APIKeyParamClientTest, unittest.TestCase):
-    client_cls = MetOfficeClient
-    region = "Edinburgh"
-    api_key = os.environ["METOFFICE_API_KEY"]
-    variable_codes = ["T", "P"]
 
 
 class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
