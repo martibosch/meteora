@@ -1,7 +1,7 @@
 """National Oceanic And Atmospheric Administration (NOAA) client."""
 
 import logging as lg
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 import dask
 import pandas as pd
@@ -9,11 +9,16 @@ import pooch
 import pyproj
 import requests
 from dask import diagnostics
+from pyregeon import RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseTextClient
-from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.mixins import (
+    MultiRequestTSMixin,
+    StationsEndpointMixin,
+    VariablesHardcodedMixin,
+)
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
 logger = pooch.get_logger()
@@ -262,3 +267,21 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
             at each station (first-level index) for each variable (column).
         """
         return self._get_ts_df(variables, start, end)
+
+
+class _MeteoSwissClient(MultiRequestTSMixin, GHCNHourlyClient):
+    def _get_ts_request_list(self, ts_params: Mapping) -> Iterable:
+        # we override this method because we need a separate request for each station
+        # variable_cols = list(ts_params["variable_ids"])
+        # cols_to_keep = (
+        #     [self._ts_df_stations_id_col] + [self._ts_df_time_col] + variable_cols
+        # )
+        start = ts_params["start"]
+        end = ts_params["end"]
+        requested_years = set(range(start.year, end.year + 1))
+
+        return [
+            (station_id, year)
+            for station_id in self.stations_gdf.index
+            for year in requested_years
+        ]

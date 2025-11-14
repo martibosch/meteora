@@ -1,8 +1,6 @@
 [build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-  "setuptools>=61.0"
-]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 authors = [
@@ -21,6 +19,7 @@ dependencies = [
   "geopandas>=1.0.0",
   "matplotlib",
   "pooch",
+  "pyregeon",
   "requests",
   "requests-cache",
   "requests-oauthlib",
@@ -44,14 +43,12 @@ dev = [
   "pip",
   "pre-commit",
   "toml",
-  "tox",
   "twine"
 ]
 doc = [
   "myst-parser",
   "nbsphinx",
   "pydata-sphinx-theme",
-  "setuptools",
   "sphinx",
   "sphinxemoji"
 ]
@@ -68,6 +65,7 @@ test = [
   "pytest",
   "pytest-cov",
   "python-dotenv[cli]",
+  "requests-mock",
   "ruff"
 ]
 xvec = [
@@ -80,7 +78,7 @@ Repository = "https://github.com/martibosch/meteora"
 
 [tool.codespell]
 ignore-words-list = "convencional,pres,ser,temperatur"
-skip = "CHANGELOG.md"
+skip = "CHANGELOG.md,pixi.lock"
 
 [tool.commitizen]
 major_version_zero = true
@@ -107,6 +105,39 @@ omit = [
 source = [
   "meteora"
 ]
+
+[tool.pixi.dependencies]
+python = ">=3.10,<3.14"
+gdal = ">=3"
+ipykernel = ">=7.1.0,<8"
+
+[tool.pixi.environments]
+default = {features = ["ox"], solve-group = "default"}
+cx = {features = ["cx"], solve-group = "default"}
+dev = {features = ["dev"], solve-group = "default"}
+doc = {features = ["doc"], solve-group = "default"}
+ox = {features = ["ox"], solve-group = "default"}
+qc = {features = ["qc"], solve-group = "default"}
+test = {features = ["ox", "qc", "test", "xvec"], solve-group = "default"}
+xvec = {features = ["xvec"], solve-group = "default"}
+
+[tool.pixi.feature.dev.tasks]
+build = "python -m build"
+check = {cmd = "twine check dist/*", depends-on = ["build"]}
+
+[tool.pixi.feature.doc.tasks]
+build-doc = "sphinx-build docs docs/_build"
+
+[tool.pixi.feature.test.tasks]
+# use dotenv to set api keys as env. vars
+test = "dotenv -f .keys.env run pytest -s --cov=meteora --cov-report=xml tests"
+
+[tool.pixi.pypi-dependencies]
+meteora = {path = ".", editable = true}
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
 [tool.ruff]
 line-length = 88
@@ -144,61 +175,6 @@ include = [
   "meteora.*"
 ]
 
-[tool.tox]
-env_list = [
-  "3.10",
-  "3.11",
-  "3.12",
-  "3.13",
-  "build"
-]
-requires = [
-  "tox>=4.19"
-]
-
-[tool.tox.env.build]
-commands = [
-  ["python", "-m", "build"],
-  ["twine", "check", "dist/*"]
-]
-extras = [
-  "dev",
-  "test"
-]
-whitelist_externals = [
-  "build",
-  "sphinx-build",
-  "twine"
-]
-
-[tool.tox.env_run_base]
-commands = [
-  ["dotenv", "-f", ".keys.env", "run", "pytest", "-s", "--cov=meteora", "--cov-report=xml", "tests", "{posargs}"]
-]
-conda_deps = [
-  "gdal>=3.3"
-]
-extras = [
-  "ox",
-  "qc",
-  "test",
-  "xvec"
-]
-whitelist_externals = [
-  "pytest"
-]
-
-[tool.tox.gh.python]
-"3.10" = [
-  "3.10"
-]
-"3.11" = [
-  "3.11"
-]
-"3.12" = [
-  "3.12"
-]
-"3.13" = [
-  "3.13",
-  "build"
-]
+[tool.uv.build-backend]
+module-name = "meteora"
+module-root = ""

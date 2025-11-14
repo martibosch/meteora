@@ -4,15 +4,17 @@ from collections.abc import Mapping
 
 import pandas as pd
 import pyproj
+from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseJSONClient
 from meteora.mixins import (
     APIKeyHeaderMixin,
+    MultiRequestTSMixin,
     StationsEndpointMixin,
     VariablesEndpointMixin,
 )
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # API endpoints
 BASE_URL = "https://api.meteo.cat/xema/v1"
@@ -253,3 +255,80 @@ class MeteocatClient(
             ),
             :,
         ]
+
+
+class _MeteocatClient(MultiRequestTSMixin, MeteocatClient):
+    def _get_ts_request_args_iter(self, ts_params: Mapping) -> list:
+        return [
+            (variable_id, date)
+            for variable_id in ts_params["variable_ids"]
+            for date in pd.date_range(
+                start=ts_params["start"], end=ts_params["end"], freq="D"
+            )
+        ]
+
+    def _request_to_ts_df(self, variable_id: int, date: pd.Timestamp) -> pd.DataFrame:
+        response_content = self._get_content_from_url(
+            f"{self._ts_endpoint}/{variable_id}/"
+            f"{date.year}/{date.month:02}/{date.day:02}"
+        )
+        # process response
+        response_df = pd.json_normalize(response_content)
+        # filter stations
+        response_df = response_df[response_df["codi"].isin(self.stations_gdf.index)]
+        # extract json observed data, i.e.,  the "variables" column into a list of data
+        # frames and concatenate them into a single data frame
+        ts_df = pd.concat(
+            response_df.apply(
+                lambda row: pd.DataFrame(row["variables"][0]["lectures"]), axis=1
+            ).tolist()
+        )
+        # add the station id column matching the observations
+        ts_df[self._ts_df_stations_id_col] = (
+            response_df[self._ts_df_stations_id_col]
+            .repeat(
+                response_df.apply(
+                    lambda row: len(row["variables"][0]["lectures"]), axis=1
+                )
+            )
+            .values
+        )
+        # TODO: values_col as class-level constant?
+        values_col = "valor"
+        # # convert to a wide data frame
+        # ts_df = long_df.pivot_table(
+        #     index=self._time_col, columns=self._stations_id_col, values=values_col
+        # )
+        # # set the index name
+        # ts_df.index.name = settings.TIME_NAME
+        # # convert the index from string to datetime
+        # ts_df.index = pd.to_datetime(ts_df.index)
+        # ACHTUNG: do not sort the index here
+        # note that we are renaming a series
+        return (
+            ts_df.assign(
+                **{self._ts_df_time_col: pd.to_datetime(ts_df[self._ts_df_time_col])}
+            )
+            .set_index([self._ts_df_stations_id_col, self._ts_df_time_col])[values_col]
+            .rename(variable_id)
+        )
+
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        # get iterable of arguments for `self._request_to_ts_df`
+        request_args_iter = self._get_ts_request_args_iter(ts_params)
+        # perform requests and assemble responses into a time series data frame
+        ts_ser_list = [
+            self._request_to_ts_df(*request_args) for request_args in request_args_iter
+        ]
+        # concat each series with the same name as columns
+        ts_ser_dict = {}
+        for ts_ser in ts_ser_list:
+            variable_id = ts_ser.name
+            ts_ser_dict[variable_id] = ts_ser_dict.get(variable_id, []) + [ts_ser]
+        return pd.concat(
+            [
+                pd.concat([ts_ser for ts_ser in var_ts_ser_list], axis="index")
+                for var_ts_ser_list in ts_ser_dict.values()
+            ],
+            axis="columns",
+        )
