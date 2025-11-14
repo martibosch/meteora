@@ -16,8 +16,6 @@ GHCNh (NOAA)     |:earth_africa:| Global  |:white_check_mark:| Yes   |:white_che
 Meteocat         Catalonia                |:white_check_mark:| Yes   |:key:| API key (free)
 MeteoSwiss       |:switzerland:|          |:white_check_mark:| Yes   |:white_check_mark:| None
                  Switzerland
-MetOffice        |:great_britain:| United |:clock1:| Latest 24h only |:key:| API key (free)
-                 Kingdom
 Netatmo          |:earth_africa:| Global  |:white_check_mark:| Yes   |:key:| API key (free)
 ================ ======================== ========================== =========================
 
@@ -84,19 +82,6 @@ MeteoSwiss
 
 `MeteoSwiss <https://www.meteoswiss.admin.ch>`__ is the Federal Office of Meteorology and Climatology of Switzerland. Since May 2025, `"MeteoSwiss is gradually making its data accessible as Open Government Data" <https://www.meteoswiss.admin.ch/services-and-publications/service/open-data.html>`__ which `can be downloaded using a REST API <https://opendatadocs.meteoswiss.ch>`__. Meteora provides a client to `retrieve the data from the 160 stations of the SwissMetNet automatic measurement networw <https://opendatadocs.meteoswiss.ch/a-data-groundbased/a1-automatic-weather-stations>`__, which delivers data on temperature, precipitation, wind, sunshine, humidity, radiation and pressure every 10 minutes.
 
-MetOffice
----------
-
-`MetOffice <https://www.metoffice.gov.uk>`__ is the United Kingdom (UK) national weather
-service. It provides a `DataPoint API
-<https://www.metoffice.gov.uk/services/data/datapoint>`__ with access to a range of data
-including observations, forecasts, climate averages, and weather warnings. The API is
-free to use but `the free tier is limited to 5000 requests per day, and 100 requests per
-minute
-<https://www.metoffice.gov.uk/services/data/datapoint/terms-and-conditions---datapoint>`__.
-The `“Getting Started” guide
-<https://www.metoffice.gov.uk/services/data/datapoint/getting-started>`__ describes the
-steps required to get an API key.
 
 Netatmo
 -------
