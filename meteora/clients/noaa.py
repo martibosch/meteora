@@ -9,6 +9,7 @@ import pooch
 import pyproj
 import requests
 from dask import diagnostics
+from pyregeon import RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseTextClient
@@ -17,7 +18,7 @@ from meteora.mixins import (
     StationsEndpointMixin,
     VariablesHardcodedMixin,
 )
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
 logger = pooch.get_logger()

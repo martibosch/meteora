@@ -7,11 +7,12 @@ from collections.abc import Sequence
 import geopandas as gpd
 import pandas as pd
 import pyproj
+from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # API endpoints
 BASE_URL = "https://mesonet.agron.iastate.edu"
