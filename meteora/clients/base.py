@@ -12,9 +12,9 @@ import pandas as pd
 import pyproj
 import requests
 import requests_cache
+from pyregeon import RegionMixin
 
 from meteora import settings, utils
-from meteora.mixins import RegionMixin
 from meteora.utils import KwargsType, VariablesType
 
 __all__ = [

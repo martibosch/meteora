@@ -8,15 +8,14 @@ import logging as lg
 import os
 import sys
 import unicodedata
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from contextlib import redirect_stdout
 from pathlib import Path
-from typing import IO, TypeVar
+from typing import TypeVar
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from pyproj.crs import CRS
 
 from meteora import settings
 
@@ -26,10 +25,8 @@ try:
 except ImportError:
     xr = None
 
-RegionType = str | Sequence | gpd.GeoSeries | gpd.GeoDataFrame | os.PathLike | IO
 VariablesType = str | int | list[str] | list[int]
 DateTimeType = dt.date | dt.datetime | np.datetime64 | pd.Timestamp | str | int | float
-CRSType = str | dict | CRS
 KwargsType = Mapping | None
 PathType = str | os.PathLike
 if xr is not None:
