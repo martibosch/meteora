@@ -19,6 +19,7 @@ dependencies = [
   "geopandas>=1.0.0",
   "matplotlib",
   "pooch",
+  "pyregeon",
   "requests",
   "requests-cache",
   "requests-oauthlib",
@@ -128,12 +129,8 @@ check = {cmd = "twine check dist/*", depends-on = ["build"]}
 build-doc = "sphinx-build docs docs/_build"
 
 [tool.pixi.feature.test.tasks]
-test = {cmd = [
-  # use dotenv to set api keys as env. vars
-  "dotenv -f .keys.env run",
-  # run pytest with posargs
-  "pytest -s --cov=meteora --cov-report=xml tests {posargs}"
-]}
+# use dotenv to set api keys as env. vars
+test = "dotenv -f .keys.env run pytest -s --cov=meteora --cov-report=xml tests"
 
 [tool.pixi.pypi-dependencies]
 meteora = {path = ".", editable = true}
