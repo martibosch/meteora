@@ -8,6 +8,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pyproj
+from pyregeon import RegionType
 from requests_cache import CacheMixin
 from requests_oauthlib import OAuth2Session
 from shapely import geometry
@@ -16,7 +17,7 @@ from tqdm import tqdm
 from meteora import settings, utils
 from meteora.clients.base import BaseJSONClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # to show a progress bar in pandas/geopandas apply
 tqdm.pandas()

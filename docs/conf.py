@@ -2,13 +2,12 @@
 
 import os
 import sys
-
-import pkg_resources
+from importlib import metadata
 
 project = "Meteora"
 author = "Martí Bosch"
 
-release = pkg_resources.get_distribution("meteora").version
+release = metadata.version("meteora")
 version = ".".join(release.split(".")[:2])
 
 extensions = [

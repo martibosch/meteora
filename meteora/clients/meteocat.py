@@ -4,6 +4,7 @@ from collections.abc import Mapping
 
 import pandas as pd
 import pyproj
+from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseJSONClient
@@ -12,7 +13,7 @@ from meteora.mixins import (
     StationsEndpointMixin,
     VariablesEndpointMixin,
 )
-from meteora.utils import DateTimeType, KwargsType, RegionType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # API endpoints
 BASE_URL = "https://api.meteo.cat/xema/v1"

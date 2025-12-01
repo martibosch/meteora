@@ -3,14 +3,12 @@
 import json
 import logging as lg
 import os
-import tempfile
 import unittest
 from os import path
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
-import osmnx as ox
 import pandas as pd
 import pook
 import pytest
@@ -27,7 +25,6 @@ from meteora.clients import (
     METARASOSIEMClient,
     MeteocatClient,
     MeteoSwissClient,
-    MetOfficeClient,
     NetatmoClient,
 )
 from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
@@ -242,26 +239,6 @@ class TestUtils(unittest.TestCase):
         utils.ts(style="date")
         utils.ts(style="datetime")
         utils.ts(style="time")
-
-
-def test_region_arg():
-    # we will use Agrometeo (since it does not require API keys) to test the region arg
-    nominatim_query = "Pully, Switzerland"
-    gdf = ox.geocode_to_gdf(nominatim_query)
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        filepath = path.join(tmp_dir, "foo.gpkg")
-        gdf.to_file(filepath)
-        for region in [nominatim_query, gdf, filepath]:
-            client = AgrometeoClient(region=region)
-            stations_gdf = client.stations_gdf
-            assert len(stations_gdf) >= 1
-    # now test naive geometries without providing CRS, so first ensure that we have them
-    # in the same CRS as the client
-    gdf = gdf.to_crs(client.CRS)
-    for region in [gdf.total_bounds, gdf["geometry"].iloc[0]]:
-        client = AgrometeoClient(region=region)
-        stations_gdf = client.stations_gdf
-        assert len(stations_gdf) >= 1
 
 
 def test_qc():
@@ -594,13 +571,6 @@ class MeteoSwissClientTest(BaseClientTest, unittest.TestCase):
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
-
-
-class MetOfficeClientTest(APIKeyParamClientTest, unittest.TestCase):
-    client_cls = MetOfficeClient
-    region = "Edinburgh"
-    api_key = os.environ["METOFFICE_API_KEY"]
-    variable_codes = ["T", "P"]
 
 
 class NetatmoClientTest(OAuth2ClientTest, unittest.TestCase):
