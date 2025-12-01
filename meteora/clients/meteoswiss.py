@@ -160,6 +160,7 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
 
         # TODO: better approach to ensure datetime types in `ts_params`
         start = pd.Timestamp(ts_params["start"])
+        end = pd.Timestamp(ts_params["end"])
         if start.date() > this_year_start:
             # the first requested data is after the start of the current year, so we
             # only need to query the data from the "recent" file
@@ -171,8 +172,6 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
                     )
                 ]
         else:
-            # TODO: better approach to ensure datetime types in `ts_params`
-            end = pd.Timestamp(ts_params["end"])
             # we need to query the data from at least one "historical" file (there is a
             # "historical" file for each decade, e.g., 1980-1989, 1990-1999, etc.)
             decades = []
