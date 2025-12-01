@@ -1,5 +1,22 @@
 # History
 
+## [v0.10.0] - 2025-12-01
+
+### :boom: BREAKING CHANGES
+
+- due to [`2362ae3`](https://github.com/martibosch/meteora/commit/2362ae3818a3eaac536e45d35fafb878de9c3e6d) - default Agrometeo CRS to lon/lat (some stations have no lv03) *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  default Agrometeo CRS to lon/lat (some stations have no lv03)
+
+### :sparkles: New Features
+
+- [`2362ae3`](https://github.com/martibosch/meteora/commit/2362ae3818a3eaac536e45d35fafb878de9c3e6d) - default Agrometeo CRS to lon/lat (some stations have no lv03) *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`2aa354e`](https://github.com/martibosch/meteora/commit/2aa354e1243041f3e57a7d70deff3383467dc4ee) - ensure same CRS in stations_gdf sjoin *(commit by [@martibosch](https://github.com/martibosch))*
+- [`982c050`](https://github.com/martibosch/meteora/commit/982c0509a5f73eb57e7def0d1f5f55ab99779095) - `end` var definition in `MeteoSwissClient.get_ts_df` *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.9.0] - 2025-12-01
 
 ### :boom: BREAKING CHANGES
@@ -173,3 +190,4 @@
   \[v0.7.0\]: https://github.com/martibosch/meteora/compare/v0.6.0...v0.7.0
   \[v0.8.0\]: https://github.com/martibosch/meteora/compare/v0.7.0...v0.8.0
   \[v0.9.0\]: https://github.com/martibosch/meteora/compare/v0.8.0...v0.9.0
+  \[v0.10.0\]: https://github.com/martibosch/meteora/compare/v0.9.0...v0.10.0
