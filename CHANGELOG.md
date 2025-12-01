@@ -1,5 +1,18 @@
 # History
 
+## [v0.9.0] - 2025-12-01
+
+### :boom: BREAKING CHANGES
+
+- due to [`043e229`](https://github.com/martibosch/meteora/commit/043e2299a4d139fa73e7282534c77231360a7481) - remove metoffice client (discontinued points api service) *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  remove metoffice client (discontinued points api service)
+
+### :sparkles: New Features
+
+- [`043e229`](https://github.com/martibosch/meteora/commit/043e2299a4d139fa73e7282534c77231360a7481) - remove metoffice client (discontinued points api service) *(commit by [@martibosch](https://github.com/martibosch))*
+- [`7c282d7`](https://github.com/martibosch/meteora/commit/7c282d70fb4dd9a42df36a3c8ff4c2f9f293b86b) - outsource regionmixin/types to pyregeon *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.8.0] - 2025-08-28
 
 ### :sparkles: New Features
@@ -159,3 +172,4 @@
   \[v0.6.0\]: https://github.com/martibosch/meteora/compare/v0.5.0...v0.6.0
   \[v0.7.0\]: https://github.com/martibosch/meteora/compare/v0.6.0...v0.7.0
   \[v0.8.0\]: https://github.com/martibosch/meteora/compare/v0.7.0...v0.8.0
+  \[v0.9.0\]: https://github.com/martibosch/meteora/compare/v0.8.0...v0.9.0
