@@ -221,9 +221,9 @@ class BaseClient(RegionMixin, abc.ABC):
         # TODO: do we need to copy the dict to avoid reference issues?
         _sjoin_kwargs = self.SJOIN_KWARGS.copy()
         # predicate = _sjoin_kws.pop("predicate", SJOIN_PREDICATE)
-        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kwargs)[
-            stations_gdf.columns
-        ]
+        return stations_gdf.sjoin(
+            self.region[["geometry"]].to_crs(self.CRS), **_sjoin_kwargs
+        )[stations_gdf.columns]
 
     @property
     def stations_gdf(self) -> gpd.GeoDataFrame:
