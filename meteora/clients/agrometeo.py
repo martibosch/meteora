@@ -23,7 +23,7 @@ LV03_CRS = pyproj.CRS("epsg:21781")
 # ACHTUNG: for some reason, the API mixes up the longitude and latitude columns ONLY in
 # the CH1903/LV03 projection. This is why we need to swap the columns in the dict below.
 GEOM_COL_DICT = {LONLAT_CRS: ["long_dec", "lat_dec"], LV03_CRS: ["lat_ch", "long_ch"]}
-DEFAULT_CRS = LV03_CRS
+DEFAULT_CRS = LONLAT_CRS
 # stations column used by the Agrometeo API (do not change)
 STATIONS_GDF_ID_COL = "id"
 TS_DF_STATIONS_ID_COL = "id"
