@@ -169,3 +169,9 @@ convention = "numpy"
 [tool.uv.build-backend]
 module-name = "meteora"
 module-root = ""
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
