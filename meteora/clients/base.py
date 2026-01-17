@@ -12,7 +12,7 @@ import pandas as pd
 import pyproj
 import requests
 import requests_cache
-from pyregeon import RegionMixin
+from pyregeon import RegionMixin, RegionType
 
 from meteora import settings, utils
 from meteora.utils import KwargsType, VariablesType
@@ -53,6 +53,13 @@ class BaseClient(RegionMixin, abc.ABC):
     def CRS(self) -> pyproj.CRS:  # pylint: disable=invalid-name
         """CRS of the data source."""
         pass
+
+    @RegionMixin.region.setter
+    def region(self, region: RegionType):
+        # call parent's setter
+        RegionMixin.region.fset(self, region)
+        # ensure that region is in the client's CRS
+        self._region = self._region.to_crs(self.CRS)
 
     @utils.abstract_attribute
     def _stations_gdf_id_col(self) -> str:
@@ -221,9 +228,9 @@ class BaseClient(RegionMixin, abc.ABC):
         # TODO: do we need to copy the dict to avoid reference issues?
         _sjoin_kwargs = self.SJOIN_KWARGS.copy()
         # predicate = _sjoin_kws.pop("predicate", SJOIN_PREDICATE)
-        return stations_gdf.sjoin(
-            self.region[["geometry"]].to_crs(self.CRS), **_sjoin_kwargs
-        )[stations_gdf.columns]
+        return stations_gdf.sjoin(self.region[["geometry"]], **_sjoin_kwargs)[
+            stations_gdf.columns
+        ]
 
     @property
     def stations_gdf(self) -> gpd.GeoDataFrame:

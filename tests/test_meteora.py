@@ -369,6 +369,9 @@ class BaseClientTest:
     def setUp(self):
         self.client = self.client_cls(region=self.region)
 
+    def test_region_crs(self):
+        self.assertEqual(self.client.CRS, self.client.region.crs)
+
     def test_attributes(self):
         for attr in ["X_COL", "Y_COL", "CRS"]:
             self.assertTrue(hasattr(self.client, attr))
