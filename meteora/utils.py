@@ -193,26 +193,28 @@ def get_heatwave_periods(
         inter_station_agg_func = settings.HEATWAVE_INTER_STATION_AGG_FUNC
 
     # find consecutive days above threshold
-    # day_agg_ts_ser = getattr(
-    #     getattr(ts_df.groupby(ts_df.index.date), station_agg_func)(),
-    #     inter_station_agg_func,
-    # )(axis="columns")
     day_agg_ts_ser = (
         ts_df.groupby(ts_df.index.date)
         .agg(station_agg_func)
         .agg(inter_station_agg_func, axis="columns")
     )
-    idx = (day_agg_ts_ser >= heatwave_t_threshold).rolling(
-        window=heatwave_n_consecutive_days, center=True
-    ).sum() >= heatwave_n_consecutive_days
+
+    ge_sel_ser = day_agg_ts_ser.ge(heatwave_t_threshold)
+    consecutive_ge_ser = (
+        day_agg_ts_ser[ge_sel_ser]
+        .index.to_series()
+        .groupby((~ge_sel_ser).cumsum())
+        .agg(["first", "last", "count"])
+    )
 
     return [
         (
-            dt.datetime.combine(g.index[0], dt.time.min),
-            dt.datetime.combine(g.index[-1], dt.time.max),
+            dt.datetime.combine(row["first"], dt.time.min),
+            dt.datetime.combine(row["last"], dt.time.max),
         )
-        for _, g in idx.groupby(idx.ne(idx.shift()).cumsum())
-        if g.any()
+        for i, row in consecutive_ge_ser[
+            consecutive_ge_ser["count"].ge(heatwave_n_consecutive_days)
+        ].iterrows()
     ]
 
 
