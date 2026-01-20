@@ -1,9 +1,12 @@
 """Tests for Meteora."""
 
+import importlib
 import json
 import logging as lg
 import os
+import sys
 import unittest
+from collections.abc import Generator
 from os import path
 
 import geopandas as gpd
@@ -33,6 +36,26 @@ tests_dir = "tests"
 tests_data_dir = path.join(tests_dir, "data")
 
 
+@pytest.fixture
+def unload_xarray(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """Fake that xarray is not installed.
+
+    Source: https://stackoverflow.com/a/79280624
+    """
+    for module in sys.modules:
+        # ensure that `xarray` and all its submodules are not loadable
+        if module.startswith("xarray") or module == "xarray":
+            monkeypatch.setitem(sys.modules, module, None)
+
+    with pytest.raises(ImportError):
+        # ensure that `xarray` cannot be imported
+        import xarray  # noqa: F401
+
+    importlib.reload(utils)
+    yield  # undo the monkeypatch
+    importlib.reload(utils)  # make `xarray` available again
+
+
 def override_settings(module, **kwargs):
     class OverrideSettings:
         def __enter__(self):
@@ -49,6 +72,19 @@ def override_settings(module, **kwargs):
 
 
 class TestUtils(unittest.TestCase):
+    def setUp(self):
+        self.ts_df = pd.read_csv(
+            path.join(tests_data_dir, "ts-df.csv"),
+            index_col=["station_id", "time"],
+            parse_dates=True,
+            date_format="%Y-%m-%d %H:%M:%S",
+        )
+        self.wide_ts_df = pd.read_csv(
+            path.join(tests_data_dir, "wide-ts-df.csv"),
+            index_col="time",
+            parse_dates=True,
+        )
+
     def test_geo_utils(self):
         # geo utils
         # dms to dd
@@ -56,42 +92,42 @@ class TestUtils(unittest.TestCase):
         dd_ser = utils.dms_to_decimal(dms_ser)
         self.assertTrue(is_numeric_dtype(dd_ser))
 
-    def test_ts_utils(self):
-        # time series utils
-        # long to wide
-        ts_df = pd.read_csv(
-            path.join(tests_data_dir, "ts-df.csv"),
-            index_col=["station_id", "time"],
-            parse_dates=True,
-            date_format="%Y-%m-%d %H:%M:%S",
-        )
-        wide_ts_df = utils.long_to_wide(ts_df)
+    def test_long_to_wide(self):
+        wide_ts_df = utils.long_to_wide(self.ts_df)
         # test wide data frame form
         self.assertIsInstance(wide_ts_df.columns, pd.MultiIndex)
         self.assertIsInstance(wide_ts_df.index, pd.DatetimeIndex)
         # with only one variable, we should have only one column level
-        wide_ts_df = utils.long_to_wide(ts_df, variables=["temperature"])
+        wide_ts_df = utils.long_to_wide(self.ts_df, variables=["temperature"])
         self.assertEqual(len(wide_ts_df.columns.names), 1)
         self.assertIsInstance(wide_ts_df.index, pd.DatetimeIndex)
 
-        # long to cube (xvec)
+    @pytest.mark.usefixtures("unload_xarray")
+    def _test_long_to_cube(self):
+        # dummy variable which does not matter
+        stations_gdf = gpd.GeoDataFrame()
+        # test that we can only call this function if xarray/xvec are installed
+        with pytest.raises(ValueError):
+            utils.long_to_cube(self.ts_df, stations_gdf)
+
+    def test_long_to_cube(self):
         stations_gdf = gpd.read_file(
             path.join(tests_data_dir, "stations.gpkg")
         ).set_index(settings.STATIONS_ID_COL)
         with pytest.raises(KeyError):
             # if stations_gdf does not cover all stations in ts_df a KeyError is also
             # raised
-            utils.long_to_cube(ts_df, stations_gdf.iloc[:2])
+            utils.long_to_cube(self.ts_df, stations_gdf.iloc[:2])
             # attempting to convert from the wide form also raises a KeyError
-            utils.wide_to_cube(wide_ts_df, stations_gdf)
+            utils.long_to_cube(self.wide_ts_df, stations_gdf)
         # test proper conversion
-        ts_cube = utils.long_to_cube(ts_df, stations_gdf)
+        ts_cube = utils.long_to_cube(self.ts_df, stations_gdf)
         # test an xarray dataset is returned
         self.assertIsInstance(ts_cube, xr.Dataset)
         # test that the time column is in the coordinates
-        self.assertIn(ts_df.index.names[1], ts_cube.coords)
+        self.assertIn(self.ts_df.index.names[1], ts_cube.coords)
         # test that the variable columns are in the data_vars
-        self.assertTrue(all([var in ts_cube.data_vars for var in ts_df.columns]))
+        self.assertTrue(all([var in ts_cube.data_vars for var in self.ts_df.columns]))
         # test that it has a dimension with geometry
         self.assertIn("geometry", ts_cube.xvec.geom_coords)
         self.assertIn("geometry", ts_cube.xvec.geom_coords_indexed)
@@ -104,23 +140,18 @@ class TestUtils(unittest.TestCase):
 
     def test_meteo_utils(self):
         # meteo utils (heatwave detection)
-        ts_df = pd.read_csv(
-            path.join(tests_data_dir, "wide-ts-df.csv"),
-            index_col="time",
-            parse_dates=True,
-        )
         # increasing the temperature threshold should result in a less or equal number
         # of heatwave periods
         self.assertLessEqual(
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=27,
                 )
             ),
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                 )
             ),
@@ -130,14 +161,14 @@ class TestUtils(unittest.TestCase):
         self.assertLessEqual(
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=3,
                 )
             ),
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=2,
                 )
@@ -148,7 +179,7 @@ class TestUtils(unittest.TestCase):
         self.assertGreaterEqual(
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=2,
                     station_agg_func="max",
@@ -156,7 +187,7 @@ class TestUtils(unittest.TestCase):
             ),
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=2,
                     station_agg_func="mean",
@@ -168,7 +199,7 @@ class TestUtils(unittest.TestCase):
         self.assertGreaterEqual(
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=2,
                     inter_station_agg_func="max",
@@ -176,7 +207,7 @@ class TestUtils(unittest.TestCase):
             ),
             len(
                 utils.get_heatwave_periods(
-                    ts_df,
+                    self.wide_ts_df,
                     heatwave_t_threshold=25,
                     heatwave_n_consecutive_days=2,
                     inter_station_agg_func="mean",
@@ -186,7 +217,7 @@ class TestUtils(unittest.TestCase):
         # get the time series data for the heatwave periods
         for kwargs in [{}, {"heatwave_t_threshold": 25}]:
             heatwave_ts_df = utils.get_heatwave_ts_df(
-                ts_df,
+                self.wide_ts_df,
                 **kwargs,
             )
             # test that the data frame has a multi-index with the heatwave periods and
@@ -196,15 +227,15 @@ class TestUtils(unittest.TestCase):
                 heatwave_ts_df.index.names,
                 [
                     "heatwave",
-                    ts_df.index.name,
+                    self.wide_ts_df.index.name,
                 ],
             )
         # test that we can also get it from the heatwave periods
         heatwave_periods = utils.get_heatwave_periods(
-            ts_df,
+            self.wide_ts_df,
         )
         heatwave_ts_df = utils.get_heatwave_ts_df(
-            ts_df,
+            self.wide_ts_df,
             heatwave_periods=heatwave_periods,
         )
         # test that we have an outermost index with the heatwave periods
@@ -218,7 +249,7 @@ class TestUtils(unittest.TestCase):
         # with self.assertLogs(settings.LOG_NAME, level=lg.WARNING) as cm:
         #     settings.LOG_CONSOLE = True
         #     self.assertIn("empty", cm.output)
-        ts_df = utils.get_heatwave_ts_df(ts_df, heatwave_t_threshold=100)
+        ts_df = utils.get_heatwave_ts_df(self.wide_ts_df, heatwave_t_threshold=100)
         self.assertTrue(ts_df.empty)
 
         # logger

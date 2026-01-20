@@ -1,7 +1,4 @@
-"""Utils.
-
-Based on osmnx utils and downloader modules.
-"""
+"""Utils."""
 
 import datetime as dt
 import logging as lg
@@ -113,6 +110,12 @@ def long_to_cube(
         The vector data cube with the time series of measurements for each station. The
         stations are indexed by their geometry.
     """
+    # first ensure that we have xarray/xvec
+    if xr is None:
+        raise ValueError(
+            "The `meteora.utils.long_to_cube` function requires xarray and xvec, which "
+            "are not available in the current environment."
+        )
     # get the stations id column in the time series data frame
     stations_ts_df_id_col = ts_df.index.names[0]
     # convert data frame to xarray
