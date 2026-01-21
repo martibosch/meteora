@@ -7,7 +7,7 @@ import pandas as pd
 import pyproj
 from pyregeon import CRSType, RegionType
 
-from meteora import settings
+from meteora import settings, utils
 from meteora.clients.base import BaseTextClient
 from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
@@ -161,7 +161,7 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
         # TODO: better approach to ensure datetime types in `ts_params`
         start = pd.Timestamp(ts_params["start"])
         end = pd.Timestamp(ts_params["end"])
-        if start.date() > this_year_start:
+        if start.date() >= this_year_start:
             # the first requested data is after the start of the current year, so we
             # only need to query the data from the "recent" file
             def _get_station_urls(station_id):
@@ -229,12 +229,46 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
                 :,
             ]
 
+        def _station_ts_dfs(station_id):
+            station_urls = _get_station_urls(station_id)
+            ts_dfs = []
+            for station_url in station_urls:
+                ts_df = _ts_df_from_url(station_url)
+                if ts_df.empty:
+                    utils.log(
+                        "The requested data for the given period and station "
+                        "'{station_id}' returned an empty data frame. This can happen "
+                        "when requesting data from the past year during the first "
+                        "months of the year, since 'historical' data for the "
+                        "corresponding decade has not been updated with the data from "
+                        "the previous year yet. In this case, we will try to retrieve "
+                        "the 'recent' data instead.",
+                    )
+                    recent_station_url = self._ts_endpoint.format(
+                        station_id=station_id,
+                        update_freq="recent",
+                    )
+                    if recent_station_url not in station_urls:
+                        ts_df = _ts_df_from_url(recent_station_url)
+                        utils.log(
+                            f"Retrieved {len(ts_df)} rows for station '{station_id}' "
+                            "from 'recent' data."
+                        )
+                ts_dfs.append(ts_df)
+            return ts_dfs
+
+        # get a flat list of all the data frames of each station
+        ts_dfs = [
+            ts_df
+            for station_id in self.stations_gdf.index.str.lower()
+            for ts_df in _station_ts_dfs(station_id)
+        ]
+        if len(ts_dfs) == 1:
+            # if there is only one data frame, return it
+            return ts_dfs[0]
+        # otherwise, concat them and return
         return pd.concat(
-            [
-                _ts_df_from_url(station_url)
-                for station_id in self.stations_gdf.index.str.lower()
-                for station_url in _get_station_urls(station_id)
-            ],
+            ts_dfs,
             axis="index",
         )
 
