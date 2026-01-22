@@ -1,5 +1,27 @@
 # History
 
+## [v0.11.0] - 2026-01-22
+
+### :boom: BREAKING CHANGES
+
+- due to [`a57d978`](https://github.com/martibosch/meteora/commit/a57d9788c4e6ecf797961b2342d6cf556a873fab) - ensure that self.\_region is in the client's CRS *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  ensure that self.\_region is in the client's CRS
+
+- due to [`b1f6f7d`](https://github.com/martibosch/meteora/commit/b1f6f7d6d03455c3f252c17644f4834853fe74ee) - fix incorrect heatwave detection, now using gb and cumsum *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  fix incorrect heatwave detection, now using gb and cumsum
+
+### :sparkles: New Features
+
+- [`a57d978`](https://github.com/martibosch/meteora/commit/a57d9788c4e6ecf797961b2342d6cf556a873fab) - ensure that self.\_region is in the client's CRS *(commit by [@martibosch](https://github.com/martibosch))*
+- [`b1f6f7d`](https://github.com/martibosch/meteora/commit/b1f6f7d6d03455c3f252c17644f4834853fe74ee) - fix incorrect heatwave detection, now using gb and cumsum *(commit by [@martibosch](https://github.com/martibosch))*
+- [`1d6cf99`](https://github.com/martibosch/meteora/commit/1d6cf991c566a874e887aac013cc06534863a643) - raise informative ValueError in utils.long_to_cube without xr *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`cd70c4b`](https://github.com/martibosch/meteora/commit/cd70c4b9eb79cf944aba7e6ac2f78b0ca7219d51) - get meteoswiss past year from recent file if not in historical *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.10.0] - 2025-12-01
 
 ### :boom: BREAKING CHANGES
@@ -191,3 +213,4 @@
   \[v0.8.0\]: https://github.com/martibosch/meteora/compare/v0.7.0...v0.8.0
   \[v0.9.0\]: https://github.com/martibosch/meteora/compare/v0.8.0...v0.9.0
   \[v0.10.0\]: https://github.com/martibosch/meteora/compare/v0.9.0...v0.10.0
+  \[v0.11.0\]: https://github.com/martibosch/meteora/compare/v0.10.0...v0.11.0
