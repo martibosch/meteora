@@ -103,7 +103,7 @@ class AemetClient(
         """Initialize AEMET client."""
         self.region = region
         self._api_key = api_key
-        if sjoin_kwargs is None:
+        if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
         # need to call super().__init__() to set the cache

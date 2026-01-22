@@ -166,7 +166,7 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
             )
 
         self.region = region
-        if sjoin_kwargs is None:
+        if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
 

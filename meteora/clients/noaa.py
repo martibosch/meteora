@@ -133,11 +133,11 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
     ) -> None:
         """Initialize GHCN hourly client."""
         self.region = region
-        if sjoin_kwargs is None:
+        if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
 
-        if pooch_kwargs is None:
+        if not pooch_kwargs:
             pooch_kwargs = {}
         self.pooch_kwargs = pooch_kwargs
 

@@ -314,17 +314,23 @@ class BaseClient(RegionMixin, abc.ABC):
 
 
 class BaseJSONClient(BaseClient):
-    """Base class for JSON clients."""
+    """Base class for clients that return JSON-encoded responses."""
 
     def _get_content_from_response(self, response: requests.Response) -> dict:
         return response.json()
 
 
 class BaseTextClient(BaseClient):
-    """Base class for text clients."""
+    """Base class for clients that return text-encoded (e.g., CSV) responses."""
 
     def _get_content_from_response(
         self,
         response: requests.Response,
     ) -> io.StringIO:
         return io.StringIO(response.content.decode(response.encoding))
+
+
+class BaseFileClient(BaseClient):
+    """Base class for file-based clients."""
+
+    pass

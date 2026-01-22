@@ -431,7 +431,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         )
         # end: split the region into windows
 
-        if sjoin_kwargs is None:
+        if not sjoin_kwargs:
             sjoin_kwargs = {}
         self.SJOIN_KWARGS = sjoin_kwargs
 
