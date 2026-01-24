@@ -32,7 +32,7 @@ LV95_CRS = pyproj.CRS("epsg:2056")
 # ACHTUNG: for some reason, the API mixes up the longitude and latitude columns ONLY in
 # the CH1903/LV03 projection. This is why we need to swap the columns in the dict below.
 GEOM_COL_DICT = {
-    LONLAT_CRS: ["station_coordinates_wgs84_lat", "station_coordinates_wgs84_lon"],
+    LONLAT_CRS: ["station_coordinates_wgs84_lon", "station_coordinates_wgs84_lat"],
     LV95_CRS: ["station_coordinates_lv95_east", "station_coordinates_lv95_north"],
 }
 DEFAULT_CRS = LV95_CRS
