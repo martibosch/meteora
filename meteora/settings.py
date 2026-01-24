@@ -9,6 +9,31 @@ STATIONS_ID_COL = "station_id"
 TIME_COL = "time"
 SJOIN_KWARGS = {"how": "inner", "predicate": "intersects"}
 
+# ECV meteora nomenclature
+# https://public.wmo.int/en/programmes/global-climate-observing-system/essential-climate-variables
+# precipitation
+ECV_PRECIPITATION = "precipitation"  # Precipitation
+# pressure
+ECV_PRESSURE = "pressure"  # Pressure (surface)
+# radiation budget
+ECV_RADIATION_SHORTWAVE = "radiation_shortwave"  # Incoming short-wave radiation
+ECV_RADIATION_LONGWAVE_INCOMING = (
+    "radiation_longwave_incoming"  # Incoming long-wave radiation
+)
+ECV_RADIATION_LONGWAVE_OUTGOING = (
+    "radiation_longwave_outgoing"  # Outgoing long-wave radiation
+)
+# temperature
+ECV_TEMPERATURE = "temperature"  # Air temperature (usually at 2m above ground)
+# water vapour
+ECV_DEW_POINT_TEMPERATURE = (
+    "dew_point_temperature"  # Dew point temperature (usually at 2m above ground)
+)
+ECV_RELATIVE_HUMIDITY = "relative_humidity"  # Water vapour/relative humidity
+# wind
+ECV_WIND_SPEED = "wind_speed"  # Surface wind speed
+ECV_WIND_DIRECTION = "wind_direction"  # Surface wind direction
+
 ## netatmo
 NETATMO_ON_GET_ERROR = "log"  # or "raise"
 

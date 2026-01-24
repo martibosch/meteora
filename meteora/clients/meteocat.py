@@ -29,18 +29,18 @@ TS_DF_TIME_COL = "data"
 VARIABLES_ID_COL = "codi"
 ECV_DICT = {
     # precipitation
-    "precipitation": 35,  # "Precipitació",
+    settings.ECV_PRECIPITATION: 35,  # "Precipitació",
     # pressure
-    "pressure": 34,  # "Pressió atmosfèrica",
+    settings.ECV_PRESSURE: 34,  # "Pressió atmosfèrica",
     # radiation budget
-    "radiation_shortwave": 39,  # "Radiació UV",
+    settings.ECV_RADIATION_SHORTWAVE: 39,  # "Radiació UV",
     # temperature
-    "temperature": 32,  # "Temperatura",
+    settings.ECV_TEMPERATURE: 32,  # "Temperatura",
     # water vapour
-    "relative_humidity": 33,  # "Humitat relativa",
+    settings.ECV_RELATIVE_HUMIDITY: 33,  # "Humitat relativa",
     # wind
-    "wind_speed": 46,  # "Velocitat del vent a 2 m (esc.)",
-    "wind_direction": 47,  # "Direcció de vent 2 m (m. 1)",
+    settings.ECV_WIND_SPEED: 46,  # "Velocitat del vent a 2 m (esc.)",
+    settings.ECV_WIND_DIRECTION: 47,  # "Direcció de vent 2 m (m. 1)",
 }
 
 

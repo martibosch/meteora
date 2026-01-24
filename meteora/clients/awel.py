@@ -41,8 +41,8 @@ VARIABLES_DICT = {
     "humidity": "measured value relative humidity (in%)",
 }
 ECV_DICT = {
-    "temperature": "temperature",
-    "relative_humidity": "humidity",
+    settings.ECV_TEMPERATURE: "temperature",
+    settings.ECV_RELATIVE_HUMIDITY: "humidity",
 }
 
 

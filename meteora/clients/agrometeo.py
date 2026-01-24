@@ -83,19 +83,19 @@ VARIABLES_ID_COL = "id"
 # 105                           Leaf surface
 ECV_DICT = {
     # precipitation
-    "precipitation": 6,  # "Precipitation"
+    settings.ECV_PRECIPITATION: 6,  # "Precipitation"
     # pressure
-    "pressure": 18,  # "Real air pressure"
+    settings.ECV_PRESSURE: 18,  # "Real air pressure"
     # radiation budget
-    "radiation_shortwave": 11,  # "Solar radiation"
+    settings.ECV_RADIATION_SHORTWAVE: 11,  # "Solar radiation"
     # temperature
-    "temperature": 1,  # "Temperature 2m above ground"
+    settings.ECV_TEMPERATURE: 1,  # "Temperature 2m above ground"
     # water vapour
-    "dew_point": 13,  # "Dew point"
-    "relative_humidity": 4,  # "Relative humidity"
+    settings.ECV_DEW_POINT_TEMPERATURE: 13,  # "Dew point temperature"
+    settings.ECV_RELATIVE_HUMIDITY: 4,  # "Relative humidity"
     # wind
-    "wind_speed": 9,  # "Avg. wind speed"
-    "wind_direction": 8,  # "Wind direction"
+    settings.ECV_WIND_SPEED: 9,  # "Avg. wind speed"
+    settings.ECV_WIND_DIRECTION: 8,  # "Wind direction"
 }
 API_DT_FMT = "%Y-%m-%d"
 SCALE = "none"

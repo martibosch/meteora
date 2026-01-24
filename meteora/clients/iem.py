@@ -56,16 +56,16 @@ ONEMIN_VARIABLES_DICT = {
 }
 ONEMIN_ECV_DICT = {
     # precipitation
-    "precipitation": "precip",
+    settings.ECV_PRECIPITATION: "precip",
     # pressure
-    "pressure": "pres1",
+    settings.ECV_PRESSURE: "pres1",
     # temperature
-    "temperature": "tmpf",
+    settings.ECV_TEMPERATURE: "tmpf",
     # water vapour
-    "dew_point": "dwpf",
+    settings.ECV_DEW_POINT_TEMPERATURE: "dwpf",
     # wind
-    "wind_speed": "sknt",
-    "wind_direction": "drct",
+    settings.ECV_WIND_SPEED: "sknt",
+    settings.ECV_WIND_DIRECTION: "drct",
 }
 ONEMIN_TS_DF_TIME_COL = "valid(UTC)"
 
@@ -117,17 +117,17 @@ METAR_VARIABLES_DICT = {
 }
 METAR_ECV_DICT = {
     # precipitation
-    "precipitation": "p01i",
+    settings.ECV_PRECIPITATION: "p01i",
     # pressure
-    "pressure": "mslp",
+    settings.ECV_PRESSURE: "mslp",
     # temperature
-    "temperature": "tmpf",
+    settings.ECV_TEMPERATURE: "tmpf",
     # water vapour
-    "dew_point": "dwpf",
-    "relative_humidity": "relh",
+    settings.ECV_DEW_POINT_TEMPERATURE: "dwpf",
+    settings.ECV_RELATIVE_HUMIDITY: "relh",
     # wind
-    "wind_speed": "sknt",
-    "wind_direction": "drct",
+    settings.ECV_WIND_SPEED: "sknt",
+    settings.ECV_WIND_DIRECTION: "drct",
 }
 METAR_TS_DF_TIME_COL = "valid"
 

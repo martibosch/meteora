@@ -31,17 +31,17 @@ TS_DF_TIME_COL = "fint"
 VARIABLES_ID_COL = "id"
 ECV_DICT = {
     # precipitation
-    "precipitation": "prec",
+    settings.ECV_PRECIPITATION: "prec",
     # pressure
-    "pressure": "pres",
+    settings.ECV_PRESSURE: "pres",
     # temperature
-    "temperature": "ta",
+    settings.ECV_TEMPERATURE: "ta",
     # wind speed and direction
-    "wind_speed": "vv",
-    "wind_direction": "dv",
+    settings.ECV_WIND_SPEED: "vv",
+    settings.ECV_WIND_DIRECTION: "dv",
     # water vapour
-    "dew_point": "tpr",
-    "relative_humidity": "hr",
+    settings.ECV_DEW_POINT_TEMPERATURE: "tpr",
+    settings.ECV_RELATIVE_HUMIDITY: "hr",
 }
 
 

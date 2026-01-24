@@ -66,16 +66,16 @@ VARIABLES_DICT = {
 }
 ECV_DICT = {
     # precipitation
-    "preciptation": "precipitation",
+    settings.ECV_PRECIPITATION: "precipitation",
     # pressure
-    "pressure": "station_level_pressure",
+    settings.ECV_PRESSURE: "station_level_pressure",
     # temperature
-    "temperature": "temperature",
+    settings.ECV_TEMPERATURE: "temperature",
     # water vapour
-    "relative_humidity": "relative_humidity",
+    settings.ECV_RELATIVE_HUMIDITY: "relative_humidity",
     # wind
-    "wind_speed": "wind_speed",
-    "wind_direction": "wind_direction",
+    settings.ECV_WIND_SPEED: "wind_speed",
+    settings.ECV_WIND_DIRECTION: "wind_direction",
 }
 
 

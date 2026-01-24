@@ -45,30 +45,30 @@ VARIABLES_ID_COL = "parameter_shortname"
 ECV_DICT = {
     # precipitation
     # "Precipitation (ten minutes total) [mm]"
-    "precipitation": "rre150z0",
+    settings.ECV_PRECIPITATION: "rre150z0",
     # pressure
     # "Atmospheric pressure at barometric altitude (current value) [hPa]"
-    "pressure": "prestas0",
+    settings.ECV_PRESSURE: "prestas0",
     # radiation budget
     # "Global radiation (ten minutes mean) [W/m2]"
-    "radiation_shortwave": "gre000z0",
+    settings.ECV_RADIATION_SHORTWAVE: "gre000z0",
     # "Longwave incoming radiation; ten minute mean [W/m2]"
-    "radiation_longwave_incoming": "oli000z0",
+    settings.ECV_RADIATION_LONGWAVE_INCOMING: "oli000z0",
     # "Longwave outgoing radiation; ten minute mean [W/m2]"
-    "radiation_longwave_outgoing": "olo000z0",
+    settings.ECV_RADIATION_LONGWAVE_OUTGOING: "olo000z0",
     # temperature
     # "Air temperature 2 m above ground (current value) [°C]"
-    "temperature": "tre200s0",
+    settings.ECV_TEMPERATURE: "tre200s0",
     # water vapour
     # "Dew point 2 m above ground [°C]"
-    "dew_point": "tde200h0",
+    settings.ECV_DEW_POINT_TEMPERATURE: "tde200h0",
     # "Relative air humidity 2 m above ground (current value) [%]"
-    "relative_humidity": "ure200s0",
+    settings.ECV_RELATIVE_HUMIDITY: "ure200s0",
     # wind
     # "Wind speed scalar (ten minutes mean) [m/s]",
-    "wind_speed": "fkl010z0",
+    settings.ECV_WIND_SPEED: "fkl010z0",
     # "Wind direction (ten minutes mean) [degrees]",
-    "wind_direction": "dkl010z0",
+    settings.ECV_WIND_DIRECTION: "dkl010z0",
 }
 
 

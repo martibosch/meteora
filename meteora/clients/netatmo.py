@@ -68,18 +68,18 @@ VARIABLES_DICT = {
 }
 ECV_DICT = {
     # "precipitation": "rain_live",
-    "preciptation": "rain",
+    settings.ECV_PRECIPITATION: "rain",
     # pressure
-    "pressure": "pressure",
+    settings.ECV_PRESSURE: "pressure",
     # temperature
-    "temperature": "temperature",
+    settings.ECV_TEMPERATURE: "temperature",
     # water vapour
-    "relative_humidity": "humidity",
+    settings.ECV_RELATIVE_HUMIDITY: "humidity",
     # wind
     # "surface_wind_speed": "wind_strength",
     # "surface_wind_direction": "wind_angle",
-    "wind_speed": "windstrength",
-    "wind_direction": "windangle",
+    settings.ECV_WIND_SPEED: "windstrength",
+    settings.ECV_WIND_DIRECTION: "windangle",
 }
 
 # Netatmo stations can have up to three modules: The NAMain module is for pressure,

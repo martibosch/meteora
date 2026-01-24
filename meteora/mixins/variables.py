@@ -4,18 +4,6 @@ import pandas as pd
 
 from meteora.utils import VariablesType, abstract_attribute
 
-# https://public.wmo.int/en/programmes/global-climate-observing-system/essential-climate-variables
-ECVS = [
-    "precipitation",
-    "pressure",
-    "surface_radiation_longwave",
-    "surface_radiation_shortwave",
-    "surface_wind_speed",
-    "surface_wind_direction",
-    "temperature",
-    "water_vapour",
-]
-
 
 class VariablesMixin:
     """Variables Mixin."""
