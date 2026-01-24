@@ -2,19 +2,12 @@
 
 import pandas as pd
 
-from meteora.utils import VariablesType, abstract_attribute
+from meteora import utils
+from meteora.utils import VariablesType
 
 
 class VariablesMixin:
     """Variables Mixin."""
-
-    @abstract_attribute
-    def _variables_id_col(self) -> str:
-        pass
-
-    @abstract_attribute
-    def _ecv_dict(self) -> dict:
-        pass
 
     def _process_variable_arg(self, variable: str | int) -> str | int:
         # process the variable arg
@@ -57,11 +50,11 @@ class VariablesMixin:
 class VariablesHardcodedMixin(VariablesMixin):
     """Hardcoded variables mixin."""
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def _variables_dict(self) -> dict:
         pass
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def _variables_label_col(self) -> str:
         pass
 
@@ -82,7 +75,7 @@ class VariablesHardcodedMixin(VariablesMixin):
 class VariablesEndpointMixin(VariablesMixin):
     """Variables endpoint mixin."""
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def _variables_endpoint(self) -> str:
         pass
 

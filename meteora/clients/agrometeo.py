@@ -284,12 +284,13 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
         ts_df = self._get_ts_df(
             variables, start, end, scale=scale, measurement=measurement
         )
+        units_map = ts_df.attrs.get("units")
         # filter time range, otherwise, for some reason, agrometeo API includes one day
         # after
         # TODO: dry with Meteocat, perhaps a global approach in the base client
         time_ser = ts_df.index.get_level_values(settings.TIME_COL).to_series()
         tz = time_ser.dt.tz
-        return ts_df.loc[
+        ts_df = ts_df.loc[
             (
                 slice(None),
                 time_ser.between(
@@ -300,3 +301,7 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
             ),
             :,
         ]
+        if isinstance(units_map, Mapping):
+            ts_df.attrs = ts_df.attrs.copy()
+            ts_df.attrs["units"] = dict(units_map)
+        return ts_df

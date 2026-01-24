@@ -15,7 +15,7 @@ import requests
 import requests_cache
 from pyregeon import RegionMixin, RegionType
 
-from meteora import settings, utils
+from meteora import settings, units, utils
 from meteora.utils import KwargsType, VariablesType
 
 __all__ = [
@@ -77,6 +77,14 @@ class BaseClient(RegionMixin, abc.ABC):
     @utils.abstract_attribute
     def _ts_df_stations_id_col(self) -> str:
         """Column with the station IDs in the `ts_df` returned by the API."""
+        pass
+
+    @utils.abstract_attribute
+    def _variables_id_col(self) -> str:
+        pass
+
+    @utils.abstract_attribute
+    def _ecv_dict(self) -> dict:
         pass
 
     @property
@@ -153,6 +161,58 @@ class BaseClient(RegionMixin, abc.ABC):
             }
         )
 
+    def _coerce_variable_id(self, variable_id):
+        """Coerce a variable id to match the variables dataframe dtype."""
+        try:
+            variables_df = self.variables_df
+            dtype = variables_df[self._variables_id_col].dtype
+        except Exception:
+            return variable_id
+        try:
+            return pd.Series([variable_id], dtype=dtype).iloc[0]
+        except Exception:
+            return variable_id
+
+    def _units_by_id(self) -> dict | None:
+        """Return a mapping of variable ids to units, if defined."""
+        units_map = getattr(self, "_variable_units_dict", None)
+        if units_map is None:
+            return None
+        return {
+            self._coerce_variable_id(variable_id): unit
+            for variable_id, unit in units_map.items()
+        }
+
+    def _ecv_by_variable_id(self) -> dict:
+        """Return a mapping of variable ids to ECV names."""
+        return {
+            self._coerce_variable_id(variable_id): ecv
+            for ecv, variable_id in self._ecv_dict.items()
+        }
+
+    def _get_units_map(self, variable_id_ser: pd.Series) -> dict:
+        """Return a mapping of requested variables to their units."""
+        units_by_id = self._units_by_id()
+        ecv_by_id = self._ecv_by_variable_id()
+
+        units_map = {}
+        for variable, variable_id in variable_id_ser.items():
+            if units_by_id is not None:
+                unit = units_by_id.get(variable_id)
+                if unit is None and isinstance(variable, str):
+                    unit = units_by_id.get(variable)
+            else:
+                if isinstance(variable, str) and variable in settings.ECV_UNIT_DICT:
+                    unit = settings.ECV_UNIT_DICT[variable]
+                else:
+                    ecv = ecv_by_id.get(variable_id)
+                    unit = None if ecv is None else settings.ECV_UNIT_DICT.get(ecv)
+            if unit is None:
+                raise ValueError(f"Missing unit for variable {variable!r}.")
+            units_map[variable] = unit
+
+        return units_map
+
     @abc.abstractmethod
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
         pass
@@ -183,12 +243,19 @@ class BaseClient(RegionMixin, abc.ABC):
         ts_df = self._post_process_ts_df(ts_df)
 
         # rename stations and id labels in multi-level index
-        return ts_df.rename_axis(
+        ts_df = ts_df.rename_axis(
             index={
                 self._ts_df_stations_id_col: settings.STATIONS_ID_COL,
                 self._ts_df_time_col: settings.TIME_COL,
             }
         )
+
+        # attach units
+        units_map = self._get_units_map(variable_id_ser)
+        ts_df = units.attach_units(ts_df, units_map)
+
+        # return
+        return ts_df
 
 
 class BaseRequestClient(BaseClient, abc.ABC):

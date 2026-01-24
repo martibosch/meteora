@@ -54,6 +54,14 @@ ONEMIN_VARIABLES_DICT = {
     "pres1": "Sensor 1 Station Pressure",
     "precip": "1 minute precip",
 }
+ONEMIN_VARIABLE_UNITS_DICT = {
+    "tmpf": "degF",
+    "dwpf": "degF",
+    "sknt": "knot",
+    "drct": "degree",
+    "pres1": "inHg",
+    "precip": "inch",
+}
 ONEMIN_ECV_DICT = {
     # precipitation
     settings.ECV_PRECIPITATION: "precip",
@@ -114,6 +122,15 @@ METAR_VARIABLES_DICT = {
     "drct": "Wind Direction",
     "mslp": "Sea Level Pressure in millibar",
     "p01i": "1 minute precip",
+}
+METAR_VARIABLE_UNITS_DICT = {
+    "tmpf": "degF",
+    "dwpf": "degF",
+    "relh": "percent",
+    "sknt": "knot",
+    "drct": "degree",
+    "mslp": "hPa",
+    "p01i": "inch",
 }
 METAR_ECV_DICT = {
     # precipitation
@@ -271,6 +288,7 @@ class ASOSOneMinIEMClient(IEMClient):
     # data frame labels constants
     _ts_df_time_col = ONEMIN_TS_DF_TIME_COL
     _variables_dict = ONEMIN_VARIABLES_DICT
+    _variable_units_dict = ONEMIN_VARIABLE_UNITS_DICT
     _ecv_dict = ONEMIN_ECV_DICT
     _vars_param = "vars"
 
@@ -305,5 +323,6 @@ class METARASOSIEMClient(IEMClient):
     # data frame labels constants
     _ts_df_time_col = METAR_TS_DF_TIME_COL
     _variables_dict = METAR_VARIABLES_DICT
+    _variable_units_dict = METAR_VARIABLE_UNITS_DICT
     _ecv_dict = METAR_ECV_DICT
     _vars_param = "data"

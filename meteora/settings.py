@@ -34,6 +34,20 @@ ECV_RELATIVE_HUMIDITY = "relative_humidity"  # Water vapour/relative humidity
 ECV_WIND_SPEED = "wind_speed"  # Surface wind speed
 ECV_WIND_DIRECTION = "wind_direction"  # Surface wind direction
 
+# canonical units for ECVs (xclim/pint compatible)
+ECV_UNIT_DICT = {
+    ECV_PRECIPITATION: "mm",
+    ECV_PRESSURE: "hPa",
+    ECV_RADIATION_SHORTWAVE: "W m-2",
+    ECV_RADIATION_LONGWAVE_INCOMING: "W m-2",
+    ECV_RADIATION_LONGWAVE_OUTGOING: "W m-2",
+    ECV_TEMPERATURE: "degC",
+    ECV_DEW_POINT_TEMPERATURE: "degC",
+    ECV_RELATIVE_HUMIDITY: "percent",
+    ECV_WIND_SPEED: "m s-1",
+    ECV_WIND_DIRECTION: "degree",
+}
+
 ## netatmo
 NETATMO_ON_GET_ERROR = "log"  # or "raise"
 

@@ -1,6 +1,7 @@
 """Tests for Meteora."""
 
 import importlib
+import inspect
 import json
 import logging as lg
 import os
@@ -16,9 +17,10 @@ import pandas as pd
 import pook
 import pytest
 import xarray as xr
+import xclim.indices as xci
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
-from meteora import qc, settings, utils
+from meteora import climate_indices, qc, settings, units, utils
 from meteora.clients import (
     AemetClient,
     AgrometeoClient,
@@ -30,7 +32,12 @@ from meteora.clients import (
     MeteoSwissClient,
     NetatmoClient,
 )
-from meteora.clients.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.clients.base import BaseClient
+from meteora.clients.mixins import (
+    StationsEndpointMixin,
+    VariablesEndpointMixin,
+    VariablesHardcodedMixin,
+)
 
 tests_dir = "tests"
 tests_data_dir = path.join(tests_dir, "data")
@@ -42,10 +49,14 @@ def unload_xarray(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None
 
     Source: https://stackoverflow.com/a/79280624
     """
-    for module in sys.modules:
+    modules = {
+        module: sys.modules[module]
+        for module in list(sys.modules)
+        if module.startswith("xarray") or module == "xarray"
+    }
+    for module in modules:
         # ensure that `xarray` and all its submodules are not loadable
-        if module.startswith("xarray") or module == "xarray":
-            monkeypatch.setitem(sys.modules, module, None)
+        monkeypatch.setitem(sys.modules, module, None)
 
     with pytest.raises(ImportError):
         # ensure that `xarray` cannot be imported
@@ -53,7 +64,36 @@ def unload_xarray(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None
 
     importlib.reload(utils)
     yield  # undo the monkeypatch
+    for module, original in modules.items():
+        if original is None:
+            sys.modules.pop(module, None)
+        else:
+            sys.modules[module] = original
     importlib.reload(utils)  # make `xarray` available again
+
+
+@pytest.fixture
+def unload_xclim(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """Fake that xclim is not installed."""
+    modules = {
+        module: sys.modules[module]
+        for module in list(sys.modules)
+        if module.startswith("xclim") or module == "xclim"
+    }
+    for module in modules:
+        monkeypatch.setitem(sys.modules, module, None)
+
+    with pytest.raises(ImportError):
+        import xclim  # noqa: F401
+
+    importlib.reload(climate_indices)
+    yield
+    for module, original in modules.items():
+        if original is None:
+            sys.modules.pop(module, None)
+        else:
+            sys.modules[module] = original
+    importlib.reload(climate_indices)
 
 
 def override_settings(module, **kwargs):
@@ -69,6 +109,50 @@ def override_settings(module, **kwargs):
                 setattr(module, key, value)
 
     return OverrideSettings()
+
+
+class DummyUnitsClient(VariablesHardcodedMixin, BaseClient):
+    X_COL = "x"
+    Y_COL = "y"
+    CRS = "epsg:4326"
+    _stations_gdf_id_col = settings.STATIONS_ID_COL
+    _ts_df_time_col = settings.TIME_COL
+    _ts_df_stations_id_col = settings.STATIONS_ID_COL
+    _variables_id_col = "code"
+    _variables_label_col = "label"
+    _variables_dict = {
+        "tmpf": "Air Temperature",
+        "dwpf": "Dew Point Temperature",
+    }
+    _variable_units_dict = {"tmpf": "degF", "dwpf": "degF"}
+    _ecv_dict = {
+        settings.ECV_TEMPERATURE: "tmpf",
+        settings.ECV_DEW_POINT_TEMPERATURE: "dwpf",
+    }
+    _ts_endpoint = "dummy"
+
+    def __init__(self):
+        self.region = [0.0, 0.0, 1.0, 1.0]
+        super().__init__()
+
+    def get_ts_df(self, variables, *args, **kwargs):
+        return self._get_ts_df(variables, *args, **kwargs)
+
+    def _ts_df_from_endpoint(self, ts_params):
+        variable_ids = ts_params["variable_ids"]
+        if isinstance(variable_ids, pd.Series):
+            variable_ids = list(variable_ids)
+        idx = pd.MultiIndex.from_product(
+            [["A"], pd.date_range("2020-01-01", periods=2, freq="D")],
+            names=[settings.STATIONS_ID_COL, settings.TIME_COL],
+        )
+        data = {}
+        for variable_id in variable_ids:
+            if variable_id == "tmpf":
+                data[variable_id] = [32.0, 50.0]
+            else:
+                data[variable_id] = [30.0, 40.0]
+        return pd.DataFrame(data, index=idx)
 
 
 class TestUtils(unittest.TestCase):
@@ -102,15 +186,38 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(wide_ts_df.columns.names), 1)
         self.assertIsInstance(wide_ts_df.index, pd.DatetimeIndex)
 
+    def test_attach_units(self):
+        ts_df = pd.DataFrame({"temperature": [1.0, 2.0]})
+        units_map = {"temperature": "degC"}
+        result = units.attach_units(ts_df, units_map)
+        self.assertEqual(result.attrs["units"]["temperature"], "degC")
+
+    def test_convert_units(self):
+        ts_df = pd.DataFrame({"temperature": [32.0, 68.0]})
+        source_units = {"temperature": "degF"}
+        target_units = {"temperature": "degC"}
+        result = units.convert_units(ts_df, target_units, source_units=source_units)
+        self.assertAlmostEqual(result["temperature"].iloc[0], 0.0, places=6)
+        self.assertAlmostEqual(result["temperature"].iloc[1], 20.0, places=6)
+        self.assertEqual(result.attrs["units"]["temperature"], "degC")
+        ts_df_units = units.attach_units(ts_df, source_units)
+        result_from_attrs = units.convert_units(
+            ts_df_units,
+            target_units,
+            source_units={"temperature": "degC"},
+        )
+        pd.testing.assert_frame_equal(result, result_from_attrs)
+
     @pytest.mark.usefixtures("unload_xarray")
-    def _test_long_to_cube(self):
+    def test_long_to_cube_missing_xarray(self):
         # dummy variable which does not matter
         stations_gdf = gpd.GeoDataFrame()
         # test that we can only call this function if xarray/xvec are installed
-        with pytest.raises(ValueError):
+        with pytest.raises(ImportError):
             utils.long_to_cube(self.ts_df, stations_gdf)
 
     def test_long_to_cube(self):
+        pytest.importorskip("xvec")
         stations_gdf = gpd.read_file(
             path.join(tests_data_dir, "stations.gpkg")
         ).set_index(settings.STATIONS_ID_COL)
@@ -271,6 +378,135 @@ class TestUtils(unittest.TestCase):
         utils.ts(style="datetime")
         utils.ts(style="time")
 
+    def test_climate_indices(self):
+        # defaults from xclim should match explicit parameters
+        tn_default = climate_indices.tn_days_above(self.ts_df)
+        tn_sig = inspect.signature(xci.tn_days_above)
+        tn_explicit = climate_indices.tn_days_above(
+            self.ts_df,
+            temperature_col="temperature",
+            thresh=tn_sig.parameters["thresh"].default,
+            freq=tn_sig.parameters["freq"].default,
+            op=tn_sig.parameters["op"].default,
+        )
+        pd.testing.assert_frame_equal(tn_default, tn_explicit)
+        self.assertIsInstance(tn_default.index, pd.DatetimeIndex)
+        self.assertTrue(
+            set(tn_default.columns)
+            <= set(self.ts_df.index.get_level_values("station_id").unique())
+        )
+
+        hs_sig = inspect.signature(xci.hot_spell_frequency)
+        hs_default = climate_indices.hot_spell_frequency(self.ts_df)
+        hs_explicit = climate_indices.hot_spell_frequency(
+            self.ts_df,
+            temperature_col="temperature",
+            thresh=hs_sig.parameters["thresh"].default,
+            window=hs_sig.parameters["window"].default,
+            freq=hs_sig.parameters["freq"].default,
+            op=hs_sig.parameters["op"].default,
+            resample_before_rl=hs_sig.parameters["resample_before_rl"].default,
+        )
+        pd.testing.assert_frame_equal(hs_default, hs_explicit)
+
+        hd_sig = inspect.signature(xci.heating_degree_days)
+        hd_default = climate_indices.heating_degree_days(self.ts_df)
+        hd_explicit = climate_indices.heating_degree_days(
+            self.ts_df,
+            temperature_col="temperature",
+            thresh=hd_sig.parameters["thresh"].default,
+            freq=hd_sig.parameters["freq"].default,
+        )
+        pd.testing.assert_frame_equal(hd_default, hd_explicit)
+
+        extra_df = self.ts_df.assign(
+            **{
+                settings.ECV_PRECIPITATION: 1.0,
+                settings.ECV_WIND_SPEED: 2.0,
+            }
+        )
+        wet_sig = inspect.signature(xci.wetdays)
+        wet_default = climate_indices.wetdays(extra_df)
+        wet_explicit = climate_indices.wetdays(
+            extra_df,
+            precipitation_col=settings.ECV_PRECIPITATION,
+            thresh=wet_sig.parameters["thresh"].default,
+            freq=wet_sig.parameters["freq"].default,
+            op=wet_sig.parameters["op"].default,
+        )
+        pd.testing.assert_frame_equal(wet_default, wet_explicit)
+
+        wind_sig = inspect.signature(xci.sfcWind_mean)
+        wind_default = climate_indices.sfc_wind_mean(extra_df)
+        wind_explicit = climate_indices.sfc_wind_mean(
+            extra_df,
+            wind_speed_col=settings.ECV_WIND_SPEED,
+            freq=wind_sig.parameters["freq"].default,
+        )
+        pd.testing.assert_frame_equal(wind_default, wind_explicit)
+
+        # multi-variable defaults use ECV names
+        multi_df = self.ts_df.rename(
+            columns={"water_vapour": settings.ECV_RELATIVE_HUMIDITY}
+        ).assign(
+            **{
+                settings.ECV_DEW_POINT_TEMPERATURE: self.ts_df["temperature"],
+            }
+        )
+        heat_index_df = climate_indices.heat_index(multi_df)
+        humidex_df = climate_indices.humidex(multi_df)
+        self.assertIsInstance(heat_index_df.index, pd.DatetimeIndex)
+        self.assertIsInstance(humidex_df.index, pd.DatetimeIndex)
+
+    def test_climate_indices_units_metadata(self):
+        idx = pd.MultiIndex.from_product(
+            [["A"], pd.date_range("2020-01-01", periods=3, freq="D")],
+            names=[settings.STATIONS_ID_COL, settings.TIME_COL],
+        )
+        base_df = pd.DataFrame(
+            {
+                settings.ECV_TEMPERATURE: [20.0, 25.0, 30.0],
+                settings.ECV_RELATIVE_HUMIDITY: [50.0, 60.0, 70.0],
+            },
+            index=idx,
+        )
+        df_c = units.attach_units(
+            base_df,
+            {
+                settings.ECV_TEMPERATURE: "degC",
+                settings.ECV_RELATIVE_HUMIDITY: "percent",
+            },
+        )
+        df_f = base_df.copy()
+        df_f[settings.ECV_TEMPERATURE] = (
+            df_f[settings.ECV_TEMPERATURE] * 9.0 / 5.0 + 32.0
+        )
+        df_f = units.attach_units(
+            df_f,
+            {
+                settings.ECV_TEMPERATURE: "degF",
+                settings.ECV_RELATIVE_HUMIDITY: "percent",
+            },
+        )
+        humidex_c = climate_indices.humidex(df_c)
+        humidex_f = climate_indices.humidex(df_f)
+        # xclim returns humidex in the same units as the input temperature.
+        humidex_f_as_c = units.convert_units(
+            humidex_f,
+            {col: "degC" for col in humidex_f.columns},
+            source_units={col: "degF" for col in humidex_f.columns},
+        )
+        pd.testing.assert_frame_equal(humidex_c, humidex_f_as_c, rtol=1e-6, atol=1e-6)
+        humidex_wrong_units = climate_indices.humidex(df_c, temperature_unit="degF")
+        pd.testing.assert_frame_equal(
+            humidex_c, humidex_wrong_units, rtol=1e-6, atol=1e-6
+        )
+
+    @pytest.mark.usefixtures("unload_xclim")
+    def test_climate_indices_missing_xclim(self):
+        with pytest.raises(ImportError):
+            climate_indices.tn_days_above(self.ts_df)
+
 
 def test_qc():
     # read a wide ts df
@@ -387,6 +623,22 @@ def test_qc():
     assert len(
         qc.get_indoor_stations(ts_df, station_indoor_corr_threshold=0.85)
     ) <= len(indoor_stations)
+
+
+class TestClientUnits(unittest.TestCase):
+    def test_get_ts_df_units(self):
+        client = DummyUnitsClient()
+        ts_df = client.get_ts_df(
+            [settings.ECV_TEMPERATURE, settings.ECV_DEW_POINT_TEMPERATURE]
+        )
+        self.assertEqual(
+            ts_df.attrs["units"][settings.ECV_TEMPERATURE],
+            "degF",
+        )
+        self.assertEqual(
+            ts_df.attrs["units"][settings.ECV_DEW_POINT_TEMPERATURE],
+            "degF",
+        )
 
 
 class BaseClientTest:

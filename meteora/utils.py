@@ -8,28 +8,34 @@ import unicodedata
 from collections.abc import Callable, Mapping
 from contextlib import redirect_stdout
 from pathlib import Path
-from typing import TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from meteora import settings
+from meteora.optional import require_optional
 
 try:
     import xarray as xr
-    import xvec  # noqa: F401
 except ImportError:
     xr = None
+try:
+    import xvec  # noqa: F401
+except ImportError:
+    xvec = None
 
 VariablesType = str | int | list[str] | list[int]
 DateTimeType = dt.date | dt.datetime | np.datetime64 | pd.Timestamp | str | int | float
 KwargsType = Mapping | None
 PathType = str | os.PathLike
-if xr is not None:
-    CubeType = xr.Dataset
+if TYPE_CHECKING:
+    import xarray as xr_type
+
+    CubeType: TypeAlias = xr_type.Dataset
 else:
-    CubeType = TypeVar("CubeType")
+    CubeType: TypeAlias = Any
 AggFuncType = str | Callable | None
 
 
@@ -110,12 +116,11 @@ def long_to_cube(
         The vector data cube with the time series of measurements for each station. The
         stations are indexed by their geometry.
     """
-    # first ensure that we have xarray/xvec
-    if xr is None:
-        raise ValueError(
-            "The `meteora.utils.long_to_cube` function requires xarray and xvec, which "
-            "are not available in the current environment."
-        )
+    require_optional(
+        {"xarray": xr, "xvec": xvec},
+        extra="xvec",
+        feature="meteora.utils.long_to_cube",
+    )
     # get the stations id column in the time series data frame
     stations_ts_df_id_col = ts_df.index.names[0]
     # convert data frame to xarray

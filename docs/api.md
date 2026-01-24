@@ -72,6 +72,13 @@
    :members:
 ```
 
+## Climate indices
+
+```{eval-rst}
+.. automodule:: meteora.climate_indices
+   :members:
+```
+
 ## Utils
 
 ```{eval-rst}

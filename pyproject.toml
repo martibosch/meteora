@@ -18,6 +18,8 @@ dependencies = [
   "dask",
   "geopandas>=1.0.0",
   "matplotlib",
+  "pint",
+  "pint-pandas",
   "pooch",
   "pyregeon",
   "requests",
@@ -68,9 +70,17 @@ test = [
   "requests-mock",
   "ruff"
 ]
+user-guide = [
+  "ecmwf-datastores-client",
+  "netcdf4"
+]
 xvec = [
   "xarray",
   "xvec>=0.5.0" # need at least v0.5.0 for categorical plots with custom cmap
+]
+xclim = [
+  "xarray",
+  "xclim"
 ]
 
 [project.urls]
@@ -118,7 +128,9 @@ dev = {features = ["dev"], solve-group = "default"}
 doc = {features = ["doc"], solve-group = "default"}
 ox = {features = ["ox"], solve-group = "default"}
 qc = {features = ["qc"], solve-group = "default"}
-test = {features = ["ox", "qc", "test", "xvec"], solve-group = "default"}
+test = {features = ["ox", "qc", "test", "xclim", "xvec"], solve-group = "default"}
+user-guide = {features = ["cx", "doc", "ox", "qc", "user-guide", "xclim", "xvec"], solve-group = "default"}
+xclim = {features = ["xclim"], solve-group = "default"}
 xvec = {features = ["xvec"], solve-group = "default"}
 
 [tool.pixi.feature.dev.tasks]
@@ -131,6 +143,12 @@ build-doc = "sphinx-build docs docs/_build"
 [tool.pixi.feature.test.tasks]
 # use dotenv to set api keys as env. vars
 test = "dotenv -f .keys.env run pytest -s --cov=meteora --cov-report=xml tests"
+
+[tool.pixi.feature.user-guide.tasks]
+run-notebooks = "sphinx-build -b html docs docs/_build/user-guide-exec -D nbsphinx_execute=always -D nbsphinx_kernel_name=pixi-kernel-python3 -D nbsphinx_exclude='.*a\\d\\d-.*'"
+
+[tool.pixi.pypi-dependencies]
+meteora = {path = ".", editable = true}
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]

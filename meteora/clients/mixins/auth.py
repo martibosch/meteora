@@ -1,14 +1,14 @@
 """Authentication mixins."""
 
-from abc import ABC, abstractmethod
+import abc
 
-from meteora.utils import abstract_attribute
+from meteora import utils
 
 
-class APIKeyMixin(ABC):
+class APIKeyMixin(abc.ABC):
     """API key mixin."""
 
-    @abstract_attribute
+    @utils.abstract_attribute
     def _api_key(self) -> str:
         # https://stackoverflow.com/questions/23831510/abstract-attribute-not-property
         pass
@@ -31,7 +31,7 @@ class APIKeyParamMixin(APIKeyMixin):
     """API key as request parameter mixin."""
 
     @property
-    @abstractmethod
+    @abc.abstractmethod
     def _api_key_param_name(self) -> str:
         pass
 
