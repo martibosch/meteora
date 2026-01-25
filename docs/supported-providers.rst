@@ -35,7 +35,7 @@ registering at `opendata.aemet.es/centrodedescargas/obtencionAPIKey
 AWEL
 ----
 
-The `Office of Waste, Water, Energy and Air (AWEL) <https://https://www.zh.ch/de/baudirektion/amt-fuer-abfall-wasser-energie-luft.html`__ of the canton of Zurich (Switzerland) operates a network of 50 sensors that measure air temperature and humidity. The measured values `are freely available as open data (link in German) <https://opendata.swiss/en/dataset/lufttemperatur-und-luftfeuchte-lora-sensor-messwerte>`__.
+The `Office of Waste, Water, Energy and Air (AWEL) <https://www.zh.ch/de/baudirektion/amt-fuer-abfall-wasser-energie-luft.html>`__ of the canton of Zurich (Switzerland) operates a network of 50 sensors that measure air temperature and humidity. The measured values `are freely available as open data (link in German) <https://opendata.swiss/en/dataset/lufttemperatur-und-luftfeuchte-lora-sensor-messwerte>`__.
 
 Agrometeo
 ---------
