@@ -8,7 +8,7 @@ from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseJSONClient
-from meteora.mixins import (
+from meteora.clients.mixins import (
     APIKeyHeaderMixin,
     StationsEndpointMixin,
     VariablesEndpointMixin,

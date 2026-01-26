@@ -9,7 +9,7 @@ from pyregeon import CRSType, RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseFileClient
-from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesEndpointMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 BASE_URL = "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"

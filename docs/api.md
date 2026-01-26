@@ -89,21 +89,16 @@
 ## Mixins
 
 ```{eval-rst}
-.. automodule:: meteora.mixins.auth
+.. automodule:: meteora.clients.mixins.auth
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteora.mixins.region
+.. automodule:: meteora.clients.mixins.stations
    :members:
 ```
 
 ```{eval-rst}
-.. automodule:: meteora.mixins.stations
-   :members:
-```
-
-```{eval-rst}
-.. automodule:: meteora.mixins.variables
+.. automodule:: meteora.clients.mixins.variables
    :members:
 ```

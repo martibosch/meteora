@@ -30,7 +30,7 @@ from meteora.clients import (
     MeteoSwissClient,
     NetatmoClient,
 )
-from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesEndpointMixin
 
 tests_dir = "tests"
 tests_data_dir = path.join(tests_dir, "data")

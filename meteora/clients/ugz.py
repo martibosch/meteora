@@ -1,18 +1,12 @@
 """Environmental and health protection (UGZ) of the city of Zurich."""
 
-import pandas as pd
-import pooch
 import pyproj
 from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseFileClient
-from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import KwargsType
-
-# disable pooch warnings when providing `None` as "known_hash"
-logger = pooch.get_logger()
-logger.setLevel("WARNING")
 
 # API endpoints
 STATIONS_ENDPOINT = (
@@ -61,8 +55,8 @@ class UGZClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
         Sensor height (in m) above site location, must be a value among the following:
         1, 1.8, 2, 2.5, 2.7, 3.5, 4. The default value is 2 m.
     pooch_kwargs : dict, optional
-        Keyword arguments to pass to the `pooch.retrieve` function when downloading the
-        stations time series data.
+        Keyword arguments to pass to the `pooch.retrieve` function when caching file
+        downloads.
     sjoin_kwargs : dict, optional
         Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
         stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
@@ -78,6 +72,7 @@ class UGZClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
     # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
     # _ts_endpoint = TS_ENDPOINT
+    _stations_read_csv_kwargs = {"encoding": "utf-8"}
 
     # data frame labels constants
     _stations_gdf_id_col = STATIONS_GDF_ID_COL
@@ -91,6 +86,8 @@ class UGZClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
     def __init__(
         self,
         region: RegionType,
+        *,
+        pooch_kwargs: KwargsType | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize GHCN hourly client."""
@@ -98,10 +95,9 @@ class UGZClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
         if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
+        if pooch_kwargs is None:
+            pooch_kwargs = {}
+        self.pooch_kwargs = pooch_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
-
-    def _stations_df_from_content(self, response_content):
-        print(response_content)
-        return pd.read_csv(response_content, encoding="utf-8")

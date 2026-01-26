@@ -13,7 +13,7 @@ from pyregeon import RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseFileClient
-from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"

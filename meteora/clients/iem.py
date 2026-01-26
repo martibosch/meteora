@@ -11,7 +11,7 @@ from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseTextClient
-from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # API endpoints

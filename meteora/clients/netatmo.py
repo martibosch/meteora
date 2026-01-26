@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from meteora import settings, utils
 from meteora.clients.base import BaseJSONClient
-from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # to show a progress bar in pandas/geopandas apply
