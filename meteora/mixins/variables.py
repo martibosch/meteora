@@ -92,6 +92,5 @@ class VariablesEndpointMixin(VariablesMixin):
         try:
             return self._variables_df
         except AttributeError:
-            response_content = self._get_content_from_url(self._variables_endpoint)
-            self._variables_df = self._variables_df_from_content(response_content)
+            self._variables_df = self._variables_df_from_endpoint()
             return self._variables_df

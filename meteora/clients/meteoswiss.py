@@ -8,7 +8,7 @@ import pyproj
 from pyregeon import CRSType, RegionType
 
 from meteora import settings, utils
-from meteora.clients.base import BaseTextClient
+from meteora.clients.base import BaseFileClient
 from meteora.mixins import StationsEndpointMixin, VariablesEndpointMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
@@ -72,7 +72,7 @@ ECV_DICT = {
 }
 
 
-class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextClient):
+class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileClient):
     """MeteoSwiss client.
 
     Parameters
@@ -93,6 +93,9 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
         The coordinate reference system (CRS) to be used. For Agrometeo, the
         provided value must be equivalent to either the EPSG:21781 (default) or
         EPSG:4326.
+    pooch_kwargs : dict, optional
+        Keyword arguments to pass to the `pooch.retrieve` function when caching file
+        downloads.
     sjoin_kwargs : dict, optional
         Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
         stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
@@ -103,6 +106,8 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
     _stations_endpoint = STATIONS_ENDPOINT
     _variables_endpoint = VARIABLES_ENDPOINT
     _ts_endpoint = TS_ENDPOINT
+    _stations_read_csv_kwargs = READ_CSV_KWARGS
+    _variables_read_csv_kwargs = READ_CSV_KWARGS
 
     # data frame labels constants
     _stations_gdf_id_col = STATIONS_GDF_ID_COL
@@ -116,6 +121,7 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
         region: RegionType,
         *,
         crs: CRSType | None = None,
+        pooch_kwargs: KwargsType | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize MeteoSwiss client."""
@@ -137,19 +143,12 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
         if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
         self.SJOIN_KWARGS = sjoin_kwargs
+        if pooch_kwargs is None:
+            pooch_kwargs = {}
+        self.pooch_kwargs = pooch_kwargs
 
         # need to call super().__init__() to set the cache
         super().__init__()
-
-    def _stations_df_from_content(self, response_content) -> pd.DataFrame:
-        # return pd.read_csv(self._stations_endpoint, encoding=FILE_ENCODING)
-        return pd.read_csv(response_content, **READ_CSV_KWARGS)
-
-    def _variables_df_from_content(self, response_content) -> pd.DataFrame:
-        return pd.read_csv(response_content, **READ_CSV_KWARGS)
-
-    def _ts_df_from_content(self, response_content) -> pd.DataFrame:
-        return pd.read_csv(response_content, **READ_CSV_KWARGS)
 
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
         # the API only allows returning data for a given station so we have to iterate
@@ -202,9 +201,29 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseTextCl
                         )
                     ]
 
+        def _should_cache_historical(update_freq):
+            today = dt.date.today()
+            if today.month != 12:
+                return True
+            decade = update_freq.split("historical_", 1)[1]
+            start_year, end_year = (int(year) for year in decade.split("-"))
+            return not (start_year <= today.year <= end_year)
+
+        def _should_cache_url(station_url):
+            update_freq = station_url.rsplit("_t_", 1)[-1].removesuffix(".csv")
+            if update_freq == "recent":
+                return False
+            if update_freq.startswith("historical_"):
+                return _should_cache_historical(update_freq)
+            return True
+
         def _ts_df_from_url(station_url):
             # read file into a pandas data frame
-            ts_df = self._ts_df_from_content(self._get_content_from_url(station_url))
+            ts_source = self._retrieve_file(
+                station_url,
+                cache=_should_cache_url(station_url),
+            )
+            ts_df = pd.read_csv(ts_source, **READ_CSV_KWARGS)
             # set time and station id columns as index
             ts_df = ts_df.assign(
                 **{

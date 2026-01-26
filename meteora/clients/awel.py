@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 from pyregeon import RegionType
 
 from meteora import settings
-from meteora.clients.base import BaseTextClient
+from meteora.clients.base import BaseFileClient
 from meteora.mixins import VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
@@ -46,7 +46,7 @@ ECV_DICT = {
 }
 
 
-class AWELClient(VariablesHardcodedMixin, BaseTextClient):
+class AWELClient(VariablesHardcodedMixin, BaseFileClient):
     """AWEL client (canton of Zurich).
 
     Parameters
@@ -126,18 +126,17 @@ class AWELClient(VariablesHardcodedMixin, BaseTextClient):
         for months in range(1, max_months):
             ts_df_date = today - relativedelta(months=months)
             try:
-                latest_ts_df_filepath = pooch.retrieve(
+                latest_ts_df_source = self._retrieve_file(
                     self._ts_endpoint.format(
                         year=ts_df_date.year, month=ts_df_date.month
                     ),
-                    None,
-                    **self.pooch_kwargs,
+                    cache=False,
                 )
                 break
             except requests.HTTPError:
                 pass
         return (
-            pd.read_csv(latest_ts_df_filepath, sep=";")
+            pd.read_csv(latest_ts_df_source, sep=";")
             .drop(columns=["starttime"] + list(self._variables_dict.keys()))
             .groupby("sensor")
             .first()
@@ -164,18 +163,18 @@ class AWELClient(VariablesHardcodedMixin, BaseTextClient):
             + [self._ts_df_time_col, SENSOR_HEIGHT_COL]
             + variable_cols
         )
+        today = dt_date.today()
 
         def _process_month_ts_df(year, month):
             try:
-                month_ts_filepath = pooch.retrieve(
+                month_ts_source = self._retrieve_file(
                     self._ts_endpoint.format(year=year, month=month),
-                    None,
-                    **self.pooch_kwargs,
+                    cache=not (year == today.year and month == today.month),
                 )
             except requests.HTTPError:
                 # TODO: log?
                 return pd.DataFrame()
-            ts_df = pd.read_csv(month_ts_filepath, sep=";", usecols=cols_to_keep)
+            ts_df = pd.read_csv(month_ts_source, sep=";", usecols=cols_to_keep)
             # filter sensor height
             ts_df = ts_df[ts_df[SENSOR_HEIGHT_COL] == self._sensor_height]
             # filter stations

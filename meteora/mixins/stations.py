@@ -23,5 +23,4 @@ class StationsEndpointMixin(ABC):
             The stations data for the given region.
 
         """
-        response_content = self._get_content_from_url(self._stations_endpoint)
-        return self._stations_df_from_content(response_content)
+        return self._stations_df_from_endpoint()

@@ -12,7 +12,7 @@ from dask import diagnostics
 from pyregeon import RegionType
 
 from meteora import settings, utils
-from meteora.clients.base import BaseTextClient
+from meteora.clients.base import BaseFileClient
 from meteora.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
@@ -79,7 +79,7 @@ ECV_DICT = {
 }
 
 
-class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextClient):
+class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
     """NOAA GHCN hourly client.
 
     Parameters
@@ -114,6 +114,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
     # API endpoints
     _stations_endpoint = GHCNH_STATIONS_ENDPOINT
     _ts_endpoint = TS_ENDPOINT
+    _stations_known_hash = STATIONS_LIST_KNOWN_HASH
 
     # data frame labels constants
     _stations_gdf_id_col = STATIONS_GDF_ID_COL
@@ -144,20 +145,6 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         # need to call super().__init__() to set the cache
         super().__init__()
 
-    def _get_stations_df(self) -> pd.DataFrame:
-        """Get all stations."""
-        try:
-            # ACHTUNG: we are not using `self.pooch_kwargs` to set the path to download
-            # files, because the stations file path can be reused independently of the
-            # region, so it is useful to cache it globally
-            stations_filepath = pooch.retrieve(
-                self._stations_endpoint, STATIONS_LIST_KNOWN_HASH
-            )
-        except ValueError:
-            # sha hash mismatch, probably because of updates in the station list
-            stations_filepath = pooch.retrieve(self._stations_endpoint, None)
-        return pd.read_csv(stations_filepath)
-
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
     ) -> dict:
@@ -177,6 +164,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         start = ts_params["start"]
         end = ts_params["end"]
         requested_years = set(range(start.year, end.year + 1))
+        current_year = pd.Timestamp.now().year
 
         # def _process_station_ts_df(year, station_id):
         #     try:
@@ -202,15 +190,14 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseTextC
         # use dask to parallelize requests
         def _process_station_ts_df(year, station_id):
             try:
-                station_ts_filepath = pooch.retrieve(
+                station_ts_source = self._retrieve_file(
                     self._ts_endpoint.format(year=year, station_id=station_id),
-                    None,
-                    **self.pooch_kwargs,
+                    cache=year != current_year,
                 )
             except requests.HTTPError:
                 # TODO: log?
                 return pd.DataFrame()
-            ts_df = pd.read_csv(station_ts_filepath, sep="|", usecols=cols_to_keep)
+            ts_df = pd.read_csv(station_ts_source, sep="|", usecols=cols_to_keep)
             ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
             return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
 
