@@ -49,7 +49,7 @@ dev = [
 ]
 doc = [
   "myst-parser",
-  "nbsphinx",
+  "myst-nb",
   "pydata-sphinx-theme",
   "sphinx",
   "sphinxcontrib-bibtex",

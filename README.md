@@ -23,7 +23,7 @@ Meteora provides a set of provider-specific clients to get observations from met
 from meteora.clients import GHCNHourlyClient
 
 region = "Canton de Vaud, Switzerland"
-variables = ["temperature", "precipitation", "surface_wind_speed"]
+variables = ["temperature", "precipitation", "wind_speed"]
 start = "12-11-2021"
 end = "12-12-2021"
 
@@ -36,13 +36,13 @@ ts_df.head()
 [########################################] | 100% Completed | 925.68 ms
 ```
 
-| station_id  | time                | temperature | precipitation | surface_wind_speed |
-| ----------- | ------------------- | ----------- | ------------- | ------------------ |
-| SZI0000LSMP | 2021-12-11 00:20:00 | 2.0         | NaN           | 4.6                |
-|             | 2021-12-11 00:50:00 | 2.0         | NaN           | 5.1                |
-|             | 2021-12-11 01:20:00 | 2.0         | NaN           | 4.6                |
-|             | 2021-12-11 01:50:00 | 2.0         | NaN           | 3.6                |
-|             | 2021-12-11 02:20:00 | 2.0         | NaN           | 4.6                |
+| station_id  | time                | temperature | precipitation | wind_speed |
+| ----------- | ------------------- | ----------- | ------------- | ---------- |
+| SZI0000LSMP | 2021-12-11 00:20:00 | 2.0         | NaN           | 4.6        |
+|             | 2021-12-11 00:50:00 | 2.0         | NaN           | 5.1        |
+|             | 2021-12-11 01:20:00 | 2.0         | NaN           | 4.6        |
+|             | 2021-12-11 01:50:00 | 2.0         | NaN           | 3.6        |
+|             | 2021-12-11 02:20:00 | 2.0         | NaN           | 4.6        |
 
 We can also get the station locations using the `stations_gdf` property:
 
