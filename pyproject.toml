@@ -52,6 +52,7 @@ doc = [
   "nbsphinx",
   "pydata-sphinx-theme",
   "sphinx",
+  "sphinxcontrib-bibtex",
   "sphinxemoji"
 ]
 ox = [
@@ -72,7 +73,8 @@ test = [
 ]
 user-guide = [
   "ecmwf-datastores-client",
-  "netcdf4"
+  "netcdf4",
+  "zarr"
 ]
 xvec = [
   "xarray",
@@ -125,11 +127,10 @@ ipykernel = ">=7.1.0,<8"
 default = {features = ["ox"], solve-group = "default"}
 cx = {features = ["cx"], solve-group = "default"}
 dev = {features = ["dev"], solve-group = "default"}
-doc = {features = ["doc"], solve-group = "default"}
+doc = {features = ["cx", "doc", "ox", "qc", "user-guide", "xclim", "xvec"], solve-group = "default"}
 ox = {features = ["ox"], solve-group = "default"}
 qc = {features = ["qc"], solve-group = "default"}
 test = {features = ["ox", "qc", "test", "xclim", "xvec"], solve-group = "default"}
-user-guide = {features = ["cx", "doc", "ox", "qc", "user-guide", "xclim", "xvec"], solve-group = "default"}
 xclim = {features = ["xclim"], solve-group = "default"}
 xvec = {features = ["xvec"], solve-group = "default"}
 
@@ -143,9 +144,6 @@ build-doc = "sphinx-build docs docs/_build"
 [tool.pixi.feature.test.tasks]
 # use dotenv to set api keys as env. vars
 test = "dotenv -f .keys.env run pytest -s --cov=meteora --cov-report=xml tests"
-
-[tool.pixi.feature.user-guide.tasks]
-run-notebooks = "sphinx-build -b html docs docs/_build/user-guide-exec -D nbsphinx_execute=always -D nbsphinx_kernel_name=pixi-kernel-python3 -D nbsphinx_exclude='.*a\\d\\d-.*'"
 
 [tool.pixi.pypi-dependencies]
 meteora = {path = ".", editable = true}

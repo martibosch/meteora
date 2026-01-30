@@ -44,13 +44,6 @@
    :members:
 ```
 
-### MetOffice
-
-```{eval-rst}
-.. automodule:: meteora.clients.metoffice
-   :members:
-```
-
 ### Netatmo
 
 ```{eval-rst}

@@ -15,6 +15,7 @@ extensions = [
     "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinxcontrib.bibtex",
     "sphinxemoji.sphinxemoji",
 ]
 
@@ -31,10 +32,19 @@ myst_heading_anchors = 3
 sys.path.insert(0, os.path.abspath(".."))
 
 # exclude patterns from sphinx-build
-exclude_patterns = ["_build", "**.ipynb_checkpoints"]
+exclude_patterns = [
+    "_build",
+    "**.ipynb_checkpoints",
+    "user-guide/a01-era5-download.ipynb",
+]
 
-# do NOT execute notebooks
-nbsphinx_execute = "never"
+# execute notebooks during the docs build
+nbsphinx_execute = "always"
+nbsphinx_kernel_name = "python3"
+
+# bibliography
+bibtex_bibfiles = ["user-guide/references.bib"]
+bibtex_default_style = "unsrt"
 
 
 # no prompts in rendered notebooks

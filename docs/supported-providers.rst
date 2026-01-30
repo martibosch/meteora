@@ -20,8 +20,7 @@ Netatmo          |:earth_africa:| Global  |:white_check_mark:| Yes   |:key:| API
 ================ ======================== ========================== =========================
 
 See more details about how to use each provider in the respective sections below as well
-as in the `API documentation
-<https://meteora.readthedocs.io/en/latest/api.html#available-clients>`__.
+as in the `API documentation <api.html#available-clients>`__.
 
 AEMET
 -----

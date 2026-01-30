@@ -77,4 +77,9 @@ repos:
     rev: 0.8.1
     hooks:
       - id: nbstripout
-        args: ["--keep-output"]
+
+
+  - repo: https://github.com/FlamingTempura/bibtex-tidy
+    rev: v1.14.0
+    hooks:
+      - id: bibtex-tidy
