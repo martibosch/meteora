@@ -19,9 +19,6 @@ from meteora.clients.base import BaseJSONClient
 from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
-# to show a progress bar in pandas/geopandas apply
-tqdm.pandas()
-
 # API endpoints
 BASE_URL = "https://api.netatmo.com"
 OAUTH2_TOKEN_ENDPOINT = f"{BASE_URL}/oauth2/token"
@@ -491,6 +488,21 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                 )
                 return None
 
+        response_jsons = (
+            self._get_content_from_url(
+                self._stations_endpoint,
+                params=dict(
+                    lon_sw=window.bounds[0],
+                    lat_sw=window.bounds[1],
+                    lon_ne=window.bounds[2],
+                    lat_ne=window.bounds[3],
+                ),
+            )
+            for window in tqdm(
+                self.region_window_gser,
+                total=len(self.region_window_gser),
+            )
+        )
         _stations_df = pd.concat(
             [
                 pd.DataFrame(
@@ -499,29 +511,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
                         for station_record in response_json["body"]
                     ],
                 )
-                for response_json in self.region_window_gser.progress_apply(
-                    # for response_json, _ in self.region_window_gser.apply(
-                    # lambda window: self._perform_request(
-                    #     STATIONS_ENDPOINT,
-                    #     data=dict(
-                    #         lon_sw=window.bounds[0],
-                    #         lat_sw=window.bounds[1],
-                    #         lon_ne=window.bounds[2],
-                    #         lat_ne=window.bounds[3],
-                    #     ),
-                    # )
-                    # we can use the cache to get the stations (note that the same
-                    # endpoint is used to get the latest observations)
-                    lambda window: self._get_content_from_url(
-                        self._stations_endpoint,
-                        params=dict(
-                            lon_sw=window.bounds[0],
-                            lat_sw=window.bounds[1],
-                            lon_ne=window.bounds[2],
-                            lat_ne=window.bounds[3],
-                        ),
-                    )
-                )
+                for response_json in response_jsons
             ],
             axis="rows",
             ignore_index=True,
