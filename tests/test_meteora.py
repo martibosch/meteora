@@ -692,9 +692,11 @@ class BaseClientTest:
             )
             # TODO: use "time" as `level` arg?
             assert is_datetime64_any_dtype(ts_df.index.get_level_values(1))
-            # test that index is sorted (note that we need to test it as a multi-index
-            # because otherwise the time index alone is not unique in long data frames
-            assert ts_df.index.is_monotonic_increasing
+            # test that index is sorted - note that we need to test it as a multi-index
+            # for each station because (i) we do not care if stations ids are sorted and
+            # (ii) otherwise the time index alone is not unique in long data frames
+            for _, _ts_df in ts_df.groupby(level="station_id"):
+                assert _ts_df.droplevel("station_id").index.is_monotonic_increasing
             # test index labels
             assert ts_df.index.names == [settings.STATIONS_ID_COL, settings.TIME_COL]
 

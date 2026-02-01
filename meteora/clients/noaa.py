@@ -220,10 +220,6 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileC
             )
             return pd.DataFrame(columns=variable_cols)
 
-    def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
-        # no need to sort the index given the way the data has been requested
-        return ts_df.apply(pd.to_numeric, axis="columns")
-
     def get_ts_df(
         self,
         variables: VariablesType,

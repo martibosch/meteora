@@ -146,7 +146,7 @@ class BaseClient(RegionMixin, abc.ABC):
         return {"variable_ids": variable_ids, **kwargs}
 
     def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
-        return ts_df.apply(pd.to_numeric, axis="columns").sort_index()
+        return ts_df.apply(pd.to_numeric, axis="columns")  # .sort_index()
 
     def _rename_variables_cols(
         self, ts_df: pd.DataFrame, variable_id_ser: pd.Series

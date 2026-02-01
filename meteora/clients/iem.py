@@ -226,7 +226,6 @@ class IEMClient(
 
     def _post_process_ts_df(self, ts_df: pd.DataFrame) -> pd.DataFrame:
         # In this case:
-        # - avoid sorting on index as data is already sorted
         # - avoid to_numeric as data is already numeric
         return ts_df
 
