@@ -1,5 +1,34 @@
 # History
 
+## [v0.12.0] - 2026-02-01
+
+### :boom: BREAKING CHANGES
+
+- due to [`4b73db5`](https://github.com/martibosch/meteora/commit/4b73db5f325f8b089741a3332018451683a16a99) - ECV constants in settings; added `_temperature` to dew point *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  ECV constants in settings; added `_temperature` to dew point
+
+- due to [`9256199`](https://github.com/martibosch/meteora/commit/9256199f4d1fd4c5fe3b4329d475597509452f99) - improve performance by not sorting in `_post_process_ts_df` *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  improve performance by not sorting in `_post_process_ts_df`
+
+### :sparkles: New Features
+
+- [`4b73db5`](https://github.com/martibosch/meteora/commit/4b73db5f325f8b089741a3332018451683a16a99) - ECV constants in settings; added `_temperature` to dew point *(commit by [@martibosch](https://github.com/martibosch))*
+- [`15ca56b`](https://github.com/martibosch/meteora/commit/15ca56bab46dede346c0379d12f6267169116a6b) - request vs file based clients *(commit by [@martibosch](https://github.com/martibosch))*
+- [`7faf3af`](https://github.com/martibosch/meteora/commit/7faf3af6e05d0fb54423c5df1c9058980b042c6c) - xclim integration, unit support with pint, updated user-guide *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9256199`](https://github.com/martibosch/meteora/commit/9256199f4d1fd4c5fe3b4329d475597509452f99) - improve performance by not sorting in `_post_process_ts_df` *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`3de3f48`](https://github.com/martibosch/meteora/commit/3de3f48c5a97ea37faa6c8cde65fcaba83221074) - swap lon/lat cols for meteoswiss client *(commit by [@martibosch](https://github.com/martibosch))*
+- [`8fb5f1b`](https://github.com/martibosch/meteora/commit/8fb5f1b303f0b7b5aa00c4d30234d6e9c0d7412f) - avoid GeoSeries.progress_apply to support pandas 3 *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :recycle: Refactors
+
+- [`49f6f37`](https://github.com/martibosch/meteora/commit/49f6f37a4e302c8f0067182e6d0477afe4aa397e) - improve client initialization and base class structure *(commit by [@martibosch](https://github.com/martibosch))*
+- [`d4f15ad`](https://github.com/martibosch/meteora/commit/d4f15addad57bcffa15eb50ad3206df9efd75ba8) - move mixins to clients module *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.11.0] - 2026-01-22
 
 ### :boom: BREAKING CHANGES
@@ -214,3 +243,4 @@
   \[v0.9.0\]: https://github.com/martibosch/meteora/compare/v0.8.0...v0.9.0
   \[v0.10.0\]: https://github.com/martibosch/meteora/compare/v0.9.0...v0.10.0
   \[v0.11.0\]: https://github.com/martibosch/meteora/compare/v0.10.0...v0.11.0
+  \[v0.12.0\]: https://github.com/martibosch/meteora/compare/v0.11.0...v0.12.0
