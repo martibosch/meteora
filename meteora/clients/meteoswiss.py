@@ -1,6 +1,7 @@
 """MeteoSwiss client."""
 
 import datetime as dt
+import os
 from collections.abc import Mapping
 
 import pandas as pd
@@ -269,10 +270,34 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileCl
                     )
                     if recent_station_url not in station_urls:
                         ts_df = _ts_df_from_url(recent_station_url)
-                        utils.log(
-                            f"Retrieved {len(ts_df)} rows for station '{station_id}' "
-                            "from 'recent' data."
-                        )
+                        if ts_df.empty:
+                            utils.log(
+                                "The requested data for the given period and station "
+                                "'{station_id}' is not on the 'recent' data either. "
+                                "This can happen when the 'historical' data for the "
+                                "corresponding decade is cached locally but has been "
+                                "already updated in the MeteoSwiss API. Accordingly, we"
+                                " will try to update the 'historical' file and retrieve"
+                                " the requested data from the updated file.",
+                            )
+                            # ACHTUNG: here we are assuming that the file is cached
+                            cached_ts_source = self._retrieve_file(
+                                station_url, cache=True
+                            )
+                            os.remove(cached_ts_source)
+                            utils.log(
+                                f"Removed cached file '{cached_ts_source}' for station "
+                                f"'{station_id}' to force the retrieval of the updated "
+                                f"'historical' data from the MeteoSwiss API."
+                            )
+                            # here we assume that ts_df will be non-empty, otherwise the
+                            # only possible reason would be a malformed request
+                            ts_df = _ts_df_from_url(station_url)
+                        else:
+                            utils.log(
+                                f"Retrieved {len(ts_df)} rows for station "
+                                f"'{station_id}' from 'recent' data."
+                            )
                 ts_dfs.append(ts_df)
             return ts_dfs
 
