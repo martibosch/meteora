@@ -37,16 +37,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: install uv
-        uses: astral-sh/setup-uv@v7
-
       - uses: actions/download-artifact@v5
         with:
           name: artifact
           path: dist
 
-      - name: publish to test pypi
-        run: uv publish --index testpypi
+      # Temporary workaround: use Twine-based publisher instead of `uv publish`.
+      # See https://github.com/pypi/support/issues/9423
+      - name: publish to test pypi (twine workaround)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist
 
   release:
     needs: [publish_dev_build]
@@ -61,9 +63,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: install uv
-        uses: astral-sh/setup-uv@v7
 
       - name: update changelog
         id: changelog
@@ -87,8 +86,12 @@ jobs:
           name: artifact
           path: dist
 
-      - name: publish to pypi
-        run: uv publish
+      # Temporary workaround: use Twine-based publisher instead of `uv publish`.
+      # See https://github.com/pypi/support/issues/9423
+      - name: publish to pypi (twine workaround)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
 
       - name: pre-commit on changelog
         uses: pre-commit/action@v3.0.1
