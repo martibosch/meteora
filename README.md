@@ -14,7 +14,11 @@ Pythonic interface to access observations from meteorological stations. Key feat
 - easily stream meteorological observations [from multiple providers, from global (e.g., GHCNh) and regional (e.g., MeteoSwiss) networks to citizen weather stations (e.g., Netatmo)](https://meteora.readthedocs.io/en/latest/supported-providers.html) into pandas data frames.
 - user-friendly arguments to filter data by region, variables or date ranges.
 - request and download caching with [requests-cache](https://github.com/requests-cache/requests-cache) and [pooch](https://github.com/fatiando/pooch) to avoid re-downloading data and help bypassing API limits.
-- analyze the collected data, e.g., [compute climate indices](https://meteora.readthedocs.io/en/latest/user-guide/climate-indices.html), [detect heatwave periods](https://meteora.readthedocs.io/en/latest/user-guide/heatwave-detection.html) or [perform quality-control on citizen weather station data](https://meteora.readthedocs.io/en/latest/user-guide/netatmo-qc.html).
+- postprocess the collected data, e.g.:
+  - [compute climate indices](https://meteora.readthedocs.io/en/latest/user-guide/climate-indices.html)
+  - [detect heatwave periods](https://meteora.readthedocs.io/en/latest/user-guide/heatwave-detection.html)
+  - [produce ground truth datasets to benchmark weather forecasts](https://meteora.readthedocs.io/en/latest/user-guide/data-structures.html#stationbench-format)
+  - [perform quality-control on citizen weather station data](https://meteora.readthedocs.io/en/latest/user-guide/netatmo-qc.html).
 
 ## Overview
 
