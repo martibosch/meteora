@@ -168,6 +168,9 @@ class TestUtils(unittest.TestCase):
             index_col="time",
             parse_dates=True,
         )
+        self.stations_gdf = gpd.read_file(
+            path.join(tests_data_dir, "stations.gpkg")
+        ).set_index(settings.STATIONS_ID_COL)
 
     def test_geo_utils(self):
         # geo utils
@@ -210,25 +213,27 @@ class TestUtils(unittest.TestCase):
 
     @pytest.mark.usefixtures("unload_xarray")
     def test_long_to_cube_missing_xarray(self):
-        # dummy variable which does not matter
-        stations_gdf = gpd.GeoDataFrame()
         # test that we can only call this function if xarray/xvec are installed
         with pytest.raises(ImportError):
-            utils.long_to_cube(self.ts_df, stations_gdf)
+            utils.long_to_cube(self.ts_df, self.stations_gdf)
+
+    @pytest.mark.usefixtures("unload_xarray")
+    def test_long_to_stationbench_missing_xarray(self):
+        # test that we can only call this function if xarray/xvec are installed
+        with pytest.raises(ImportError):
+            utils.long_to_stationbench(self.ts_df, self.stations_gdf)
 
     def test_long_to_cube(self):
         pytest.importorskip("xvec")
-        stations_gdf = gpd.read_file(
-            path.join(tests_data_dir, "stations.gpkg")
-        ).set_index(settings.STATIONS_ID_COL)
+
         with pytest.raises(KeyError):
             # if stations_gdf does not cover all stations in ts_df a KeyError is also
             # raised
-            utils.long_to_cube(self.ts_df, stations_gdf.iloc[:2])
+            utils.long_to_cube(self.ts_df, self.stations_gdf.iloc[:2])
             # attempting to convert from the wide form also raises a KeyError
-            utils.long_to_cube(self.wide_ts_df, stations_gdf)
+            utils.long_to_cube(self.wide_ts_df, self.stations_gdf)
         # test proper conversion
-        ts_cube = utils.long_to_cube(self.ts_df, stations_gdf)
+        ts_cube = utils.long_to_cube(self.ts_df, self.stations_gdf)
         # test an xarray dataset is returned
         self.assertIsInstance(ts_cube, xr.Dataset)
         # test that the time column is in the coordinates
@@ -242,8 +247,56 @@ class TestUtils(unittest.TestCase):
         # are in the stations_gdf index
         self.assertIn(settings.STATIONS_ID_COL, ts_cube.coords)
         self.assertLessEqual(
-            set(ts_cube[settings.STATIONS_ID_COL].values), set(stations_gdf.index)
+            set(ts_cube[settings.STATIONS_ID_COL].values), set(self.stations_gdf.index)
         )
+
+    def test_long_to_stationbench(self):
+        pytest.importorskip("xvec")
+
+        with pytest.raises(ValueError):
+            # calling it with a wide data frame should raise a ValueError (not enough
+            # values to unpack)
+            utils.long_to_stationbench(self.wide_ts_df, self.stations_gdf)
+
+        # test default dataset shape
+        ts_ds = utils.long_to_stationbench(self.ts_df, self.stations_gdf)
+        self.assertIsInstance(ts_ds, xr.Dataset)
+        self.assertEqual(
+            set(ts_ds.dims),
+            {"time", "station_id"},
+        )
+        self.assertIn("latitude", ts_ds.coords)
+        self.assertIn("longitude", ts_ds.coords)
+        self.assertEqual(ts_ds["latitude"].dims, ("station_id",))
+        self.assertEqual(ts_ds["longitude"].dims, ("station_id",))
+        self.assertIn("2m_temperature", ts_ds.data_vars)
+        self.assertIn("water_vapour", ts_ds.data_vars)
+        self.assertEqual(
+            ts_ds["2m_temperature"].dims,
+            (settings.TIME_COL, settings.STATIONS_ID_COL),
+        )
+        # test time and station dim name kwargs
+        dst_time_dim = "_time"
+        dst_station_dim = "_station"
+        self.assertEqual(
+            set(
+                utils.long_to_stationbench(
+                    self.ts_df,
+                    self.stations_gdf,
+                    dst_time_dim=dst_time_dim,
+                    dst_station_dim=dst_station_dim,
+                ).dims
+            ),
+            {dst_time_dim, dst_station_dim},
+        )
+        # test different variable rename map (note that self.ts_df does  not have wind
+        # speed)
+        variable_rename_map = {"temperature": "2t"}  # , "wind_speed": "10u"
+        ts_ds_renamed = utils.long_to_stationbench(
+            self.ts_df, self.stations_gdf, variable_rename=variable_rename_map
+        )
+        for variable_name in variable_rename_map.values():
+            self.assertIn(variable_name, ts_ds_renamed.data_vars)
 
     def test_meteo_utils(self):
         # meteo utils (heatwave detection)

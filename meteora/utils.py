@@ -150,6 +150,94 @@ def long_to_cube(
     )
 
 
+def long_to_stationbench(
+    ts_df: pd.DataFrame,
+    stations_gdf: gpd.GeoDataFrame,
+    *,
+    variable_rename: Mapping[str, str] | None = None,
+    dst_time_dim: str = "time",
+    dst_station_dim: str = "station_id",
+) -> CubeType:
+    """Convert a long time series data frame to StationBench's station data format.
+
+    Parameters
+    ----------
+    ts_df : pd.DataFrame
+        Long form data frame with a time series of measurements (second-level index) at
+        each station (first-level index) for each variable (column).
+    stations_gdf : gpd.GeoDataFrame
+        Stations data as a GeoDataFrame, indexed by station ID.
+    variable_rename : Mapping[str, str], optional
+        Mapping used to rename data variable names in the output dataset.
+        If None, Meteora ECV names are mapped to StationBench defaults (`temperature` ->
+        `2m_temperature`, `wind_speed` -> `10m_wind_speed`).
+    dst_time_dim, dst_station_dim : str, optional
+        Names for the time and station dimensions in the output dataset. If not
+        provided, they default to `time` and `station_id`, which are the expected names
+        in StationBench.
+
+    Returns
+    -------
+    ts_ds : xr.Dataset
+        Dataset with dimensions `time` and `station_id`, coordinates `latitude` and
+        `longitude`, and one data variable per weather variable.
+    """
+    require_optional(
+        {"xarray": xr, "xvec": xvec},
+        extra="xvec",
+        feature="meteora.utils.long_to_stationbench",
+    )
+
+    # get the stations id and time columns in the time series data frame
+    stations_ts_df_id_col, time_col = ts_df.index.names
+    # time_col = ts_df.index.names[1]
+    # ts_ds = ts_df.to_xarray()
+    ts_cube = long_to_cube(ts_df, stations_gdf)
+    # get lon/lat array
+    lonlat_arr = shapely.get_coordinates(
+        ts_cube.xvec.to_crs(geometry=LONLAT_CRS).geometry
+    )
+    ts_cube = (
+        ts_cube.swap_dims({"geometry": "station_id"})
+        .drop_vars("geometry")
+        # TODO: transposing matches the StationBench format, but do we really need it?
+        .transpose("time", "station_id")
+        .assign_coords(
+            longitude=(stations_ts_df_id_col, lonlat_arr[:, 0]),
+            latitude=(stations_ts_df_id_col, lonlat_arr[:, 1]),
+        )
+    )
+
+    # rename dimensions if needed.
+    # note that Meteora defaults (from the settings module) actually coincide with the
+    # expected StationBench nomenclature, however it is better to still
+    rename_dims = {}
+    if stations_ts_df_id_col != dst_station_dim:
+        # rename_dims[stations_ts_df_id_col] = settings.STATIONS_ID_COL
+        rename_dims[stations_ts_df_id_col] = dst_station_dim
+    if time_col != dst_time_dim:
+        # rename_dims[time_col] = settings.TIME_COL
+        rename_dims[time_col] = dst_time_dim
+    if rename_dims:
+        ts_cube = ts_cube.rename(rename_dims)
+
+    # rename data variables if needed
+    if variable_rename is None:
+        variable_rename = {
+            settings.ECV_TEMPERATURE: "2m_temperature",
+            settings.ECV_WIND_SPEED: "10m_wind_speed",
+        }
+    actual_rename = {
+        src_var: dst_var
+        for src_var, dst_var in variable_rename.items()
+        if src_var in ts_cube.data_vars and src_var != dst_var
+    }
+    if actual_rename:
+        ts_cube = ts_cube.rename(actual_rename)
+
+    return ts_cube
+
+
 ########################################################################################
 # meteo utils
 def get_heatwave_periods(
