@@ -12,7 +12,12 @@ from pyregeon import RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseFileClient
-from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
+from meteora.clients.mixins import (
+    StationPartitionedTSMixin,
+    StationsEndpointMixin,
+    TimePartitionedTSMixin,
+    VariablesHardcodedMixin,
+)
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
@@ -23,18 +28,18 @@ logger.setLevel("WARNING")
 # API endpoints
 BASE_URL = "https://www.ncei.noaa.gov/oa/global-historical-climatology-network/hourly"
 GHCNH_STATIONS_ENDPOINT = f"{BASE_URL}/doc/ghcnh-station-list.csv"
-TS_ENDPOINT = f"{BASE_URL}/access/by-year/" + "{year}/psv/GHCNh_{station_id}_{year}.psv"
+TS_ENDPOINT = (
+    f"{BASE_URL}/access/by-year/"
+    + "{period.year}/psv/GHCNh_{station_id}_{period.year}.psv"
+)
 
 # for pooch
-# TODO: how often can it change? how to properly update it if it does?
 STATIONS_LIST_KNOWN_HASH = (
     "6b837d8d953aa6ebc172755864e549518944e7bec15b2196ee191219587a96f5"
 )
 
 # useful constants
 STATIONS_GDF_ID_COL = "GHCN_ID"
-# ACHTUNG: note that in the time series data frame the station column label is "Station
-# ID" whereas in the stations data frame it is "id".
 TS_DF_STATIONS_ID_COL = "STATION"
 TS_DF_TIME_COL = "DATE"
 VARIABLES_ID_COL = "code"
@@ -78,7 +83,13 @@ ECV_DICT = {
 }
 
 
-class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileClient):
+class GHCNHourlyClient(
+    StationPartitionedTSMixin,
+    TimePartitionedTSMixin,
+    StationsEndpointMixin,
+    VariablesHardcodedMixin,
+    BaseFileClient,
+):
     """NOAA GHCN hourly client.
 
     Parameters
@@ -104,11 +115,13 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileC
         used.
     """
 
-    # ACHTUNG: many constants are set in `GHCNH_STATIONS_COLUMNS` above
     # geom constants
     X_COL = "LONGITUDE"
     Y_COL = "LATITUDE"
     CRS = utils.LONLAT_CRS
+
+    # time partition frequency
+    _time_partition_freq = "YS"
 
     # API endpoints
     _stations_endpoint = GHCNH_STATIONS_ENDPOINT
@@ -147,77 +160,54 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileC
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
     ) -> dict:
-        # process date args
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
-
         return dict(variable_ids=variable_ids, start=start, end=end)
 
-    def _ts_df_from_endpoint(self, ts_params) -> pd.DataFrame:
-        """Get time series data frame from endpoint."""
-        # we override this method because we need a separate request for each station
+    def _ts_cache(self, ts_params) -> bool:
+        return ts_params["period"].year != pd.Timestamp.now().year
+
+    def _ts_df_from_url(self, url, ts_params) -> pd.DataFrame:
         variable_cols = list(ts_params["variable_ids"])
         cols_to_keep = (
             [self._ts_df_stations_id_col] + [self._ts_df_time_col] + variable_cols
         )
         start = ts_params["start"]
         end = ts_params["end"]
-        requested_years = set(range(start.year, end.year + 1))
-        current_year = pd.Timestamp.now().year
+        try:
+            source = self._ts_source(url, ts_params)
+        except requests.HTTPError:
+            return pd.DataFrame()
+        ts_df = pd.read_csv(source, sep="|", usecols=cols_to_keep)
+        ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
+        ts_df = ts_df[ts_df[self._ts_df_time_col].between(start, end)]
+        return ts_df.set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
 
-        # def _process_station_ts_df(year, station_id):
-        #     try:
-        #         station_ts_filepath = pooch.retrieve(
-        #             self._ts_endpoint.format(year=year, station_id=station_id),
-        #             None,
-        #             **self.pooch_kwargs,
-        #         )
-        #     except requests.HTTPError:
-        #         return pd.DataFrame()
-        #     ts_df = pd.read_csv(station_ts_filepath, sep="|")[cols_to_keep]
-        #     ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
-        #     return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
-
-        # ts_df = pd.concat(
-        #     [
-        #         _process_station_ts_df(year, station_id)
-        #         for station_id in self.stations_gdf.index
-        #         for year in requested_years
-        #     ]
-        # )
-
-        # use dask to parallelize requests
-        def _process_station_ts_df(year, station_id):
-            try:
-                station_ts_source = self._retrieve_file(
-                    self._ts_endpoint.format(year=year, station_id=station_id),
-                    cache=year != current_year,
-                )
-            except requests.HTTPError:
-                # TODO: log?
-                return pd.DataFrame()
-            ts_df = pd.read_csv(station_ts_source, sep="|", usecols=cols_to_keep)
-            ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
-            return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
+    def _ts_df_from_endpoint(self, ts_params) -> pd.DataFrame:
+        # override to parallelize all (station, year) combinations with dask
+        variable_cols = list(ts_params["variable_ids"])
+        station_partitions = self._iter_station_partitions(ts_params)
+        time_partitions = self._iter_time_partitions(ts_params)
 
         tasks = [
-            dask.delayed(_process_station_ts_df)(year, station_id)
-            for station_id in self.stations_gdf.index
-            for year in requested_years
+            dask.delayed(self._ts_df_from_url)(
+                self._format_ts_endpoint(ts_params | sp | tp),
+                ts_params | sp | tp,
+            )
+            for sp in station_partitions
+            for tp in time_partitions
         ]
         with diagnostics.ProgressBar():
-            ts_dfs = dask.compute(*tasks)
+            dfs = dask.compute(*tasks)
 
-        try:
-            return pd.concat([ts_df for ts_df in ts_dfs if not ts_df.empty]).set_index(
-                [self._ts_df_stations_id_col, self._ts_df_time_col]
-            )
-        except ValueError:  # no objects to concatenate
+        non_empty = [df for df in dfs if not df.empty]
+        if not non_empty:
             utils.log(
-                "No data found for the requested period and stations, returning an ",
+                "No data found for any station in the requested period.",
                 level=lg.WARNING,
             )
             return pd.DataFrame(columns=variable_cols)
+        return pd.concat(non_empty)
 
     def get_ts_df(
         self,

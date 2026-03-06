@@ -21,7 +21,6 @@ from meteora.utils import KwargsType, VariablesType
 __all__ = [
     "BaseFileClient",
     "BaseJSONClient",
-    "BaseRequestClient",
     "BaseTextClient",
 ]
 
@@ -389,13 +388,17 @@ class BaseRequestClient(BaseClient, abc.ABC):
         response_content = self._get_content_from_url(self._variables_endpoint)
         return self._variables_df_from_content(response_content)
 
-    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
-        # perform request
-        response_content = self._get_content_from_url(
-            self._ts_endpoint, params=ts_params
-        )
+    def _format_ts_endpoint(self, ts_params: Mapping) -> str:
+        return self._ts_endpoint.format(**ts_params)
 
-        # process response content into a time series data frame
+    def _ts_query_params(self, ts_params: Mapping) -> Mapping:
+        return ts_params
+
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        endpoint = self._format_ts_endpoint(ts_params)
+        response_content = self._get_content_from_url(
+            endpoint, params=self._ts_query_params(ts_params)
+        )
         return self._ts_df_from_content(response_content)
 
 
@@ -510,3 +513,20 @@ class BaseFileClient(BaseClient):
             cache=cache,
             read_csv_kwargs=read_csv_kwargs,
         )
+
+    def _format_ts_endpoint(self, ts_params: Mapping) -> str:
+        return self._ts_endpoint.format(**ts_params)
+
+    def _ts_cache(self, ts_params: Mapping) -> bool:
+        return True
+
+    def _ts_source(self, url: str, ts_params: Mapping):
+        return self._retrieve_file(url, cache=self._ts_cache(ts_params))
+
+    @abc.abstractmethod
+    def _ts_df_from_url(self, url: str, ts_params: Mapping) -> pd.DataFrame:
+        pass
+
+    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        endpoint = self._format_ts_endpoint(ts_params)
+        return self._ts_df_from_url(endpoint, ts_params)

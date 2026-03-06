@@ -10,7 +10,12 @@ from pyregeon import CRSType, RegionType
 
 from meteora import settings, utils
 from meteora.clients.base import BaseFileClient
-from meteora.clients.mixins import StationsEndpointMixin, VariablesEndpointMixin
+from meteora.clients.mixins import (
+    StationPartitionedTSMixin,
+    StationsEndpointMixin,
+    TimePartitionedTSMixin,
+    VariablesEndpointMixin,
+)
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 BASE_URL = "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn"
@@ -20,11 +25,9 @@ VARIABLES_ENDPOINT = f"{BASE_URL}/ogd-smn_meta_parameters.csv"
 # https://opendatadocs.meteoswiss.ch/general/download#how-csv-files-are-structured
 # - the `t` corresponds to the "original data" (Originalwert), i.e., the 10min value,
 #   all the other granularities are aggregations (e.g., `h` for hourly...)
-# - the `{update_freq}` part can be either `historical` (until Dec 31st of last year) or
-#   `recent` (from Jan 1st of this year until yesterday).
-# Additionally, for `historical` data, an additional part of the form `_{decade}` must
-# be added to the URL, e.g., `_1980-1989` for the 1980s decade.
-TS_ENDPOINT = f"{BASE_URL}/" + "{station_id}/ogd-smn_{station_id}_t_{update_freq}.csv"
+# - the `{period}` part can be either `historical_YYYY-YYYY` (until Dec 31st of last
+#   year) or `recent` (from Jan 1st of this year until yesterday).
+TS_ENDPOINT = f"{BASE_URL}/" + "{station_id}/ogd-smn_{station_id}_t_{period}.csv"
 
 # useful constants
 # TODO: DRY with Agrometeo?
@@ -73,7 +76,13 @@ ECV_DICT = {
 }
 
 
-class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileClient):
+class MeteoSwissClient(
+    StationPartitionedTSMixin,
+    TimePartitionedTSMixin,
+    StationsEndpointMixin,
+    VariablesEndpointMixin,
+    BaseFileClient,
+):
     """MeteoSwiss client.
 
     Parameters
@@ -132,7 +141,6 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileCl
         else:
             crs = DEFAULT_CRS
         self.CRS = crs
-        # self._variables_name_col = variables_name_col or VARIABLES_NAME_COL
         try:
             self.X_COL, self.Y_COL = GEOM_COL_DICT[self.CRS]
         except KeyError:
@@ -151,81 +159,52 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileCl
         # need to call super().__init__() to set the cache
         super().__init__()
 
-    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
-        # the API only allows returning data for a given station so we have to iterate
-        # over the list of stations
-        # determine whether we need to access the "historical" or "recent" URL, see
+    def _iter_time_partitions(self, ts_params: Mapping):
+        # determine whether we need "historical" or "recent" files, see
         # https://opendatadocs.meteoswiss.ch/general/download#update-frequency
         this_year_start = dt.date(dt.datetime.now().year, 1, 1)
-
-        # TODO: better approach to ensure datetime types in `ts_params`
         start = pd.Timestamp(ts_params["start"])
         end = pd.Timestamp(ts_params["end"])
+
         if start.date() >= this_year_start:
-            # the first requested data is after the start of the current year, so we
-            # only need to query the data from the "recent" file
-            def _get_station_urls(station_id):
-                return [
-                    self._ts_endpoint.format(
-                        station_id=station_id,
-                        update_freq="recent",
-                    )
-                ]
-        else:
-            # we need to query the data from at least one "historical" file (there is a
-            # "historical" file for each decade, e.g., 1980-1989, 1990-1999, etc.)
-            decades = []
-            for year in range((start.year // 10) * 10, (end.year // 10) * 10 + 1, 10):
-                decades.append(f"{year}-{year + 9}")
+            return [{"period": "recent"}]
 
-            def _get_station_decades_urls(station_id):
-                return [
-                    self._ts_endpoint.format(
-                        station_id=station_id,
-                        update_freq=f"historical_{decade}",
-                    )
-                    for decade in decades
-                ]
+        decades = [
+            f"{year}-{year + 9}"
+            for year in range((start.year // 10) * 10, (end.year // 10) * 10 + 1, 10)
+        ]
+        update_freqs = [f"historical_{decade}" for decade in decades]
+        if end.date() >= this_year_start:
+            update_freqs.append("recent")
+        return [{"period": uf} for uf in update_freqs]
 
-            if end.date() < this_year_start:
-                # the last requested data is before the start of the current year, so we
-                # only need to query the data from the "historical" file of each decade
-                def _get_station_urls(station_id):
-                    return _get_station_decades_urls(station_id)
-            else:
-                # assume that we need to query both the "historical" and "recent" files
-                def _get_station_urls(station_id):
-                    return _get_station_decades_urls(station_id) + [
-                        self._ts_endpoint.format(
-                            station_id=station_id,
-                            update_freq="recent",
-                        )
-                    ]
+    def _format_ts_endpoint(self, ts_params: Mapping) -> str:
+        # MeteoSwiss station IDs in URLs are lowercase
+        return self._ts_endpoint.format(
+            **{**ts_params, "station_id": ts_params["station_id"].lower()}
+        )
 
-        def _should_cache_historical(update_freq):
-            today = dt.date.today()
-            if today.month != 12:
-                return True
-            decade = update_freq.split("historical_", 1)[1]
-            start_year, end_year = (int(year) for year in decade.split("-"))
-            return not (start_year <= today.year <= end_year)
-
-        def _should_cache_url(station_url):
-            update_freq = station_url.rsplit("_t_", 1)[-1].removesuffix(".csv")
-            if update_freq == "recent":
-                return False
-            if update_freq.startswith("historical_"):
-                return _should_cache_historical(update_freq)
+    def _ts_cache(self, ts_params: Mapping) -> bool:
+        period = ts_params["period"]
+        if period == "recent":
+            return False
+        # for historical, always cache unless we're in December and the period
+        # includes the current year (the file may still be getting populated)
+        today = dt.date.today()
+        if today.month != 12:
             return True
+        decade = period.split("historical_", 1)[1]
+        start_year, end_year = (int(y) for y in decade.split("-"))
+        return not (start_year <= today.year <= end_year)
 
-        def _ts_df_from_url(station_url):
-            # read file into a pandas data frame
-            ts_source = self._retrieve_file(
-                station_url,
-                cache=_should_cache_url(station_url),
-            )
-            ts_df = pd.read_csv(ts_source, **READ_CSV_KWARGS)
-            # set time and station id columns as index
+    def _ts_df_from_url(self, url, ts_params: Mapping) -> pd.DataFrame:
+        start = pd.Timestamp(ts_params["start"])
+        end = pd.Timestamp(ts_params["end"])
+        period = ts_params["period"]
+        _station_id = ts_params["station_id"].lower()
+
+        def _parse(source):
+            ts_df = pd.read_csv(source, **READ_CSV_KWARGS)
             ts_df = ts_df.assign(
                 **{
                     self._ts_df_time_col: pd.to_datetime(
@@ -233,8 +212,6 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileCl
                     )
                 }
             ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
-            # filter time range
-            # TODO: dry with Agrometeo and Meteocat
             time_ser = ts_df.index.get_level_values(self._ts_df_time_col).to_series()
             tz = time_ser.dt.tz
             return ts_df.loc[
@@ -249,72 +226,51 @@ class MeteoSwissClient(StationsEndpointMixin, VariablesEndpointMixin, BaseFileCl
                 :,
             ]
 
-        def _station_ts_dfs(station_id):
-            station_urls = _get_station_urls(station_id)
-            ts_dfs = []
-            for station_url in station_urls:
-                ts_df = _ts_df_from_url(station_url)
+        ts_source = self._ts_source(url, ts_params)
+        ts_df = _parse(ts_source)
+
+        if ts_df.empty and period.startswith("historical_"):
+            utils.log(
+                f"The requested data for the given period and station "
+                f"'{_station_id}' returned an empty data frame. This can happen "
+                "when requesting data from the past year during the first "
+                "months of the year, since 'historical' data for the "
+                "corresponding decade has not been updated with the data from "
+                "the previous year yet. In this case, we will try to retrieve "
+                "the 'recent' data instead.",
+            )
+            current_periods = [
+                p["period"] for p in self._iter_time_partitions(ts_params)
+            ]
+            if "recent" not in current_periods:
+                recent_url = self._format_ts_endpoint({**ts_params, "period": "recent"})
+                recent_source = self._retrieve_file(recent_url, cache=False)
+                ts_df = _parse(recent_source)
                 if ts_df.empty:
                     utils.log(
-                        "The requested data for the given period and station "
-                        "'{station_id}' returned an empty data frame. This can happen "
-                        "when requesting data from the past year during the first "
-                        "months of the year, since 'historical' data for the "
-                        "corresponding decade has not been updated with the data from "
-                        "the previous year yet. In this case, we will try to retrieve "
-                        "the 'recent' data instead.",
+                        f"The requested data for the given period and station "
+                        f"'{_station_id}' is not on the 'recent' data either. "
+                        "This can happen when the 'historical' data for the "
+                        "corresponding decade is cached locally but has been "
+                        "already updated in the MeteoSwiss API. Accordingly, we"
+                        " will try to update the 'historical' file and retrieve"
+                        " the requested data from the updated file.",
                     )
-                    recent_station_url = self._ts_endpoint.format(
-                        station_id=station_id,
-                        update_freq="recent",
+                    os.remove(ts_source)
+                    utils.log(
+                        f"Removed cached file '{ts_source}' for station "
+                        f"'{_station_id}' to force the retrieval of the updated "
+                        f"'historical' data from the MeteoSwiss API."
                     )
-                    if recent_station_url not in station_urls:
-                        ts_df = _ts_df_from_url(recent_station_url)
-                        if ts_df.empty:
-                            utils.log(
-                                "The requested data for the given period and station "
-                                "'{station_id}' is not on the 'recent' data either. "
-                                "This can happen when the 'historical' data for the "
-                                "corresponding decade is cached locally but has been "
-                                "already updated in the MeteoSwiss API. Accordingly, we"
-                                " will try to update the 'historical' file and retrieve"
-                                " the requested data from the updated file.",
-                            )
-                            # ACHTUNG: here we are assuming that the file is cached
-                            cached_ts_source = self._retrieve_file(
-                                station_url, cache=True
-                            )
-                            os.remove(cached_ts_source)
-                            utils.log(
-                                f"Removed cached file '{cached_ts_source}' for station "
-                                f"'{station_id}' to force the retrieval of the updated "
-                                f"'historical' data from the MeteoSwiss API."
-                            )
-                            # here we assume that ts_df will be non-empty, otherwise the
-                            # only possible reason would be a malformed request
-                            ts_df = _ts_df_from_url(station_url)
-                        else:
-                            utils.log(
-                                f"Retrieved {len(ts_df)} rows for station "
-                                f"'{station_id}' from 'recent' data."
-                            )
-                ts_dfs.append(ts_df)
-            return ts_dfs
+                    ts_source = self._ts_source(url, ts_params)
+                    ts_df = _parse(ts_source)
+                else:
+                    utils.log(
+                        f"Retrieved {len(ts_df)} rows for station "
+                        f"'{_station_id}' from 'recent' data."
+                    )
 
-        # get a flat list of all the data frames of each station
-        ts_dfs = [
-            ts_df
-            for station_id in self.stations_gdf.index.str.lower()
-            for ts_df in _station_ts_dfs(station_id)
-        ]
-        if len(ts_dfs) == 1:
-            # if there is only one data frame, return it
-            return ts_dfs[0]
-        # otherwise, concat them and return
-        return pd.concat(
-            ts_dfs,
-            axis="index",
-        )
+        return ts_df
 
     def get_ts_df(
         self,

@@ -7,12 +7,14 @@ import pandas as pd
 import pooch
 import pyproj
 import requests
-from dateutil.relativedelta import relativedelta
 from pyregeon import RegionType
 
 from meteora import settings
 from meteora.clients.base import BaseFileClient
-from meteora.clients.mixins import VariablesHardcodedMixin
+from meteora.clients.mixins import (
+    TimePartitionedTSMixin,
+    VariablesHardcodedMixin,
+)
 from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 # disable pooch warnings when providing `None` as "known_hash"
@@ -22,7 +24,7 @@ logger.setLevel("WARNING")
 # API endpoints
 TS_ENDPOINT = (
     "https://www.web.statistik.zh.ch/awel/LoRa/data/"
-    "AWEL_Sensors_LoRa_{year}{month:02}.csv"
+    "AWEL_Sensors_LoRa_{period.year}{period.month:02d}.csv"
 )
 
 # useful constants
@@ -46,7 +48,7 @@ ECV_DICT = {
 }
 
 
-class AWELClient(VariablesHardcodedMixin, BaseFileClient):
+class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient):
     """AWEL client (canton of Zurich).
 
     Parameters
@@ -75,11 +77,13 @@ class AWELClient(VariablesHardcodedMixin, BaseFileClient):
         used.
     """
 
-    # ACHTUNG: many constants are set in `GHCNH_STATIONS_COLUMNS` above
     # geom constants
     X_COL = "x"
     Y_COL = "y"
     CRS = pyproj.CRS("epsg:2056")
+
+    # time partition frequency
+    _time_partition_freq = "MS"
 
     # API endpoints
     _ts_endpoint = TS_ENDPOINT
@@ -101,7 +105,7 @@ class AWELClient(VariablesHardcodedMixin, BaseFileClient):
         pooch_kwargs: KwargsType | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
-        """Initialize GHCN hourly client."""
+        """Initialize AWEL client."""
         self.region = region
         if not sjoin_kwargs:
             sjoin_kwargs = settings.SJOIN_KWARGS.copy()
@@ -120,16 +124,12 @@ class AWELClient(VariablesHardcodedMixin, BaseFileClient):
         today = dt_date.today()
         # since there is no stations endpoint, get the time series data from the most
         # recent month
-        # while True:
-        # ACHTUNG: ugly hardcoded
         max_months = 10
         for months in range(1, max_months):
-            ts_df_date = today - relativedelta(months=months)
+            ts_df_date = today - pd.DateOffset(months=months)
             try:
                 latest_ts_df_source = self._retrieve_file(
-                    self._ts_endpoint.format(
-                        year=ts_df_date.year, month=ts_df_date.month
-                    ),
+                    TS_ENDPOINT.format(period=ts_df_date),
                     cache=False,
                 )
                 break
@@ -146,59 +146,36 @@ class AWELClient(VariablesHardcodedMixin, BaseFileClient):
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
     ) -> dict:
-        # TODO: DRY with noaa.GHCNHourlyClient?
-        # process date args
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
-
         return dict(variable_ids=variable_ids, start=start, end=end)
 
-    def _ts_df_from_endpoint(self, ts_params) -> pd.DataFrame:
-        """Get time series data frame from endpoint."""
-        # TODO: DRY with noaa.GHCNHourlyClient?
-        # we override this method because we need a separate request for each station
+    def _ts_cache(self, ts_params) -> bool:
+        today = dt_date.today()
+        period = ts_params["period"]
+        return not (period.year == today.year and period.month == today.month)
+
+    def _ts_df_from_url(self, url, ts_params) -> pd.DataFrame:
+        start = ts_params["start"]
+        end = ts_params["end"]
         variable_cols = list(ts_params["variable_ids"])
         cols_to_keep = (
             [self._ts_df_stations_id_col]
             + [self._ts_df_time_col, SENSOR_HEIGHT_COL]
             + variable_cols
         )
-        today = dt_date.today()
-
-        def _process_month_ts_df(year, month):
-            try:
-                month_ts_source = self._retrieve_file(
-                    self._ts_endpoint.format(year=year, month=month),
-                    cache=not (year == today.year and month == today.month),
-                )
-            except requests.HTTPError:
-                # TODO: log?
-                return pd.DataFrame()
-            ts_df = pd.read_csv(month_ts_source, sep=";", usecols=cols_to_keep)
-            # filter sensor height
-            ts_df = ts_df[ts_df[SENSOR_HEIGHT_COL] == self._sensor_height]
-            # filter stations
-            ts_df = ts_df[
-                ts_df[self._ts_df_stations_id_col].isin(self.stations_gdf.index)
-            ]
-            # drop (station, time) duplicates (TODO: use first and reset_index?)
-            ts_df = ts_df.groupby(
-                [self._ts_df_stations_id_col, self._ts_df_time_col]
-            ).head(1)
-            # ensure datetime
-            ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
-            # filter time range
-            return ts_df[ts_df[self._ts_df_time_col].between(start, end)]
-
-        start = ts_params["start"]
-        end = ts_params["end"]
-        date_range = pd.date_range(start=start, end=end, freq="MS")
-        if len(date_range) == 0:
-            date_range = [start]
-        ts_df = pd.concat(
-            [_process_month_ts_df(date.year, date.month) for date in date_range]
+        try:
+            source = self._ts_source(url, ts_params)
+        except requests.HTTPError:
+            return pd.DataFrame()
+        ts_df = pd.read_csv(source, sep=";", usecols=cols_to_keep)
+        ts_df = ts_df[ts_df[SENSOR_HEIGHT_COL] == self._sensor_height]
+        ts_df = ts_df[ts_df[self._ts_df_stations_id_col].isin(self.stations_gdf.index)]
+        ts_df = ts_df.groupby([self._ts_df_stations_id_col, self._ts_df_time_col]).head(
+            1
         )
-        # ts_df = ts_df[ts_df[self._ts_df_time_col].between(start, end)]
+        ts_df[self._ts_df_time_col] = pd.to_datetime(ts_df[self._ts_df_time_col])
+        ts_df = ts_df[ts_df[self._ts_df_time_col].between(start, end)]
         return ts_df.set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
 
     def get_ts_df(

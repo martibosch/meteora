@@ -10,6 +10,8 @@ from meteora.clients.base import BaseJSONClient
 from meteora.clients.mixins import (
     APIKeyHeaderMixin,
     StationsEndpointMixin,
+    TimePartitionedTSMixin,
+    VariablePartitionedTSMixin,
     VariablesEndpointMixin,
 )
 from meteora.utils import DateTimeType, KwargsType, VariablesType
@@ -18,13 +20,16 @@ from meteora.utils import DateTimeType, KwargsType, VariablesType
 BASE_URL = "https://api.meteo.cat/xema/v1"
 STATIONS_ENDPOINT = f"{BASE_URL}/estacions/metadades"
 VARIABLES_ENDPOINT = f"{BASE_URL}/variables/mesurades/metadades"
-TS_ENDPOINT = f"{BASE_URL}/variables/mesurades"
+TS_ENDPOINT = (
+    BASE_URL
+    + "/variables/mesurades/{variable_id}"
+    + "/{period.year}/{period.month:02d}/{period.day:02d}"
+)
 
 # useful constants
 STATIONS_GDF_ID_COL = "codi"
 TS_DF_STATIONS_ID_COL = "codi"
 TS_DF_TIME_COL = "data"
-# VARIABLES_NAME_COL = "nom"
 VARIABLES_ID_COL = "codi"
 ECV_DICT = {
     # precipitation
@@ -44,6 +49,8 @@ ECV_DICT = {
 
 
 class MeteocatClient(
+    VariablePartitionedTSMixin,
+    TimePartitionedTSMixin,
     APIKeyHeaderMixin,
     StationsEndpointMixin,
     VariablesEndpointMixin,
@@ -78,6 +85,9 @@ class MeteocatClient(
     Y_COL = "coordenades.latitud"
     CRS = utils.LONLAT_CRS
 
+    # time partition frequency
+    _time_partition_freq = "D"
+
     # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT
     _variables_endpoint = VARIABLES_ENDPOINT
@@ -87,7 +97,6 @@ class MeteocatClient(
     _stations_gdf_id_col = STATIONS_GDF_ID_COL
     _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
     _ts_df_time_col = TS_DF_TIME_COL
-    # _variables_name_col = VARIABLES_NAME_COL
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
 
@@ -104,6 +113,9 @@ class MeteocatClient(
         # need to call super().__init__() to set the cache
         super().__init__()
 
+    def _ts_query_params(self, ts_params: Mapping) -> Mapping:
+        return {}
+
     def _stations_df_from_content(self, response_content: Mapping) -> pd.DataFrame:
         return pd.json_normalize(response_content)
 
@@ -115,8 +127,7 @@ class MeteocatClient(
         response_df = pd.json_normalize(response_content)
         # filter stations
         response_df = response_df[response_df["codi"].isin(self.stations_gdf.index)]
-        # extract json observed data, i.e.,  the "variables" column into a list of data
-        # frames and concatenate them into a single data frame
+        # extract observed data
         ts_df = pd.concat(
             response_df.apply(
                 lambda row: pd.DataFrame(row["variables"][0]["lectures"]), axis=1
@@ -132,81 +143,10 @@ class MeteocatClient(
             )
             .values
         )
-        # TODO: values_col as class-level constant?
         values_col = "valor"
-        # # convert to a wide data frame
-        # ts_df = long_df.pivot_table(
-        #     index=self._time_col, columns=self._stations_id_col, values=values_col
-        # )
-        # # set the index name
-        # ts_df.index.name = settings.TIME_NAME
-        # # convert the index from string to datetime
-        # ts_df.index = pd.to_datetime(ts_df.index)
-        # ACHTUNG: do not sort the index here
-        # note that we are renaming a series
         return ts_df.assign(
             **{self._ts_df_time_col: pd.to_datetime(ts_df[self._ts_df_time_col])}
         ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])[values_col]
-
-    # def _get_date_ts_df(
-    #     self,
-    #     variable_id: int,
-    #     date: datetime.date,
-    # ) -> pd.DataFrame:
-    #     """Get time series data frame for a given day.
-
-    #     Parameters
-    #     ----------
-    #     variable_id : int
-    #         Meteocat variable code.
-    #     date : datetime.date
-    #         datetime.date instance for the requested data period.
-
-    #     Returns
-    #     -------
-    #     ts_df : pd.DataFrame
-    #         Data frame with a time series of measurements (rows) at each station
-    #         (columns).
-
-    #     """
-    #     # # process date arg
-    #     # if isinstance(date, str):
-    #     #     date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    #     # request url
-    #     request_url = (
-    #         f"{self._ts_endpoint}"
-    #         f"/{variable_id}/{date.year}/{date.month:02}/{date.day:02}"
-    #     )
-    #     response_content = self._get_content_from_url(request_url)
-    #     return self._ts_df_from_content(response_content).rename(variable_id)
-
-    def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
-        # the API only allows returning data for a given day and variable so we have to
-        # iterate over the date range and variables to obtain data for all days
-        date_range = pd.date_range(
-            start=ts_params["start"], end=ts_params["end"], freq="D"
-        )
-        return pd.concat(
-            [
-                pd.concat(
-                    [
-                        # self._get_date_ts_df(variable_id, date)
-                        self._ts_df_from_content(
-                            self._get_content_from_url(
-                                f"{self._ts_endpoint}/{variable_id}/"
-                                f"{date.year}/{date.month:02}/{date.day:02}"
-                            )
-                        ).rename(variable_id)
-                        for variable_id in ts_params["variable_ids"]
-                    ],
-                    axis="columns",
-                    ignore_index=False,
-                )
-                for date in date_range
-            ],
-            axis="index",
-            ignore_index=False,
-        )
 
     def get_ts_df(
         self,
@@ -240,7 +180,6 @@ class MeteocatClient(
         )
         units_map = ts_df.attrs.get("units")
         # filter time range to avoid including a full day after
-        # TODO: dry with Agrometeo, perhaps a global approach in the base client
         time_ser = ts_df.index.get_level_values(settings.TIME_COL).to_series()
         tz = time_ser.dt.tz
         ts_df = ts_df.loc[
