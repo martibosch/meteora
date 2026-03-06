@@ -6,10 +6,14 @@ import pandas as pd
 import pyproj
 from pyregeon import CRSType, RegionType
 
-from meteora import settings
+from meteora import settings, utils
 from meteora.clients.base import BaseJSONClient
 from meteora.clients.mixins import StationsEndpointMixin, VariablesEndpointMixin
-from meteora.utils import DateTimeType, KwargsType, VariablesType
+from meteora.utils import (
+    DateTimeType,
+    KwargsType,
+    VariablesType,
+)
 
 # API endpoints
 BASE_URL = "https://agrometeo.ch/backend/api"
@@ -18,7 +22,7 @@ VARIABLES_ENDPOINT = f"{BASE_URL}/sensors"
 TS_ENDPOINT = f"{BASE_URL}/meteo/data"
 
 # useful constants
-LONLAT_CRS = pyproj.CRS("epsg:4326")
+LONLAT_CRS = utils.LONLAT_CRS
 LV03_CRS = pyproj.CRS("epsg:21781")
 # ACHTUNG: for some reason, the API mixes up the longitude and latitude columns ONLY in
 # the CH1903/LV03 projection. This is why we need to swap the columns in the dict below.

@@ -6,10 +6,9 @@ from collections.abc import Sequence
 
 import geopandas as gpd
 import pandas as pd
-import pyproj
 from pyregeon import RegionType
 
-from meteora import settings
+from meteora import settings, utils
 from meteora.clients.base import BaseTextClient
 from meteora.clients.mixins import StationsEndpointMixin, VariablesHardcodedMixin
 from meteora.utils import DateTimeType, KwargsType, VariablesType
@@ -155,7 +154,7 @@ class IEMClient(
     """Abstract Iowa Environmental Mesonet (IEM) client."""
 
     # geom constants
-    CRS = pyproj.CRS("epsg:4326")
+    CRS = utils.LONLAT_CRS
 
     # data frame label constants
     _stations_gdf_id_col = STATIONS_GDF_ID_COL

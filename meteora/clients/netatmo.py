@@ -7,7 +7,6 @@ from collections.abc import Mapping, Sequence
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import pyproj
 from pyregeon import RegionType
 from requests_cache import CacheMixin
 from requests_oauthlib import OAuth2Session
@@ -365,7 +364,7 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
     # geom constant
     X_COL = "lon"
     Y_COL = "lat"
-    CRS = pyproj.CRS("epsg:4326")
+    CRS = utils.LONLAT_CRS
 
     # _datetime_format = DATETIME_FORMAT
 

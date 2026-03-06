@@ -28,7 +28,7 @@ TS_ENDPOINT = f"{BASE_URL}/" + "{station_id}/ogd-smn_{station_id}_t_{update_freq
 
 # useful constants
 # TODO: DRY with Agrometeo?
-LONLAT_CRS = pyproj.CRS("epsg:4326")
+LONLAT_CRS = utils.LONLAT_CRS
 LV95_CRS = pyproj.CRS("epsg:2056")
 # ACHTUNG: for some reason, the API mixes up the longitude and latitude columns ONLY in
 # the CH1903/LV03 projection. This is why we need to swap the columns in the dict below.

@@ -3,10 +3,9 @@
 from collections.abc import Mapping
 
 import pandas as pd
-import pyproj
 from pyregeon import RegionType
 
-from meteora import settings
+from meteora import settings, utils
 from meteora.clients.base import BaseJSONClient
 from meteora.clients.mixins import (
     APIKeyHeaderMixin,
@@ -77,7 +76,7 @@ class MeteocatClient(
     # geom constants
     X_COL = "coordenades.longitud"
     Y_COL = "coordenades.latitud"
-    CRS = pyproj.CRS("epsg:4326")
+    CRS = utils.LONLAT_CRS
 
     # API endpoints
     _stations_endpoint = STATIONS_ENDPOINT

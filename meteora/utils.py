@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pyproj
+import shapely
 
 from meteora import settings
 from meteora.optional import require_optional
@@ -37,6 +39,10 @@ if TYPE_CHECKING:
 else:
     CubeType: TypeAlias = Any
 AggFuncType = str | Callable | None
+
+# longitude/latitude CRS used in many clients
+LONLAT_CRS_CODE = "epsg:4326"
+LONLAT_CRS = pyproj.CRS(LONLAT_CRS_CODE)
 
 
 ########################################################################################

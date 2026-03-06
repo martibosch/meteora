@@ -6,7 +6,6 @@ from collections.abc import Sequence
 import dask
 import pandas as pd
 import pooch
-import pyproj
 import requests
 from dask import diagnostics
 from pyregeon import RegionType
@@ -109,7 +108,7 @@ class GHCNHourlyClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseFileC
     # geom constants
     X_COL = "LONGITUDE"
     Y_COL = "LATITUDE"
-    CRS = pyproj.CRS("epsg:4326")
+    CRS = utils.LONLAT_CRS
 
     # API endpoints
     _stations_endpoint = GHCNH_STATIONS_ENDPOINT
