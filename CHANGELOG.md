@@ -1,5 +1,20 @@
 # History
 
+## [v0.13.0] - 2026-03-06
+
+### :sparkles: New Features
+
+- [`000708d`](https://github.com/martibosch/meteora/commit/000708dd834dcf11c3e48ee71063fcfa14572a45) - utils.long_to_stationbench function *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`8c0bba3`](https://github.com/martibosch/meteora/commit/8c0bba3c92df86a2740c28f1b26298b8c05e855d) - remove unsupported UGZ client draft *(commit by [@martibosch](https://github.com/martibosch))*
+- [`4778e0e`](https://github.com/martibosch/meteora/commit/4778e0eaffd7a6784d2911fbb1a549510b1759c1) - update cached recent files in meteoswiss client *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :recycle: Refactors
+
+- [`a78e2d3`](https://github.com/martibosch/meteora/commit/a78e2d3470ebe09db9c7d6c3eeacc10f498dc7c9) - DRY LONLAT_CRS as constant in utils *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.12.0] - 2026-02-01
 
 ### :boom: BREAKING CHANGES
@@ -244,3 +259,4 @@
   \[v0.10.0\]: https://github.com/martibosch/meteora/compare/v0.9.0...v0.10.0
   \[v0.11.0\]: https://github.com/martibosch/meteora/compare/v0.10.0...v0.11.0
   \[v0.12.0\]: https://github.com/martibosch/meteora/compare/v0.11.0...v0.12.0
+  \[v0.13.0\]: https://github.com/martibosch/meteora/compare/v0.12.0...v0.13.0
