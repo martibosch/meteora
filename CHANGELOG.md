@@ -1,5 +1,19 @@
 # History
 
+## [v0.14.0] - 2026-03-11
+
+### :sparkles: New Features
+
+- [`0ee898f`](https://github.com/martibosch/meteora/commit/0ee898f6fd097115a31cb87928161596df5efc63) - tqdm progress bar in partitioned time series clients *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :recycle: Refactors
+
+- [`e6f1928`](https://github.com/martibosch/meteora/commit/e6f1928349fdb860f65fab1b459655d6b28323ac) - DRY clients with time series mixins *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :white_check_mark: Tests
+
+- [`de6ee44`](https://github.com/martibosch/meteora/commit/de6ee44cda27f86ac4cbaee3625911a4e8ff4f5a) - avoid xarray importerror from xproj (xarray/pull/10285) *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.13.0] - 2026-03-06
 
 ### :sparkles: New Features
@@ -260,3 +274,4 @@
   \[v0.11.0\]: https://github.com/martibosch/meteora/compare/v0.10.0...v0.11.0
   \[v0.12.0\]: https://github.com/martibosch/meteora/compare/v0.11.0...v0.12.0
   \[v0.13.0\]: https://github.com/martibosch/meteora/compare/v0.12.0...v0.13.0
+  \[v0.14.0\]: https://github.com/martibosch/meteora/compare/v0.13.0...v0.14.0
