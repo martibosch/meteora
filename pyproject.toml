@@ -77,7 +77,9 @@ user-guide = [
   "zarr"
 ]
 xvec = [
-  "xarray",
+  # xproj>=0.2.1 expects newer xarray exception/alignment APIs than 2024.11.0
+  # (see xarray#10285 and xproj#33 / xproj#34).
+  "xarray>=2025.6.1",
   "xvec>=0.5.0" # need at least v0.5.0 for categorical plots with custom cmap
 ]
 xclim = [
