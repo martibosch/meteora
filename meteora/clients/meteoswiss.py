@@ -100,9 +100,8 @@ class MeteoSwissClient(
         -  A filename or URL, a file-like object opened in binary ('rb') mode, or a Path
            object that will be passed to `geopandas.read_file`.
     crs : str, dict or pyproj.CRS, optional
-        The coordinate reference system (CRS) to be used. For Agrometeo, the
-        provided value must be equivalent to either the EPSG:21781 (default) or
-        EPSG:4326.
+        The coordinate reference system (CRS) to be used. For MeteoSwiss, the provided
+        value must be equivalent to either the EPSG:2056 (default) or EPSG:4326.
     pooch_kwargs : dict, optional
         Keyword arguments to pass to the `pooch.retrieve` function when caching file
         downloads.
