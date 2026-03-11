@@ -74,6 +74,9 @@ class MeteocatClient(
            object that will be passed to `geopandas.read_file`.
     api_key : str
         Meteocat API key.
+    progress : bool, optional
+        Whether to show a tqdm progress bar for partitioned time series fetches. If
+        None, the value from `settings.SHOW_PROGRESS` is used.
     sjoin_kwargs : dict, optional
         Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
         stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
@@ -101,7 +104,12 @@ class MeteocatClient(
     _ecv_dict = ECV_DICT
 
     def __init__(
-        self, region: RegionType, api_key: str, **sjoin_kwargs: KwargsType
+        self,
+        region: RegionType,
+        api_key: str,
+        *,
+        progress: bool | None = None,
+        **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize Meteocat client."""
         self.region = region
@@ -112,6 +120,8 @@ class MeteocatClient(
 
         # need to call super().__init__() to set the cache
         super().__init__()
+        if progress is not None:
+            self.progress = progress
 
     def _ts_query_params(self, ts_params: Mapping) -> Mapping:
         return {}

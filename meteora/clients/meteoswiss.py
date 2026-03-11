@@ -105,6 +105,9 @@ class MeteoSwissClient(
     pooch_kwargs : dict, optional
         Keyword arguments to pass to the `pooch.retrieve` function when caching file
         downloads.
+    progress : bool, optional
+        Whether to show a tqdm progress bar for partitioned time series fetches. If
+        None, the value from `settings.SHOW_PROGRESS` is used.
     sjoin_kwargs : dict, optional
         Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
         stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
@@ -131,6 +134,7 @@ class MeteoSwissClient(
         *,
         crs: CRSType | None = None,
         pooch_kwargs: KwargsType | None = None,
+        progress: bool | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize MeteoSwiss client."""
@@ -157,6 +161,8 @@ class MeteoSwissClient(
 
         # need to call super().__init__() to set the cache
         super().__init__()
+        if progress is not None:
+            self.progress = progress
 
     def _iter_time_partitions(self, ts_params: Mapping):
         # determine whether we need "historical" or "recent" files, see

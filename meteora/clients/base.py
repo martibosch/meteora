@@ -41,6 +41,21 @@ class BaseClient(RegionMixin, abc.ABC):
             session = requests.Session()
         self._session = session
 
+    @property
+    def progress(self):
+        """Whether to show a progress bar for partitioned fetches.
+
+        Defaults to `settings.SHOW_PROGRESS` and can be overridden per-client at init
+        time (via the `progress` keyword argument) or at runtime
+        (`client.progress = False`). When enabled, only the outermost partitioned mixin
+        displays a tqdm bar.
+        """
+        return getattr(self, "_progress", settings.SHOW_PROGRESS)
+
+    @progress.setter
+    def progress(self, value):
+        self._progress = bool(value)
+
     @utils.abstract_attribute
     def X_COL(self) -> str:  # pylint: disable=invalid-name
         """Name of the column with longitude coordinates."""

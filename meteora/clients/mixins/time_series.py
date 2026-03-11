@@ -7,7 +7,34 @@ import pandas as pd
 
 
 class PartitionedTSMixin(abc.ABC):
-    """Base mixin for partitioned time series endpoints."""
+    """Base mixin for partitioned time series endpoints.
+
+    Subclasses partition time series requests along one axis (time, variable, or
+    station) and iterate over the partitions.  When ``client.progress`` is
+    enabled, only the outermost partitioned mixin in the MRO displays a tqdm
+    progress bar, determined by ``_should_show_progress``.
+    """
+
+    def _should_show_progress(self, mixin_cls):
+        """Return whether *mixin_cls* should display a progress bar.
+
+        Returns ``True`` only when ``self.progress`` is truthy **and**
+        *mixin_cls* is the first ``PartitionedTSMixin`` subclass in the MRO
+        that defines its own ``_ts_df_from_endpoint``.  This ensures that only
+        the outermost partition loop shows a progress bar, avoiding nested bars.
+        """
+        if not getattr(self, "progress", False):
+            return False
+        # find the first class in MRO that defines its own _ts_df_from_endpoint
+        # (skips the concrete client class and PartitionedTSMixin itself)
+        for cls in type(self).__mro__:
+            if (
+                cls is not PartitionedTSMixin
+                and issubclass(cls, PartitionedTSMixin)
+                and "_ts_df_from_endpoint" in cls.__dict__
+            ):
+                return cls is mixin_cls
+        return False
 
     def _concat_ts_dfs(self, ts_dfs: Iterable[pd.DataFrame | pd.Series], axis: int):
         ts_dfs = [ts_df for ts_df in ts_dfs if ts_df is not None]
@@ -24,11 +51,14 @@ class PartitionedTSMixin(abc.ABC):
 class TimePartitionedTSMixin(PartitionedTSMixin):
     """Time-partitioned time series mixin.
 
-    Either set the `time_partiton_freq` attribute to a pandas frequency string, (e.g.,
-    "D", "MS", "YS") or override `_iter_time_partitions` for non-standard periods.  Each
-    partition dict must contain a "period" key whose value is a date-time like that can
-    be referenced in `_ts_endpoint` as `{period}`, `{period.year}`,
-    `{period.month:02d}`, etc.
+    Either set the ``_time_partition_freq`` attribute to a pandas frequency string
+    (e.g., ``"D"``, ``"MS"``, ``"YS"``) or override ``_iter_time_partitions`` for
+    non-standard periods.  Each partition dict must contain a ``"period"`` key whose
+    value is a datetime-like that can be referenced in ``_ts_endpoint`` as
+    ``{period}``, ``{period.year}``, ``{period.month:02d}``, etc.
+
+    When this is the outermost partitioned mixin and ``progress`` is enabled, a
+    tqdm bar labelled *Time periods* is shown.
     """
 
     _time_partition_freq: str
@@ -49,15 +79,24 @@ class TimePartitionedTSMixin(PartitionedTSMixin):
         return [{"period": date} for date in date_range]
 
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        partitions = self._iter_time_partitions(ts_params)
+        if self._should_show_progress(TimePartitionedTSMixin):
+            from tqdm.auto import tqdm
+
+            partitions = tqdm(partitions, desc="Time periods", unit="period")
         ts_dfs = [
             super()._ts_df_from_endpoint(ts_params | partition)
-            for partition in self._iter_time_partitions(ts_params)
+            for partition in partitions
         ]
         return self._concat_ts_dfs(ts_dfs, axis=0)
 
 
 class VariablePartitionedTSMixin(PartitionedTSMixin):
-    """Variable-partitioned time series mixin."""
+    """Variable-partitioned time series mixin.
+
+    When this is the outermost partitioned mixin and ``progress`` is enabled, a
+    tqdm bar labelled *Variables* is shown.
+    """
 
     _ts_variable_endpoint_key = "variable_id"
 
@@ -76,8 +115,13 @@ class VariablePartitionedTSMixin(PartitionedTSMixin):
         return ts_df
 
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        partitions = self._iter_variable_partitions(ts_params)
+        if self._should_show_progress(VariablePartitionedTSMixin):
+            from tqdm.auto import tqdm
+
+            partitions = tqdm(partitions, desc="Variables", unit="var")
         ts_dfs = []
-        for partition in self._iter_variable_partitions(ts_params):
+        for partition in partitions:
             variable_id = partition[self._ts_variable_endpoint_key]
             ts_df = super()._ts_df_from_endpoint(ts_params | partition)
             ts_df = self._format_variable_ts_df(ts_df, variable_id)
@@ -86,7 +130,11 @@ class VariablePartitionedTSMixin(PartitionedTSMixin):
 
 
 class StationPartitionedTSMixin(PartitionedTSMixin):
-    """Station-partitioned time series mixin."""
+    """Station-partitioned time series mixin.
+
+    When this is the outermost partitioned mixin and ``progress`` is enabled, a
+    tqdm bar labelled *Stations* is shown.
+    """
 
     _ts_station_endpoint_key = "station_id"
 
@@ -100,8 +148,13 @@ class StationPartitionedTSMixin(PartitionedTSMixin):
         ]
 
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
+        partitions = self._iter_station_partitions(ts_params)
+        if self._should_show_progress(StationPartitionedTSMixin):
+            from tqdm.auto import tqdm
+
+            partitions = tqdm(partitions, desc="Stations", unit="station")
         ts_dfs = [
             super()._ts_df_from_endpoint(ts_params | partition)
-            for partition in self._iter_station_partitions(ts_params)
+            for partition in partitions
         ]
         return self._concat_ts_dfs(ts_dfs, axis=0)

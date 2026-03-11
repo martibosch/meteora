@@ -71,6 +71,9 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
     pooch_kwargs : dict, optional
         Keyword arguments to pass to the `pooch.retrieve` function when downloading the
         stations time series data.
+    progress : bool, optional
+        Whether to show a tqdm progress bar for partitioned time series fetches. If
+        None, the value from `settings.SHOW_PROGRESS` is used.
     sjoin_kwargs : dict, optional
         Keyword arguments to pass to the `geopandas.sjoin` function when filtering the
         stations within the region. If None, the value from `settings.SJOIN_KWARGS` is
@@ -103,6 +106,7 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
         *,
         sensor_height: float = 2,
         pooch_kwargs: KwargsType | None = None,
+        progress: bool | None = None,
         **sjoin_kwargs: KwargsType,
     ) -> None:
         """Initialize AWEL client."""
@@ -119,6 +123,8 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
 
         # need to call super().__init__() to set the cache
         super().__init__()
+        if progress is not None:
+            self.progress = progress
 
     def _get_stations_df(self):
         today = dt_date.today()

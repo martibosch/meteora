@@ -34,7 +34,10 @@ from meteora.clients import (
 )
 from meteora.clients.base import BaseClient
 from meteora.clients.mixins import (
+    StationPartitionedTSMixin,
     StationsEndpointMixin,
+    TimePartitionedTSMixin,
+    VariablePartitionedTSMixin,
     VariablesEndpointMixin,
     VariablesHardcodedMixin,
 )
@@ -692,6 +695,70 @@ class TestClientUnits(unittest.TestCase):
             ts_df.attrs["units"][settings.ECV_DEW_POINT_TEMPERATURE],
             "degF",
         )
+
+
+class TestProgress(unittest.TestCase):
+    """Test the progress bar integration across real client classes."""
+
+    REGION = "Pully, Switzerland"
+
+    def test_default_setting(self):
+        self.assertTrue(settings.SHOW_PROGRESS)
+
+    def test_client_progress_default(self):
+        client = MeteoSwissClient(region=self.REGION)
+        self.assertTrue(client.progress)
+
+    def test_client_progress_setting_override(self):
+        with override_settings(settings, SHOW_PROGRESS=False):
+            client = MeteoSwissClient(region=self.REGION)
+            self.assertFalse(client.progress)
+
+    def test_client_progress_init_override(self):
+        for client in [
+            MeteoSwissClient(region=self.REGION, progress=False),
+            GHCNHourlyClient(region=self.REGION, progress=False),
+            AWELClient(region="Zürich, Switzerland", progress=False),
+            MeteocatClient(region="Catalunya", api_key="dummy", progress=False),
+        ]:
+            self.assertFalse(client.progress)
+
+    def test_client_progress_runtime_toggle(self):
+        client = MeteoSwissClient(region=self.REGION)
+        self.assertTrue(client.progress)
+        client.progress = False
+        self.assertFalse(client.progress)
+        client.progress = True
+        self.assertTrue(client.progress)
+
+    def test_should_show_progress_meteoswiss(self):
+        """MeteoSwiss uses Station + Time; station is outermost."""
+        client = MeteoSwissClient(region=self.REGION, progress=True)
+        self.assertTrue(client._should_show_progress(StationPartitionedTSMixin))
+        self.assertFalse(client._should_show_progress(TimePartitionedTSMixin))
+
+    def test_should_show_progress_meteocat(self):
+        """Meteocat uses Variable + Time; variable is outermost."""
+        client = MeteocatClient(region="Catalunya", api_key="dummy", progress=True)
+        self.assertTrue(client._should_show_progress(VariablePartitionedTSMixin))
+        self.assertFalse(client._should_show_progress(TimePartitionedTSMixin))
+
+    def test_should_show_progress_awel(self):
+        """AWEL uses Time only; time is outermost."""
+        client = AWELClient(region="Zürich, Switzerland", progress=True)
+        self.assertTrue(client._should_show_progress(TimePartitionedTSMixin))
+        self.assertFalse(client._should_show_progress(StationPartitionedTSMixin))
+
+    def test_should_show_progress_ghcnh(self):
+        """GHCNh overrides _ts_df_from_endpoint; no mixin shows progress."""
+        client = GHCNHourlyClient(region=self.REGION, progress=True)
+        self.assertFalse(client._should_show_progress(StationPartitionedTSMixin))
+        self.assertFalse(client._should_show_progress(TimePartitionedTSMixin))
+
+    def test_should_show_progress_disabled(self):
+        client = MeteoSwissClient(region=self.REGION, progress=False)
+        self.assertFalse(client._should_show_progress(StationPartitionedTSMixin))
+        self.assertFalse(client._should_show_progress(TimePartitionedTSMixin))
 
 
 class BaseClientTest:

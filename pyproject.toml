@@ -125,6 +125,7 @@ python = ">=3.10,<3.14"
 gdal = ">=3"
 numba = ">=0.61.0"
 ipykernel = ">=7.1.0,<8"
+ipywidgets = "*"
 
 [tool.pixi.environments]
 default = {features = ["ox"], solve-group = "default"}
@@ -140,6 +141,9 @@ xvec = {features = ["xvec"], solve-group = "default"}
 [tool.pixi.feature.dev.tasks]
 build = "python -m build"
 check = {cmd = "twine check dist/*", depends-on = ["build"]}
+
+[tool.pixi.feature.doc.dependencies]
+ipywidgets = ">=8.1.8,<9"
 
 [tool.pixi.feature.doc.tasks]
 build-doc = "sphinx-build docs docs/_build"
