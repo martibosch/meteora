@@ -26,16 +26,16 @@ except ImportError:
 try:
     import xvec  # noqa: F401
 except ImportError:
-    xvec = None
+    pass
 
 VariablesType = str | int | list[str] | list[int]
 DateTimeType = dt.date | dt.datetime | np.datetime64 | pd.Timestamp | str | int | float
 KwargsType = Mapping | None
 PathType = str | os.PathLike
 if TYPE_CHECKING:
-    import xarray as xr_type
+    from xarray import Dataset
 
-    CubeType: TypeAlias = xr_type.Dataset
+    CubeType: TypeAlias = Dataset
 else:
     CubeType: TypeAlias = Any
 AggFuncType = str | Callable | None
