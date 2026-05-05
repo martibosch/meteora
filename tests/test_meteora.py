@@ -19,8 +19,12 @@ import pytest
 import xarray as xr
 import xclim.indices as xci
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
+from shapely import geometry
+from sklearn.exceptions import NotFittedError
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
 
-from meteora import climate_indices, qc, settings, units, utils
+from meteora import bias_correction, climate_indices, qc, settings, units, utils
 from meteora.clients import (
     AemetClient,
     AgrometeoClient,
@@ -97,6 +101,31 @@ def unload_xclim(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]
         else:
             sys.modules[module] = original
     importlib.reload(climate_indices)
+
+
+@pytest.fixture
+def unload_hub(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """Fake that huggingface_hub and skops are not installed."""
+    hub_prefixes = ("huggingface_hub", "skops")
+    modules = {
+        module: sys.modules[module]
+        for module in list(sys.modules)
+        if any(module == p or module.startswith(p + ".") for p in hub_prefixes)
+    }
+    for module in modules:
+        monkeypatch.setitem(sys.modules, module, None)
+
+    with pytest.raises(ImportError):
+        import huggingface_hub  # noqa: F401
+
+    importlib.reload(bias_correction)
+    yield
+    for module, original in modules.items():
+        if original is None:
+            sys.modules.pop(module, None)
+        else:
+            sys.modules[module] = original
+    importlib.reload(bias_correction)
 
 
 def override_settings(module, **kwargs):
@@ -562,6 +591,185 @@ class TestUtils(unittest.TestCase):
     def test_climate_indices_missing_xclim(self):
         with pytest.raises(ImportError):
             climate_indices.tn_days_above(self.ts_df)
+
+
+# TODO: test outside of the class or as staticmethod?
+def test_parse_hf_path():
+    # "user/repo" → default filename
+    repo_id, filename = bias_correction._parse_hf_path("user/repo")
+    assert repo_id == "user/repo"
+    assert filename == "model.skops"
+
+    # "user/repo/custom.skops" → explicit filename
+    repo_id, filename = bias_correction._parse_hf_path("user/repo/custom.skops")
+    assert repo_id == "user/repo"
+    assert filename == "custom.skops"
+
+    # bare name without a slash → ValueError
+    with pytest.raises(ValueError):
+        bias_correction._parse_hf_path("invalid")
+
+
+class TestBiasCorrection(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(0)
+        n_steps = 3 * 24 * 2  # 3 days at 30-min intervals
+        time_index = pd.date_range("2023-07-01", periods=n_steps, freq="30min")
+        station_ids = ["sta_A", "sta_B"]
+
+        # radiation: daytime sinusoid (~6 am – 6 pm)
+        hours = (time_index.hour + time_index.minute / 60).values
+        rad_arr = np.maximum(0, np.sin(np.pi * (hours - 6) / 12)) * 600
+
+        # reference temperature and LCD readings (reference + radiation bias + noise)
+        t_arr = 20 + 3 * np.sin(2 * np.pi * hours / 24)
+        rad_sensitivity = 0.003  # °C per W m⁻²
+
+        self.window_minutes = [30, 60, 120]
+        self.t_ref_df = pd.DataFrame(
+            {s: t_arr + i * 2 for i, s in enumerate(station_ids)},
+            index=time_index,
+        )
+        self.lcd_ts_df = (
+            self.t_ref_df
+            + rad_sensitivity
+            * pd.DataFrame({s: rad_arr for s in station_ids}, index=time_index)
+            + rng.normal(0, 0.1, (n_steps, len(station_ids)))
+        )
+
+        # radiation reference as pd.Series and pd.DataFrame
+        self.rad_ser = pd.Series(
+            rad_arr, index=time_index, name=settings.ECV_RADIATION_SHORTWAVE
+        )
+        self.ref_ts_df = pd.DataFrame(
+            {
+                settings.ECV_RADIATION_SHORTWAVE: rad_arr,
+                settings.ECV_TEMPERATURE: t_arr,
+            },
+            index=time_index,
+        )
+
+        # LCD station locations (two points in WGS-84)
+        self.lcd_stations_gdf = gpd.GeoDataFrame(
+            {"geometry": [geometry.Point(8.5, 47.3), geometry.Point(8.6, 47.4)]},
+            index=pd.Index(station_ids, name=settings.STATIONS_ID_COL),
+            crs="EPSG:4326",
+        )
+
+        # long-form data frame for building a vector data cube
+        long_index = pd.MultiIndex.from_product(
+            [station_ids, time_index],
+            names=[settings.STATIONS_ID_COL, settings.TIME_COL],
+        )
+        self.long_ts_df = pd.DataFrame(
+            {
+                settings.ECV_TEMPERATURE: np.tile(t_arr, len(station_ids)),
+                settings.ECV_RADIATION_SHORTWAVE: np.tile(rad_arr, len(station_ids)),
+            },
+            index=long_index,
+        )
+
+        # minimal bias-correction pipeline fitted on the synthetic bias
+        X_fit = pd.DataFrame(
+            {
+                settings.TIME_COL: time_index,
+                settings.ECV_RADIATION_SHORTWAVE: rad_arr,
+            }
+        )
+        y_fit = rad_sensitivity * rad_arr
+        self.pipeline = Pipeline(
+            [
+                (
+                    "transformer",
+                    bias_correction.BestScaleRadiationTransformer(self.window_minutes),
+                ),
+                ("regressor", LinearRegression()),
+            ]
+        )
+        self.pipeline.fit(X_fit, y_fit)
+
+    def test_best_scale_radiation_transformer(self):
+        transformer = bias_correction.BestScaleRadiationTransformer(self.window_minutes)
+        X = pd.DataFrame(
+            {
+                settings.TIME_COL: self.rad_ser.index,
+                settings.ECV_RADIATION_SHORTWAVE: self.rad_ser.values,
+            }
+        )
+        y = 0.003 * self.rad_ser.values
+
+        # transform must raise before fit
+        with self.assertRaises(NotFittedError):
+            transformer.transform(X)
+
+        transformer.fit(X, y)
+
+        # best_scale_ must be one of the candidate windows
+        self.assertIn(transformer.best_scale_, self.window_minutes)
+
+        # transform returns a single-column DataFrame with the radiation column name
+        result = transformer.transform(X)
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertEqual(list(result.columns), [settings.ECV_RADIATION_SHORTWAVE])
+        self.assertEqual(len(result), len(X))
+
+    def test_best_scale_radiation_transformer_defaults(self):
+        transformer = bias_correction.BestScaleRadiationTransformer([30])
+        self.assertEqual(transformer.time_col, settings.TIME_COL)
+        self.assertEqual(transformer.radiation_col, settings.ECV_RADIATION_SHORTWAVE)
+
+    def _check_correction_reduces_bias(self, cor_ts_df):
+        """Assert that corrected temperature is closer to the reference than raw."""
+        common = cor_ts_df.index.intersection(self.t_ref_df.index)
+        mae_raw = (
+            (self.lcd_ts_df.loc[common] - self.t_ref_df.loc[common]).abs().mean().mean()
+        )
+        mae_cor = (
+            (cor_ts_df.loc[common] - self.t_ref_df.loc[common]).abs().mean().mean()
+        )
+        self.assertLess(mae_cor, mae_raw)
+
+    def test_apply_bias_correction_series(self):
+        cor_ts_df = bias_correction.apply_bias_correction(
+            self.lcd_ts_df, self.rad_ser, self.pipeline
+        )
+        self.assertIsInstance(cor_ts_df, pd.DataFrame)
+        self.assertEqual(set(cor_ts_df.columns), set(self.lcd_ts_df.columns))
+        self._check_correction_reduces_bias(cor_ts_df)
+
+    def test_apply_bias_correction_dataframe(self):
+        cor_ts_df = bias_correction.apply_bias_correction(
+            self.lcd_ts_df, self.ref_ts_df, self.pipeline
+        )
+        self.assertIsInstance(cor_ts_df, pd.DataFrame)
+        self.assertEqual(set(cor_ts_df.columns), set(self.lcd_ts_df.columns))
+        self._check_correction_reduces_bias(cor_ts_df)
+
+    def test_apply_bias_correction_dataset(self):
+        pytest.importorskip("xvec")
+        aws_ts_cube = utils.long_to_cube(self.long_ts_df, self.lcd_stations_gdf)
+
+        # lcd_stations_gdf is required when ref_ts is an xr.Dataset
+        with self.assertRaises(ValueError):
+            bias_correction.apply_bias_correction(
+                self.lcd_ts_df, aws_ts_cube, self.pipeline
+            )
+
+        cor_ts_df = bias_correction.apply_bias_correction(
+            self.lcd_ts_df,
+            aws_ts_cube,
+            self.pipeline,
+            lcd_stations_gdf=self.lcd_stations_gdf,
+        )
+        self.assertIsInstance(cor_ts_df, pd.DataFrame)
+        self._check_correction_reduces_bias(cor_ts_df)
+
+    @pytest.mark.usefixtures("unload_hub")
+    def test_apply_bias_correction_missing_hub(self):
+        with pytest.raises(ImportError):
+            bias_correction.apply_bias_correction(
+                self.lcd_ts_df, self.rad_ser, "user/repo"
+            )
 
 
 def test_qc():

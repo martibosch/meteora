@@ -39,6 +39,12 @@ license-files = ["LICENSE"]
 cx = [
   "contextily"
 ]
+sk = [
+  "huggingface_hub",
+  "scikit-learn",
+  "scipy",
+  "skops"
+]
 dev = [
   "build",
   "commitizen",
@@ -48,6 +54,7 @@ dev = [
   "twine"
 ]
 doc = [
+  "ipywidgets",
   "myst-parser",
   "myst-nb",
   "pydata-sphinx-theme",
@@ -73,6 +80,7 @@ test = [
 ]
 user-guide = [
   "ecmwf-datastores-client",
+  "interpret",
   "netcdf4",
   "zarr"
 ]
@@ -92,7 +100,7 @@ Repository = "https://github.com/martibosch/meteora"
 
 [tool.codespell]
 ignore-words-list = "convencional,pres,ser,temperatur"
-skip = "CHANGELOG.md,pixi.lock"
+skip = "CHANGELOG.md,pixi.lock,*.bib"
 
 [tool.commitizen]
 major_version_zero = true
@@ -125,25 +133,21 @@ python = ">=3.10,<3.14"
 gdal = ">=3"
 numba = ">=0.61.0"
 ipykernel = ">=7.1.0,<8"
-ipywidgets = "*"
 
 [tool.pixi.environments]
 default = {features = ["ox"], solve-group = "default"}
 cx = {features = ["cx"], solve-group = "default"}
 dev = {features = ["dev"], solve-group = "default"}
-doc = {features = ["cx", "doc", "ox", "qc", "user-guide", "xclim", "xvec"], solve-group = "default"}
+doc = {features = ["cx", "doc", "ox", "qc", "sk", "user-guide", "xclim", "xvec"], solve-group = "default"}
 ox = {features = ["ox"], solve-group = "default"}
 qc = {features = ["qc"], solve-group = "default"}
-test = {features = ["ox", "qc", "test", "xclim", "xvec"], solve-group = "default"}
+test = {features = ["ox", "qc", "sk", "test", "xclim", "xvec"], solve-group = "default"}
 xclim = {features = ["xclim"], solve-group = "default"}
 xvec = {features = ["xvec"], solve-group = "default"}
 
 [tool.pixi.feature.dev.tasks]
 build = "python -m build"
 check = {cmd = "twine check dist/*", depends-on = ["build"]}
-
-[tool.pixi.feature.doc.dependencies]
-ipywidgets = ">=8.1.8,<9"
 
 [tool.pixi.feature.doc.tasks]
 build-doc = "sphinx-build docs docs/_build"

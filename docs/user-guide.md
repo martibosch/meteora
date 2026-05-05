@@ -16,6 +16,7 @@ user-guide/data-structures
 user-guide/climate-indices
 user-guide/heatwave-detection
 user-guide/netatmo-qc
+user-guide/radiation-bias-correction
 ```
 
 - {doc}`Overview of key features <user-guide/overview>`
@@ -24,6 +25,7 @@ user-guide/netatmo-qc
 - {doc}`Climate indices with xclim integration <user-guide/climate-indices>`
 - {doc}`Heatwave detection <user-guide/heatwave-detection>`
 - {doc}`Netatmo citizen weather stations (CWS) and quality checks (QC) <user-guide/netatmo-qc>`
+- {doc}`Radiation bias correction for low-cost temperature sensors <user-guide/radiation-bias-correction>`
 
 ## Annex
 
