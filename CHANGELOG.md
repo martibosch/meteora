@@ -1,5 +1,19 @@
 # History
 
+## [v0.15.0] - 2026-05-26
+
+### :sparkles: New Features
+
+- [`a54391e`](https://github.com/martibosch/meteora/commit/a54391e4b3400f01c8b2633ca5a7053b8e9ab198) - radiation correction *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`cc3cdf7`](https://github.com/martibosch/meteora/commit/cc3cdf7ec1902a9f81bdd214a05a3bc4cf9232e7) - require requests-cache>=1.3.2 for requests 2.34 compat *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :wrench: Chores
+
+- [`867ddfa`](https://github.com/martibosch/meteora/commit/867ddfacb07f25755eb8ce781e44ae70a23d62a7) - handle xr optional import/type checking better *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.14.0] - 2026-03-11
 
 ### :sparkles: New Features
@@ -275,3 +289,4 @@
   \[v0.12.0\]: https://github.com/martibosch/meteora/compare/v0.11.0...v0.12.0
   \[v0.13.0\]: https://github.com/martibosch/meteora/compare/v0.12.0...v0.13.0
   \[v0.14.0\]: https://github.com/martibosch/meteora/compare/v0.13.0...v0.14.0
+  \[v0.15.0\]: https://github.com/martibosch/meteora/compare/v0.14.0...v0.15.0
