@@ -18,7 +18,8 @@ Pythonic interface to access observations from meteorological stations. Key feat
   - [compute climate indices](https://meteora.readthedocs.io/en/latest/user-guide/climate-indices.html)
   - [detect heatwave periods](https://meteora.readthedocs.io/en/latest/user-guide/heatwave-detection.html)
   - [produce ground truth datasets to benchmark weather forecasts](https://meteora.readthedocs.io/en/latest/user-guide/data-structures.html#stationbench-format)
-  - [perform quality-control on citizen weather station data](https://meteora.readthedocs.io/en/latest/user-guide/netatmo-qc.html).
+  - [perform quality-control on citizen weather station data](https://meteora.readthedocs.io/en/latest/user-guide/netatmo-qc.html)
+  - [correct radiation biases of low-cost temperature sensors](https://meteora.readthedocs.io/en/latest/user-guide/radiation-bias-correction.html)
 
 ## Overview
 
