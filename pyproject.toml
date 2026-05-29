@@ -1,11 +1,12 @@
-[build-system]
-requires = ["uv_build>=0.9.4,<0.10.0"]
-build-backend = "uv_build"
-
 [project]
-authors = [
-  {email = "marti.bosch@epfl.ch", name = "Martí Bosch"}
-]
+name = "meteora"
+version = "0.15.0"
+description = "Pythonic interface to access data from meteorological stations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "Martí Bosch", email = "marti.bosch@epfl.ch" }]
 classifiers = [
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
@@ -27,32 +28,13 @@ dependencies = [
   "requests-oauthlib",
   "tqdm"
 ]
-description = "Pythonic interface to access data from meteorological stations"
-name = "meteora"
-readme = "README.md"
-requires-python = ">=3.10"
-version = "0.15.0"
-license = "GPL-3.0-or-later"
-license-files = ["LICENSE"]
+
+[project.urls]
+Repository = "https://github.com/martibosch/meteora"
 
 [project.optional-dependencies]
-cx = [
-  "contextily"
-]
-sk = [
-  "huggingface_hub",
-  "scikit-learn",
-  "scipy",
-  "skops"
-]
-dev = [
-  "build",
-  "commitizen",
-  "pip",
-  "pre-commit",
-  "toml",
-  "twine"
-]
+cx = ["contextily"]
+dev = ["build", "commitizen", "pip", "pre-commit", "toml", "twine"]
 doc = [
   "ipywidgets",
   "myst-parser",
@@ -62,13 +44,9 @@ doc = [
   "sphinxcontrib-bibtex",
   "sphinxemoji"
 ]
-ox = [
-  "osmnx"
-]
-qc = [
-  "seaborn",
-  "statsmodels"
-]
+ox = ["osmnx"]
+qc = ["seaborn", "statsmodels"]
+sk = ["huggingface_hub", "scikit-learn", "scipy", "skops"]
 test = [
   "coverage[toml]",
   "pook",
@@ -78,25 +56,18 @@ test = [
   "requests-mock",
   "ruff"
 ]
-user-guide = [
-  "ecmwf-datastores-client",
-  "interpret",
-  "netcdf4",
-  "zarr"
-]
+user-guide = ["ecmwf-datastores-client", "interpret", "netcdf4", "zarr"]
+xclim = ["xarray", "xclim"]
 xvec = [
   # xproj>=0.2.1 expects newer xarray exception/alignment APIs than 2024.11.0
   # (see xarray#10285 and xproj#33 / xproj#34).
   "xarray>=2025.6.1",
-  "xvec>=0.5.0" # need at least v0.5.0 for categorical plots with custom cmap
-]
-xclim = [
-  "xarray",
-  "xclim"
+  "xvec>=0.5.0"  # need at least v0.5.0 for categorical plots with custom cmap
 ]
 
-[project.urls]
-Repository = "https://github.com/martibosch/meteora"
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
 
 [tool.codespell]
 ignore-words-list = "convencional,pres,ser,temperatur"
@@ -118,15 +89,10 @@ exclude_lines = [
   "raise NotImplementedError"
 ]
 ignore_errors = true
-omit = [
-  "docs/conf.py",
-  "tests/*"
-]
+omit = ["docs/conf.py", "tests/*"]
 
 [tool.coverage.run]
-source = [
-  "meteora"
-]
+source = ["meteora"]
 
 [tool.pixi.dependencies]
 python = ">=3.10,<3.14"
@@ -135,19 +101,28 @@ numba = ">=0.61.0"
 ipykernel = ">=7.1.0,<8"
 
 [tool.pixi.environments]
-default = {features = ["ox"], solve-group = "default"}
-cx = {features = ["cx"], solve-group = "default"}
-dev = {features = ["dev"], solve-group = "default"}
-doc = {features = ["cx", "doc", "ox", "qc", "sk", "user-guide", "xclim", "xvec"], solve-group = "default"}
-ox = {features = ["ox"], solve-group = "default"}
-qc = {features = ["qc"], solve-group = "default"}
-test = {features = ["ox", "qc", "sk", "test", "xclim", "xvec"], solve-group = "default"}
-xclim = {features = ["xclim"], solve-group = "default"}
-xvec = {features = ["xvec"], solve-group = "default"}
+default = { features = ["ox"], solve-group = "default" }
+cx = { features = ["cx"], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+doc = { features = [
+  "cx",
+  "doc",
+  "ox",
+  "qc",
+  "sk",
+  "user-guide",
+  "xclim",
+  "xvec"
+], solve-group = "default" }
+ox = { features = ["ox"], solve-group = "default" }
+qc = { features = ["qc"], solve-group = "default" }
+test = { features = ["ox", "qc", "sk", "test", "xclim", "xvec"], solve-group = "default" }
+xclim = { features = ["xclim"], solve-group = "default" }
+xvec = { features = ["xvec"], solve-group = "default" }
 
 [tool.pixi.feature.dev.tasks]
 build = "python -m build"
-check = {cmd = "twine check dist/*", depends-on = ["build"]}
+check = { cmd = "twine check dist/*", depends-on = ["build"] }
 
 [tool.pixi.feature.doc.tasks]
 build-doc = "sphinx-build docs docs/_build"
@@ -157,7 +132,7 @@ build-doc = "sphinx-build docs docs/_build"
 test = "dotenv -f .keys.env run pytest -s --cov=meteora --cov-report=xml tests"
 
 [tool.pixi.pypi-dependencies]
-meteora = {path = ".", editable = true}
+meteora = { path = ".", editable = true }
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -170,25 +145,14 @@ line-length = 88
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = [
-  "D",
-  "E",
-  "F",
-  "I"
-]
+select = ["D", "E", "F", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = [
-  "meteora"
-]
+known-first-party = ["meteora"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/__init__.py" = [
-  "F401"
-]
-"tests/test_meteora.py" = [
-  "D"
-]
+"**/__init__.py" = ["F401"]
+"tests/test_meteora.py" = ["D"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

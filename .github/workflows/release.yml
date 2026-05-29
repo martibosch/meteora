@@ -18,7 +18,7 @@ jobs:
           environments: dev
           frozen: true
 
-      - name: build and check  # the `check` command depends on `build`
+      - name: build and check # the `check` command depends on `build`
         run: pixi run -e dev check
 
       - uses: actions/upload-artifact@v4

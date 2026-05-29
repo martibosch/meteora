@@ -8,6 +8,6 @@ dependencies:
   - pre-commit
   - python=3.12
   - pip:
-    - -e .
-    - tox-uv
+      - -e .
+      - tox-uv
   - tox>=4
