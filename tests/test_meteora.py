@@ -80,6 +80,35 @@ def unload_xarray(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None
 
 
 @pytest.fixture
+def unload_xvec(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    """Fake that xvec is not installed.
+
+    Source: https://stackoverflow.com/a/79280624
+    """
+    modules = {
+        module: sys.modules[module]
+        for module in list(sys.modules)
+        if module.startswith("xvec") or module == "xvec"
+    }
+    for module in modules:
+        # ensure that `xvec` and all its submodules are not loadable
+        monkeypatch.setitem(sys.modules, module, None)
+
+    with pytest.raises(ImportError):
+        # ensure that `xvec` cannot be imported
+        import xvec  # noqa: F401
+
+    importlib.reload(utils)
+    yield  # undo the monkeypatch
+    for module, original in modules.items():
+        if original is None:
+            sys.modules.pop(module, None)
+        else:
+            sys.modules[module] = original
+    importlib.reload(utils)  # make `xvec` available again
+
+
+@pytest.fixture
 def unload_xclim(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Fake that xclim is not installed."""
     modules = {
@@ -249,8 +278,20 @@ class TestUtils(unittest.TestCase):
         with pytest.raises(ImportError):
             utils.long_to_cube(self.ts_df, self.stations_gdf)
 
+    @pytest.mark.usefixtures("unload_xvec")
+    def test_long_to_cube_missing_xvec(self):
+        # test that we can only call this function if xarray/xvec are installed
+        with pytest.raises(ImportError):
+            utils.long_to_cube(self.ts_df, self.stations_gdf)
+
     @pytest.mark.usefixtures("unload_xarray")
     def test_long_to_stationbench_missing_xarray(self):
+        # test that we can only call this function if xarray/xvec are installed
+        with pytest.raises(ImportError):
+            utils.long_to_stationbench(self.ts_df, self.stations_gdf)
+
+    @pytest.mark.usefixtures("unload_xvec")
+    def test_long_to_stationbench_missing_xvec(self):
         # test that we can only call this function if xarray/xvec are installed
         with pytest.raises(ImportError):
             utils.long_to_stationbench(self.ts_df, self.stations_gdf)

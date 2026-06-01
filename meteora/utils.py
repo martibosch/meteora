@@ -26,7 +26,7 @@ except ImportError:
 try:
     import xvec  # noqa: F401
 except ImportError:
-    pass
+    xvec = None
 
 VariablesType = str | int | list[str] | list[int]
 DateTimeType = dt.date | dt.datetime | np.datetime64 | pd.Timestamp | str | int | float
