@@ -181,6 +181,7 @@ def load_correction_model(
     repo_id: str,
     filename: str,
     trusted: Sequence[str],
+    *,
     token: str | None = None,
 ) -> Any:
     """Download and load a bias correction model from a Hugging Face Hub repository.
@@ -290,6 +291,7 @@ def apply_bias_correction(
     lcd_ts_df: pd.DataFrame,
     ref_ts: pd.Series | pd.DataFrame | xr.Dataset,
     model: Any | str,
+    *,
     lcd_stations_gdf: gpd.GeoDataFrame | None = None,
     ref_stations_gdf: gpd.GeoDataFrame | None = None,
     radiation_var: str | None = None,
