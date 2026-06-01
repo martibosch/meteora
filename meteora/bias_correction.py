@@ -146,13 +146,25 @@ class BestScaleRadiationTransformer(BaseEstimator, TransformerMixin):
         return self._apply_rolling(X, self.best_scale_).to_frame(self.radiation_col)
 
 
-def _parse_hf_path(model_str: str) -> tuple[str, str]:
+def parse_hf_path(model_str: str) -> tuple[str, str]:
     """Parse an HF Hub model string into `(repo_id, filename)`.
 
     Accepts two forms:
 
     * `"username/repo-name"` — filename defaults to `model.skops`
     * `"username/repo-name/filename.skops"` — explicit filename
+
+    Parameters
+    ----------
+    model_str : str
+        HF Hub model string in one of the two accepted forms.
+
+    Returns
+    -------
+    repo_id : str
+        The HF Hub repository ID, e.g. `"username/repo-name"`.
+    filename : str
+        The filename within the repository.
     """
     parts = model_str.split("/", maxsplit=2)
     if len(parts) == 2:
@@ -357,7 +369,7 @@ def apply_bias_correction(
         radiation_var = settings.ECV_RADIATION_SHORTWAVE
 
     if isinstance(model, str):
-        repo_id, filename = _parse_hf_path(model)
+        repo_id, filename = parse_hf_path(model)
         model = load_correction_model(repo_id, filename, trusted=trusted, token=token)
 
     lcd_was_long = isinstance(lcd_ts_df.index, pd.MultiIndex)

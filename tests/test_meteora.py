@@ -637,18 +637,18 @@ class TestUtils(unittest.TestCase):
 # TODO: test outside of the class or as staticmethod?
 def test_parse_hf_path():
     # "user/repo" → default filename
-    repo_id, filename = bias_correction._parse_hf_path("user/repo")
+    repo_id, filename = bias_correction.parse_hf_path("user/repo")
     assert repo_id == "user/repo"
     assert filename == "model.skops"
 
     # "user/repo/custom.skops" → explicit filename
-    repo_id, filename = bias_correction._parse_hf_path("user/repo/custom.skops")
+    repo_id, filename = bias_correction.parse_hf_path("user/repo/custom.skops")
     assert repo_id == "user/repo"
     assert filename == "custom.skops"
 
     # bare name without a slash → ValueError
     with pytest.raises(ValueError):
-        bias_correction._parse_hf_path("invalid")
+        bias_correction.parse_hf_path("invalid")
 
 
 class TestBiasCorrection(unittest.TestCase):
