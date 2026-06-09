@@ -52,12 +52,28 @@ ECV_UNIT_DICT = {
 NETATMO_ON_GET_ERROR = "log"  # or "raise"
 
 # qc
+DEFAULT_QC_STEPS = [
+    "flag_mislocated",
+    "flag_unreliable",
+    "adjust_elevation",
+    "flag_outliers",
+    "flag_indoor",
+]
 ATMOSPHERIC_LAPSE_RATE = 0.0065
 OUTLIER_LOW_ALPHA = 0.01
 OUTLIER_HIGH_ALPHA = 0.95
 STATION_OUTLIER_THRESHOLD = 0.2
 STATION_INDOOR_CORR_THRESHOLD = 0.9
 UNRELIABLE_THRESHOLD = 0.2
+# default stations column from which to take the elevation (for the elevation
+# adjustment step of `qc.QCPipeline`)
+ELEVATION_COL = "elevation"
+# spatial buddy check
+BUDDY_RADIUS = 3000  # in units of the stations CRS (meters after projection)
+BUDDY_MIN_N = 5  # minimum number of buddies (neighbours) required
+BUDDY_LOW_ALPHA = 0.05
+BUDDY_HIGH_ALPHA = 0.95
+BUDDY_STATION_OUTLIER_THRESHOLD = 0.2
 
 # utils
 ## meteo

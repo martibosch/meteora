@@ -45,7 +45,7 @@ doc = [
   "sphinxemoji"
 ]
 ox = ["osmnx"]
-qc = ["seaborn", "statsmodels"]
+qc = ["statsmodels"]
 sk = ["huggingface_hub", "scikit-learn", "scipy", "skops"]
 test = [
   "coverage[toml]",
@@ -56,7 +56,13 @@ test = [
   "requests-mock",
   "ruff"
 ]
-user-guide = ["ecmwf-datastores-client", "interpret", "netcdf4", "zarr"]
+user-guide = [
+  "ecmwf-datastores-client",
+  "interpret",
+  "netcdf4",
+  "seaborn",
+  "zarr"
+]
 xclim = ["xarray", "xclim"]
 xvec = [
   # xproj>=0.2.1 expects newer xarray exception/alignment APIs than 2024.11.0

@@ -7,11 +7,11 @@ import logging as lg
 import os
 import sys
 import unittest
+import warnings
 from collections.abc import Generator
 from os import path
 
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pook
@@ -813,121 +813,305 @@ class TestBiasCorrection(unittest.TestCase):
             )
 
 
-def test_qc():
-    # read a wide ts df
-    # ACHTUNG: select only 3 days so that tests run faster (comparison lineplots can be
-    # slow)
-    ts_df = pd.read_csv(
-        path.join(tests_data_dir, "wide-ts-df.csv"), index_col="time", parse_dates=True
-    ).iloc[:72]
+class TestQC(unittest.TestCase):
+    """Test the individual QC step functions of `meteora.qc`."""
 
-    # test comparison lineplot
-    discard_stations = ts_df.columns[:2]
-    # check that there are four lines in the plot (2 mean + 2 CI lines)
-    assert len(qc.comparison_lineplot(ts_df, discard_stations).lines) == 4
-    # test that if we plot discarded stations individually, we get a line for each
-    # discarded station (plus two for the kept ones, i.e., the mean and CI lines)
-    assert (
-        len(qc.comparison_lineplot(ts_df, discard_stations).lines)
-        == len(discard_stations) + 2
-    )
-    # test that we can plot in a given axis
-    fig, ax = plt.subplots()
-    assert len(ax.lines) == 0
-    qc.comparison_lineplot(ts_df, discard_stations, ax=ax)
-    assert len(ax.lines) == 4
-
-    # test mislocated stations
-    # generate a random gdf with the same stations as ts_df
-    stations_gser = gpd.GeoSeries(
-        gpd.points_from_xy(
-            np.random.rand(len(ts_df.columns)), np.random.rand(len(ts_df.columns))
-        ),
-        index=ts_df.columns,
-        crs=4326,
-    )
-    # duplicate some station location
-    src_station = ts_df.columns[0]
-    dst_station = ts_df.columns[1]
-    stations_gser.loc[src_station] = stations_gser.loc[dst_station]
-    # test that we get the duplicated stations
-    mislocated_stations = qc.get_mislocated_stations(stations_gser)
-    for station in [src_station, dst_station]:
-        assert station in mislocated_stations
-
-    # test unreliable stations
-    unreliable_stations = qc.get_unreliable_stations(ts_df)
-    assert len(unreliable_stations) >= 0
-    # test threshold (default is 0.2)
-    # test that a higher threshold returns at most the same stations
-    assert len(qc.get_unreliable_stations(ts_df, unreliable_threshold=0.3)) <= len(
-        unreliable_stations
-    )
-    # test that a lower threshold returns at least the same stations
-    assert len(qc.get_unreliable_stations(ts_df, unreliable_threshold=0.1)) >= len(
-        unreliable_stations
-    )
-    # test that we get an empty list if we set the threshold to 1
-    assert qc.get_unreliable_stations(ts_df, unreliable_threshold=1 == [])
-
-    # test elevation adjustment
-    # generate a random elevation series with stations as index
-    station_elevation_ser = pd.Series(
-        np.random.rand(len(ts_df.columns)) * 100 + 1, index=ts_df.columns
-    )
-    # adjust with the default lapse rate (0.0065)
-    adj_ts_df = qc.elevation_adjustment(ts_df, station_elevation_ser)
-    # test that the adjusted ts_df has the same shape and indexing
-    assert adj_ts_df.shape == ts_df.shape
-    assert adj_ts_df.index.equals(ts_df.index)
-    assert adj_ts_df.columns.equals(ts_df.columns)
-    # test that a higher lapse rate increases (strict) the range of the adjusted values
-    # technically this may not work with elevations smaller than 1
-    high_adj_ts_df = qc.elevation_adjustment(
-        ts_df, station_elevation_ser, atmospheric_lapse_rate=0.2
-    )
-    assert adj_ts_df.min().min() > high_adj_ts_df.min().min()
-    assert adj_ts_df.max().max() < high_adj_ts_df.max().max()
-
-    # test outlier detection
-    outlier_stations = qc.get_outlier_stations(ts_df)
-    assert len(outlier_stations) >= 0
-    # test tail range (default high_alpha=0.95, low_alpha=0.01)
-    # test that a smaller tail range returns at least the same stations
-    assert len(qc.get_outlier_stations(ts_df, low_alpha=0.1, high_alpha=0.9)) >= len(
-        outlier_stations
-    )
-    # test that a bigger tail range returns at most the same stations
-    assert len(qc.get_outlier_stations(ts_df, low_alpha=0.01, high_alpha=0.99)) <= len(
-        outlier_stations
-    )
-    # test station outlier threshold (default 0.2)
-    # test that a higher outlier threshold returns at most the same stations
-    station_outlier_threshold = 0.3
-    assert len(
-        qc.get_outlier_stations(
-            ts_df, station_outlier_threshold=station_outlier_threshold
+    def setUp(self):
+        # read a wide ts df; select only 3 days so that tests run faster
+        self.ts_df = pd.read_csv(
+            path.join(tests_data_dir, "wide-ts-df.csv"),
+            index_col="time",
+            parse_dates=True,
+        ).iloc[:72]
+        # random station locations sharing the ts_df columns, with one duplicated
+        # location so that `flag_mislocated` has a pair to flag
+        stations_gser = gpd.GeoSeries(
+            gpd.points_from_xy(
+                np.random.rand(len(self.ts_df.columns)),
+                np.random.rand(len(self.ts_df.columns)),
+            ),
+            index=self.ts_df.columns,
+            crs=4326,
         )
-    ) <= len(outlier_stations)
-    # test that a lower outlier threshold returns at least the same stations
-    assert len(
-        qc.get_outlier_stations(
-            ts_df, station_outlier_threshold=station_outlier_threshold
+        self.src_station = self.ts_df.columns[0]
+        self.dst_station = self.ts_df.columns[1]
+        stations_gser.loc[self.src_station] = stations_gser.loc[self.dst_station]
+        self.stations_gser = stations_gser
+        # random per-station elevation series (positive, so the lapse-rate assertions
+        # below hold)
+        self.station_elevation_ser = pd.Series(
+            np.random.rand(len(self.ts_df.columns)) * 100 + 1,
+            index=self.ts_df.columns,
         )
-    ) >= len(outlier_stations)
 
-    # test indoor station detection
-    indoor_stations = qc.get_indoor_stations(ts_df)
-    assert len(indoor_stations) >= 0
-    # test correlation threshold (default 0.9)
-    # test that a higher threshold returns at least the same stations
-    assert len(
-        qc.get_indoor_stations(ts_df, station_indoor_corr_threshold=0.95)
-    ) >= len(indoor_stations)
-    # test that a lower threshold returns at most the same stations
-    assert len(
-        qc.get_indoor_stations(ts_df, station_indoor_corr_threshold=0.85)
-    ) <= len(indoor_stations)
+    def test_flag_mislocated(self):
+        # the QC functions share the uniform contract
+        # `func(ts_df, **kwargs) -> (ts_df, discarded_stations)`, so we discard the
+        # (here unchanged) data frame and keep the flagged station ids
+        _, mislocated_stations = qc.flag_mislocated(
+            self.ts_df, station_gser=self.stations_gser
+        )
+        for station in [self.src_station, self.dst_station]:
+            assert station in mislocated_stations
+
+    def test_flag_unreliable(self):
+        ts_df = self.ts_df
+        _, unreliable_stations = qc.flag_unreliable(ts_df)
+        assert len(unreliable_stations) >= 0
+        # test threshold (default is 0.2): a higher threshold returns at most the same
+        # stations, a lower one at least the same
+        assert len(qc.flag_unreliable(ts_df, unreliable_threshold=0.3)[1]) <= len(
+            unreliable_stations
+        )
+        assert len(qc.flag_unreliable(ts_df, unreliable_threshold=0.1)[1]) >= len(
+            unreliable_stations
+        )
+        # a threshold of 1 returns an empty list
+        assert qc.flag_unreliable(ts_df, unreliable_threshold=1)[1] == []
+
+    def test_adjust_elevation(self):
+        ts_df = self.ts_df
+        # adjust with the default lapse rate (0.0065); a transform discards no station
+        adj_ts_df, adj_discarded = qc.adjust_elevation(
+            ts_df, station_elevation_ser=self.station_elevation_ser
+        )
+        assert adj_discarded == []
+        # the adjusted ts_df has the same shape and indexing
+        assert adj_ts_df.shape == ts_df.shape
+        assert adj_ts_df.index.equals(ts_df.index)
+        assert adj_ts_df.columns.equals(ts_df.columns)
+        # a higher lapse rate strictly increases the range of the adjusted values
+        # (technically this may not hold with elevations smaller than 1)
+        high_adj_ts_df, _ = qc.adjust_elevation(
+            ts_df,
+            station_elevation_ser=self.station_elevation_ser,
+            atmospheric_lapse_rate=0.2,
+        )
+        assert adj_ts_df.min().min() > high_adj_ts_df.min().min()
+        assert adj_ts_df.max().max() < high_adj_ts_df.max().max()
+
+    def test_flag_outliers(self):
+        ts_df = self.ts_df
+        _, outlier_stations = qc.flag_outliers(ts_df)
+        assert len(outlier_stations) >= 0
+        # tail range (default high_alpha=0.95, low_alpha=0.01): a smaller tail range
+        # returns at least the same stations, a bigger one at most the same
+        assert len(qc.flag_outliers(ts_df, low_alpha=0.1, high_alpha=0.9)[1]) >= len(
+            outlier_stations
+        )
+        assert len(qc.flag_outliers(ts_df, low_alpha=0.01, high_alpha=0.99)[1]) <= len(
+            outlier_stations
+        )
+        # station outlier threshold (default 0.2): a higher threshold returns at most
+        # the same stations, a lower one at least the same
+        assert len(qc.flag_outliers(ts_df, station_outlier_threshold=0.3)[1]) <= len(
+            outlier_stations
+        )
+        assert len(qc.flag_outliers(ts_df, station_outlier_threshold=0.1)[1]) >= len(
+            outlier_stations
+        )
+
+    def test_flag_indoor(self):
+        ts_df = self.ts_df
+        _, indoor_stations = qc.flag_indoor(ts_df)
+        assert len(indoor_stations) >= 0
+        # correlation threshold (default 0.9): a higher threshold returns at least the
+        # same stations, a lower one at most the same
+        assert len(qc.flag_indoor(ts_df, station_indoor_corr_threshold=0.95)[1]) >= len(
+            indoor_stations
+        )
+        assert len(qc.flag_indoor(ts_df, station_indoor_corr_threshold=0.85)[1]) <= len(
+            indoor_stations
+        )
+
+    def test_flag_buddies(self):
+        ts_df = self.ts_df
+        # a large radius and a minimum of one make the (few, random-location) stations
+        # mutual buddies so the spatial check actually evaluates them
+        kwargs = dict(station_gser=self.stations_gser, buddy_radius=1e9, buddy_min_n=1)
+        _, buddy_stations = qc.flag_buddies(ts_df, **kwargs)
+        assert len(buddy_stations) >= 0
+        # without station geometry the step is skipped and flags nothing
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            assert qc.flag_buddies(ts_df)[1] == []
+        # station outlier threshold (default 0.2): a higher threshold returns at most
+        # the same stations, a lower one at least the same
+        assert len(
+            qc.flag_buddies(ts_df, station_outlier_threshold=0.3, **kwargs)[1]
+        ) <= len(buddy_stations)
+        assert len(
+            qc.flag_buddies(ts_df, station_outlier_threshold=0.1, **kwargs)[1]
+        ) >= len(buddy_stations)
+
+
+class TestQCPipeline(unittest.TestCase):
+    """Test the orchestration of `meteora.qc.QCPipeline`."""
+
+    def setUp(self):
+        self.ts_df = pd.read_csv(
+            path.join(tests_data_dir, "wide-ts-df.csv"),
+            index_col="time",
+            parse_dates=True,
+        ).iloc[:72]
+        stations = self.ts_df.columns
+        self.n_stations = len(stations)
+        # station locations with one duplicated location so that `flag_mislocated` flags
+        # a pair of stations
+        geometry_gser = gpd.GeoSeries(
+            gpd.points_from_xy(
+                np.random.rand(self.n_stations), np.random.rand(self.n_stations)
+            ),
+            index=stations,
+            crs=4326,
+        )
+        geometry_gser.loc[stations[0]] = geometry_gser.loc[stations[1]]
+        # station geo-data frame carrying the elevation in the default-named column,
+        # used to auto-populate the station metadata of the steps that declare it
+        self.stations_gdf = gpd.GeoDataFrame(
+            {settings.ELEVATION_COL: np.random.rand(self.n_stations) * 100 + 1},
+            geometry=geometry_gser,
+            index=stations,
+        )
+
+    def test_init_default_steps(self):
+        # with full station metadata, all the default steps are resolved, in order
+        pipeline = qc.QCPipeline(stations=self.stations_gdf)
+        self.assertEqual(
+            [step.__name__ for step in pipeline.steps],
+            list(settings.DEFAULT_QC_STEPS),
+        )
+        # the station metadata is auto-populated into the steps that declare it, and not
+        # into those that don't
+        step_kwargs = dict(
+            zip([step.__name__ for step in pipeline.steps], pipeline.step_kwargs)
+        )
+        self.assertIn("station_gser", step_kwargs["flag_mislocated"])
+        self.assertIn("station_elevation_ser", step_kwargs["adjust_elevation"])
+        self.assertNotIn("station_gser", step_kwargs["flag_unreliable"])
+
+    def test_init_omits_steps_without_metadata(self):
+        # without any station metadata, the default steps that require it
+        # (`flag_mislocated` needs geometry, `adjust_elevation` needs elevation) are
+        # silently omitted; the metadata-free steps remain, in order
+        pipeline = qc.QCPipeline()
+        self.assertEqual(
+            [step.__name__ for step in pipeline.steps],
+            ["flag_unreliable", "flag_outliers", "flag_indoor"],
+        )
+
+    def test_init_elevation(self):
+        # elevation taken from the default-named column of the stations geo-data frame
+        pipeline = qc.QCPipeline(stations=self.stations_gdf)
+        self.assertIsInstance(pipeline.elevation_ser, pd.Series)
+        # elevation passed explicitly as a series (with geometry-only stations)
+        elevation_ser = self.stations_gdf[settings.ELEVATION_COL]
+        pipeline = qc.QCPipeline(
+            stations=self.stations_gdf.geometry, elevation=elevation_ser
+        )
+        pd.testing.assert_series_equal(pipeline.elevation_ser, elevation_ser)
+        # absent elevation (geometry-only stations, no column to look up) resolves to
+        # None, and `adjust_elevation` is omitted from the defaults
+        pipeline = qc.QCPipeline(stations=self.stations_gdf.geometry)
+        self.assertIsNone(pipeline.elevation_ser)
+        self.assertNotIn("adjust_elevation", [step.__name__ for step in pipeline.steps])
+
+    def test_init_explicit_steps(self):
+        # explicit steps may mix built-in names and user callables; per-step kwargs are
+        # matched positionally and override the `settings.*` defaults
+        def custom_step(ts_df, **kwargs):
+            return ts_df, []
+
+        pipeline = qc.QCPipeline(
+            stations=self.stations_gdf,
+            steps=["flag_unreliable", custom_step],
+            step_kwargs=[{"unreliable_threshold": 0.5}, {}],
+        )
+        self.assertEqual(
+            [step.__name__ for step in pipeline.steps],
+            ["flag_unreliable", "custom_step"],
+        )
+        self.assertEqual(pipeline.step_kwargs[0]["unreliable_threshold"], 0.5)
+
+    def test_init_errors(self):
+        # unknown built-in step name
+        with self.assertRaises(ValueError) as cm:
+            qc.QCPipeline(steps=["not_a_step"])
+        self.assertIn("Unknown step", str(cm.exception))
+        # a step that is neither a name nor a callable
+        with self.assertRaises(TypeError):
+            qc.QCPipeline(steps=[42])
+        # `step_kwargs` must match `steps` positionally
+        with self.assertRaises(ValueError) as cm:
+            qc.QCPipeline(steps=["flag_unreliable"], step_kwargs=[{}, {}])
+        self.assertIn("must match positionally", str(cm.exception))
+        # `step_kwargs` is only valid together with an explicit `steps` list
+        with self.assertRaises(ValueError) as cm:
+            qc.QCPipeline(step_kwargs=[{}])
+        self.assertIn("only valid", str(cm.exception))
+
+    def test_apply(self):
+        # exercise the orchestration with deterministic steps: a station-flagging
+        # built-in (the duplicated pair), a user callable flagging a third station, and
+        # a value transform that discards nothing. The statistical steps' behaviour is
+        # covered in `TestQC`
+        target = self.ts_df.columns[2]
+
+        def drop_target(ts_df, **kwargs):
+            return ts_df, [target]
+
+        pipeline = qc.QCPipeline(
+            stations=self.stations_gdf,
+            steps=["flag_mislocated", drop_target, "adjust_elevation"],
+        )
+        qc_ts_df = pipeline.apply(self.ts_df)
+        # the returned data frame is a subset of the input columns (discarded stations
+        # dropped) with the same time index
+        self.assertTrue(qc_ts_df.columns.isin(self.ts_df.columns).all())
+        self.assertTrue(qc_ts_df.index.equals(self.ts_df.index))
+        # the input is left untouched (default copy=True)
+        self.assertEqual(len(self.ts_df.columns), self.n_stations)
+        # each step records what it discarded: `flag_mislocated` flags the duplicated
+        # pair, the user callable flags its target, the transform discards nothing
+        self.assertEqual(
+            set(pipeline.discarded_),
+            {"flag_mislocated", "drop_target", "adjust_elevation"},
+        )
+        self.assertIn(self.ts_df.columns[0], pipeline.discarded_["flag_mislocated"])
+        self.assertIn(self.ts_df.columns[1], pipeline.discarded_["flag_mislocated"])
+        self.assertEqual(pipeline.discarded_["drop_target"], [target])
+        self.assertEqual(pipeline.discarded_["adjust_elevation"], [])
+        # `discarded_stations` is the sorted union across steps, i.e. exactly the
+        # stations removed from the output
+        self.assertEqual(
+            pipeline.discarded_stations,
+            sorted(set(self.ts_df.columns) - set(qc_ts_df.columns)),
+        )
+
+    def test_apply_user_callable(self):
+        # a user callable flags a chosen station, which the pipeline drops and records
+        target = self.ts_df.columns[0]
+
+        def drop_target(ts_df, **kwargs):
+            return ts_df, [target]
+
+        pipeline = qc.QCPipeline(steps=[drop_target])
+        qc_ts_df = pipeline.apply(self.ts_df)
+        self.assertNotIn(target, qc_ts_df.columns)
+        self.assertEqual(pipeline.discarded_["drop_target"], [target])
+
+    def test_apply_explicit_step_without_metadata_warns(self):
+        # an explicitly-listed step whose metadata is absent is *not* omitted (unlike in
+        # the defaults); it self-skips with a warning at apply time and flags nothing
+        pipeline = qc.QCPipeline(steps=["flag_mislocated"])
+        self.assertEqual(
+            [step.__name__ for step in pipeline.steps], ["flag_mislocated"]
+        )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            qc_ts_df = pipeline.apply(self.ts_df)
+        self.assertGreater(len(w), 0)
+        self.assertEqual(len(qc_ts_df.columns), self.n_stations)
 
 
 class TestClientUnits(unittest.TestCase):
