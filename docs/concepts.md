@@ -12,6 +12,8 @@ Essentially, Meteora is a collection of clients, each specific to a providers. T
 
 ## Developing your own client
 
+See [Clients](writing-a-client.md) for a step-by-step guide to composing a client from the base classes and mixins. This section covers the principles behind which providers Meteora supports.
+
 ### Principles
 
 #### Conceptual

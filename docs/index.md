@@ -8,6 +8,7 @@ user-guide
 supported-providers
 api
 concepts
+writing-a-client
 contributing
 changelog
 ```
