@@ -586,6 +586,61 @@ class TestUtils(unittest.TestCase):
         self.assertIsInstance(heat_index_df.index, pd.DatetimeIndex)
         self.assertIsInstance(humidex_df.index, pd.DatetimeIndex)
 
+    def test_climate_indices_none_defaults(self):
+        # every `None`-defaulted xclim kwarg (thresh, freq, op, window, ...) must
+        # resolve to the corresponding xclim default, i.e. calling with the defaults
+        # must match passing those defaults explicitly. Covers the functions not
+        # exercised above
+        df = self.ts_df.assign(
+            **{
+                settings.ECV_PRECIPITATION: 1.0,
+                settings.ECV_WIND_SPEED: 2.0,
+            }
+        )
+        # (meteora function, xclim function name, the `None`-resolved parameters)
+        cases = [
+            (
+                climate_indices.cooling_degree_days,
+                "cooling_degree_days",
+                ["thresh", "freq"],
+            ),
+            (climate_indices.frost_days, "frost_days", ["thresh", "freq"]),
+            (climate_indices.ice_days, "ice_days", ["thresh", "freq"]),
+            (climate_indices.hot_days, "hot_days", ["thresh", "freq"]),
+            (
+                climate_indices.hot_spell_total_length,
+                "hot_spell_total_length",
+                ["thresh", "window", "freq", "op", "resample_before_rl"],
+            ),
+            (
+                climate_indices.daily_temperature_range,
+                "daily_temperature_range",
+                ["freq", "op"],
+            ),
+            (climate_indices.prcptot, "prcptot", ["thresh", "freq"]),
+            (climate_indices.dry_days, "dry_days", ["thresh", "freq", "op"]),
+            (
+                climate_indices.max_1day_precipitation_amount,
+                "max_1day_precipitation_amount",
+                ["freq"],
+            ),
+            (
+                climate_indices.max_n_day_precipitation_amount,
+                "max_n_day_precipitation_amount",
+                ["window", "freq"],
+            ),
+            (climate_indices.sfc_wind_max, "sfcWind_max", ["freq"]),
+            (climate_indices.sfc_wind_min, "sfcWind_min", ["freq"]),
+            (climate_indices.windy_days, "windy_days", ["thresh", "freq"]),
+        ]
+        for func, xclim_name, params in cases:
+            with self.subTest(index=func.__name__):
+                sig = inspect.signature(getattr(xci, xclim_name))
+                explicit_kwargs = {
+                    param: sig.parameters[param].default for param in params
+                }
+                pd.testing.assert_frame_equal(func(df), func(df, **explicit_kwargs))
+
     def test_climate_indices_units_metadata(self):
         idx = pd.MultiIndex.from_product(
             [["A"], pd.date_range("2020-01-01", periods=3, freq="D")],
