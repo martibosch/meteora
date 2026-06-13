@@ -10,6 +10,7 @@ import unittest
 import warnings
 from collections.abc import Generator
 from os import path
+from unittest.mock import patch
 
 import geopandas as gpd
 import numpy as np
@@ -1489,6 +1490,26 @@ class AWELClientTest(BaseClientTest, unittest.TestCase):
     start_date = "2022-03-22"
     end_date = "2022-03-23"
     ts_df_args = [start_date, end_date]
+
+    def _mock_retrieve_file(self):
+        # AWEL has no stations endpoint and serves monthly CSVs from a host that is
+        # often unreachable from CI. Both the station-metadata probe (which walks
+        # date-dependent monthly URLs) and the time series fetch go through
+        # `_retrieve_file`, so patch it to serve a local fixture (same monthly-CSV
+        # shape), keeping the tests offline and independent of the current date.
+        return patch.object(
+            AWELClient,
+            "_retrieve_file",
+            return_value=path.join(tests_data_dir, "awel-sensors.csv"),
+        )
+
+    def test_stations(self):
+        with self._mock_retrieve_file():
+            super().test_stations()
+
+    def test_time_series(self):
+        with self._mock_retrieve_file():
+            super().test_time_series()
 
 
 class IEMBaseClientTest(BaseClientTest):
