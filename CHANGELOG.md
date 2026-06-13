@@ -1,5 +1,37 @@
 # History
 
+## [v0.16.0] - 2026-06-13
+
+### :boom: BREAKING CHANGES
+
+- due to [`097dbeb`](https://github.com/martibosch/meteora/commit/097dbeb18ed8bde8861d5c737ed5f0792d9a8cdc) - enforce keyword-only optional args in bias_correction *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  enforce keyword-only optional args in bias_correction
+
+- due to [`fa12be7`](https://github.com/martibosch/meteora/commit/fa12be78f72403fa0fdb2dfe39f39252f9d4b0fa) - qc as pipeline with buddy check, drop comparison_lineplot *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  qc as pipeline with buddy check, drop comparison_lineplot
+
+- due to [`9492f8a`](https://github.com/martibosch/meteora/commit/9492f8a090fbe0633565755ad449b58d1665c4e4) - timezone-aware time series index via client TZ attribute *(commit by [@martibosch](https://github.com/martibosch))*:
+
+  timezone-aware time series index via client TZ attribute
+
+### :sparkles: New Features
+
+- [`21cec86`](https://github.com/martibosch/meteora/commit/21cec8677459014e21dc46810a478503a07bbc1f) - public parse_hf_path, single-repo bias correction notebook *(commit by [@martibosch](https://github.com/martibosch))*
+- [`fa12be7`](https://github.com/martibosch/meteora/commit/fa12be78f72403fa0fdb2dfe39f39252f9d4b0fa) - qc as pipeline with buddy check, drop comparison_lineplot *(commit by [@martibosch](https://github.com/martibosch))*
+- [`9492f8a`](https://github.com/martibosch/meteora/commit/9492f8a090fbe0633565755ad449b58d1665c4e4) - timezone-aware time series index via client TZ attribute *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :bug: Bug Fixes
+
+- [`fb6c669`](https://github.com/martibosch/meteora/commit/fb6c6691906ab61f9a55d947371b3b83349194d3) - set xvec to None when import fails in utils *(commit by [@martibosch](https://github.com/martibosch))*
+- [`097dbeb`](https://github.com/martibosch/meteora/commit/097dbeb18ed8bde8861d5c737ed5f0792d9a8cdc) - enforce keyword-only optional args in bias_correction *(commit by [@martibosch](https://github.com/martibosch))*
+
+### :white_check_mark: Tests
+
+- [`2c2e10c`](https://github.com/martibosch/meteora/commit/2c2e10c2f75371afd954dcf4762261cba43beaef) - mock awel files to avoid max retries reached in ci *(commit by [@martibosch](https://github.com/martibosch))*
+- [`84d692e`](https://github.com/martibosch/meteora/commit/84d692eec12b6bf46e929c4f26390e792aaefec9) - cover None-default kwargs for climate indices *(commit by [@martibosch](https://github.com/martibosch))*
+
 ## [v0.15.0] - 2026-05-26
 
 ### :sparkles: New Features
@@ -290,3 +322,4 @@
   \[v0.13.0\]: https://github.com/martibosch/meteora/compare/v0.12.0...v0.13.0
   \[v0.14.0\]: https://github.com/martibosch/meteora/compare/v0.13.0...v0.14.0
   \[v0.15.0\]: https://github.com/martibosch/meteora/compare/v0.14.0...v0.15.0
+  \[v0.16.0\]: https://github.com/martibosch/meteora/compare/v0.15.0...v0.16.0
