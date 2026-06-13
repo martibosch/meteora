@@ -156,6 +156,8 @@ class IEMClient(
     # geom constants
     CRS = utils.LONLAT_CRS
 
+    TZ = "UTC"
+
     # data frame label constants
     _stations_gdf_id_col = STATIONS_GDF_ID_COL
     _ts_df_stations_id_col = TS_DF_STATIONS_ID_COL
@@ -195,9 +197,10 @@ class IEMClient(
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
     ) -> dict:
-        # process date args
-        start = pd.Timestamp(start)
-        end = pd.Timestamp(end)
+        # process date args; normalize to UTC so the date components match the API's
+        # UTC-based time range
+        start = self._localize_datetime(start)
+        end = self._localize_datetime(end)
 
         return {
             "year1": start.year,
@@ -245,13 +248,17 @@ class IEMClient(
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
-            pandas.Timestamp.
+            pandas.Timestamp. Naive values are interpreted in the data source's
+            timezone (the client's `TZ` attribute); timezone-aware values are
+            converted to it.
 
         Returns
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         return self._get_ts_df(variables, start, end)
 

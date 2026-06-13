@@ -128,6 +128,10 @@ class MeteoSwissClient(
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
 
+    # MeteoSwiss documents its measurement timestamps in UTC
+    # (https://opendatadocs.meteoswiss.ch/a-data-groundbased/a1-automatic-weather-stations)
+    TZ = "UTC"
+
     def __init__(
         self,
         region: RegionType,
@@ -203,8 +207,10 @@ class MeteoSwissClient(
         return not (start_year <= today.year <= end_year)
 
     def _ts_df_from_url(self, url, ts_params: Mapping) -> pd.DataFrame:
-        start = pd.Timestamp(ts_params["start"])
-        end = pd.Timestamp(ts_params["end"])
+        # MeteoSwiss files store naive timestamps (in `self.TZ`), so compare the index
+        # against naive bounds
+        start = self._naive_datetime(ts_params["start"])
+        end = self._naive_datetime(ts_params["end"])
         period = ts_params["period"]
         _station_id = ts_params["station_id"].lower()
 
@@ -218,15 +224,10 @@ class MeteoSwissClient(
                 }
             ).set_index([self._ts_df_stations_id_col, self._ts_df_time_col])
             time_ser = ts_df.index.get_level_values(self._ts_df_time_col).to_series()
-            tz = time_ser.dt.tz
             return ts_df.loc[
                 (
                     slice(None),
-                    time_ser.between(
-                        pd.Timestamp(start, tz=tz),
-                        pd.Timestamp(end, tz=tz),
-                        inclusive="both",
-                    ),
+                    time_ser.between(start, end, inclusive="both"),
                 ),
                 :,
             ]
@@ -294,13 +295,17 @@ class MeteoSwissClient(
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
-            pandas.Timestamp.
+            pandas.Timestamp. Naive values are interpreted in the data source's
+            timezone (the client's `TZ` attribute); timezone-aware values are
+            converted to it.
 
         Returns
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         return self._get_ts_df(
             variables=variables,

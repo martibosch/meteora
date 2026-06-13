@@ -381,6 +381,8 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
     _variables_dict = VARIABLES_DICT
     _ecv_dict = ECV_DICT
 
+    TZ = "UTC"
+
     def __init__(
         self,
         region: RegionType,
@@ -578,9 +580,11 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         limit = _ts_params["limit"]
         # use pop to remove the date_begin and date_end keys from the dict (they will be
         # added to each chunk's request)
+        # localize to UTC so the Unix timestamps below are correct regardless of the
+        # local system timezone
         time_range = pd.date_range(
-            pd.Timestamp(_ts_params.pop("date_begin")),
-            pd.Timestamp(_ts_params.pop("date_end")),
+            self._localize_datetime(_ts_params.pop("date_begin")),
+            self._localize_datetime(_ts_params.pop("date_end")),
             freq=SCALE_TO_FREQ_DICT[scale],
         )
         if len(time_range) >= limit:
@@ -758,7 +762,9 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
-            pandas.Timestamp.
+            pandas.Timestamp. Naive values are interpreted in the data source's
+            timezone (the client's `TZ` attribute); timezone-aware values are
+            converted to it.
         scale : {"30min", "1hour", "3hours", "1day", "1week", "1month"}, optional
             Temporal scale of the measurements. If None, returns the finest scale, i.e.,
             "30min" (30 minutes).
@@ -775,7 +781,9 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         return self._get_ts_df(
             variables=variables,

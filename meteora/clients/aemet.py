@@ -92,6 +92,8 @@ class AemetClient(
     _variables_id_col = VARIABLES_ID_COL
     _ecv_dict = ECV_DICT
 
+    TZ = "UTC"
+
     # auth constants
     _api_key_param_name = "api_key"
     # request_headers = {"cache-control": "no-cache"}
@@ -169,7 +171,9 @@ class AemetClient(
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         # disable cache since the endpoint returns the latest 24h of data
         with self._session.cache_disabled():

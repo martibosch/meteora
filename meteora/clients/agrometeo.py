@@ -146,6 +146,8 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
     # _variables_name_col = VARIABLES_NAME_COL
     _ecv_dict = ECV_DICT
 
+    TZ = "Europe/Zurich"
+
     def __init__(
         self,
         region: RegionType,
@@ -270,7 +272,9 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
-            pandas.Timestamp.
+            pandas.Timestamp. Naive values are interpreted in the data source's
+            timezone (the client's `TZ` attribute); timezone-aware values are
+            converted to it.
         scale : {"hour", "day", "month", "year"}, optional
             Temporal scale of the measurements. If None, returns the finest scale, i.e.,
             10 minutes.
@@ -283,29 +287,12 @@ class AgrometeoClient(StationsEndpointMixin, VariablesEndpointMixin, BaseJSONCli
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         ts_df = self._get_ts_df(
             variables, start, end, scale=scale, measurement=measurement
         )
-        units_map = ts_df.attrs.get("units")
-        # filter time range, otherwise, for some reason, agrometeo API includes one day
-        # after
-        # TODO: dry with Meteocat, perhaps a global approach in the base client
-        time_ser = ts_df.index.get_level_values(settings.TIME_COL).to_series()
-        tz = time_ser.dt.tz
-        ts_df = ts_df.loc[
-            (
-                slice(None),
-                time_ser.between(
-                    pd.Timestamp(start, tz=tz),
-                    pd.Timestamp(end, tz=tz),
-                    inclusive="both",
-                ),
-            ),
-            :,
-        ]
-        if isinstance(units_map, Mapping):
-            ts_df.attrs = ts_df.attrs.copy()
-            ts_df.attrs["units"] = dict(units_map)
-        return ts_df
+        # filter the time range, otherwise the agrometeo API includes one day after
+        return self._clip_time_range(ts_df, start, end)

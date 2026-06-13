@@ -176,6 +176,7 @@ class DummyUnitsClient(VariablesHardcodedMixin, BaseClient):
     X_COL = "x"
     Y_COL = "y"
     CRS = "epsg:4326"
+    TZ = "UTC"
     _stations_gdf_id_col = settings.STATIONS_ID_COL
     _ts_df_time_col = settings.TIME_COL
     _ts_df_stations_id_col = settings.STATIONS_ID_COL
@@ -1130,6 +1131,112 @@ class TestClientUnits(unittest.TestCase):
         )
 
 
+class DummyZurichClient(DummyUnitsClient):
+    TZ = "Europe/Zurich"
+
+
+class TestClientTZ(unittest.TestCase):
+    """Test the timezone handling helpers of the base client."""
+
+    def setUp(self):
+        self.utc_client = DummyUnitsClient()
+        self.local_client = DummyZurichClient()
+
+    def _dummy_ts_df(self, times):
+        index = pd.MultiIndex.from_product(
+            [["A", "B"], times], names=[settings.STATIONS_ID_COL, settings.TIME_COL]
+        )
+        return pd.DataFrame({"temperature": range(len(index))}, index=index)
+
+    def test_localize_datetime(self):
+        # naive inputs are interpreted in the client's TZ
+        ts = self.local_client._localize_datetime("2024-01-01 12:00")
+        self.assertEqual(str(ts.tz), "Europe/Zurich")
+        self.assertEqual(ts.hour, 12)
+        # timezone-aware inputs are converted to the client's TZ
+        ts = self.local_client._localize_datetime("2024-01-01 12:00+05:00")
+        self.assertEqual(str(ts.tz), "Europe/Zurich")
+        # 12:00+05:00 is 08:00 in CET (UTC+01:00)
+        self.assertEqual(ts.hour, 8)
+
+    def test_naive_datetime(self):
+        # naive inputs pass through unchanged
+        self.assertEqual(
+            self.local_client._naive_datetime("2024-01-01 12:00"),
+            pd.Timestamp("2024-01-01 12:00"),
+        )
+        # timezone-aware inputs are converted to the client's TZ wall time
+        ts = self.utc_client._naive_datetime("2024-01-01 12:00+05:00")
+        self.assertIsNone(ts.tz)
+        # 12:00+05:00 is 07:00 UTC
+        self.assertEqual(ts.hour, 7)
+
+    def test_localize_ts_index(self):
+        times = pd.date_range("2024-01-01", periods=3, freq="h")
+        # naive time levels are localized to the client's TZ
+        for client in [self.utc_client, self.local_client]:
+            ts_df = client._localize_ts_index(self._dummy_ts_df(times))
+            time_level = ts_df.index.get_level_values(settings.TIME_COL)
+            self.assertEqual(str(time_level.tz), client.TZ)
+            self.assertEqual(len(ts_df), 2 * len(times))
+        # string time levels are coerced to timezone-aware datetimes
+        ts_df = self.utc_client._localize_ts_index(
+            self._dummy_ts_df(times.strftime("%Y-%m-%d %H:%M:%S"))
+        )
+        time_level = ts_df.index.get_level_values(settings.TIME_COL)
+        self.assertTrue(is_datetime64_any_dtype(time_level))
+        self.assertEqual(str(time_level.tz), "UTC")
+        # timezone-aware time levels are converted to the client's TZ
+        ts_df = self.local_client._localize_ts_index(
+            self._dummy_ts_df(times.tz_localize("UTC"))
+        )
+        time_level = ts_df.index.get_level_values(settings.TIME_COL)
+        self.assertEqual(str(time_level.tz), "Europe/Zurich")
+        # 00:00 UTC is 01:00 in CET (UTC+01:00)
+        self.assertEqual(time_level[0].hour, 1)
+
+    def test_localize_ts_index_dst(self):
+        # naive wall times spanning the 2024-10-27 DST fall-back: the 02:00-03:00 hour
+        # is genuinely ambiguous and its rows are dropped
+        times = pd.date_range("2024-10-27 01:00", "2024-10-27 04:00", freq="30min")
+        ts_df = self.local_client._localize_ts_index(self._dummy_ts_df(times))
+        time_level = ts_df.index.get_level_values(settings.TIME_COL)
+        self.assertFalse(time_level.isna().any())
+        # 02:00 and 02:30 are dropped for each of the two stations
+        self.assertEqual(len(ts_df), 2 * (len(times) - 2))
+        # there is no DST in UTC, so all rows are kept
+        ts_df = self.utc_client._localize_ts_index(self._dummy_ts_df(times))
+        self.assertEqual(len(ts_df), 2 * len(times))
+
+    def test_clip_time_range(self):
+        times = pd.date_range("2024-01-01", periods=24, freq="h", tz="Europe/Zurich")
+        ts_df = self._dummy_ts_df(times)
+        ts_df.attrs["units"] = {"temperature": "degC"}
+        # naive bounds are interpreted in the client's TZ
+        clipped = self.local_client._clip_time_range(
+            ts_df, "2024-01-01 06:00", "2024-01-01 12:00"
+        )
+        time_level = clipped.index.get_level_values(settings.TIME_COL)
+        self.assertEqual(time_level.min().hour, 6)
+        self.assertEqual(time_level.max().hour, 12)
+        # timezone-aware bounds clip the same instants regardless of their timezone
+        clipped_utc_bounds = self.local_client._clip_time_range(
+            ts_df,
+            pd.Timestamp("2024-01-01 05:00", tz="UTC"),
+            pd.Timestamp("2024-01-01 11:00", tz="UTC"),
+        )
+        pd.testing.assert_frame_equal(clipped, clipped_utc_bounds)
+        # the data frame attrs (e.g., the attached units) are preserved
+        self.assertEqual(clipped.attrs["units"], {"temperature": "degC"})
+
+    def test_get_ts_df_tz(self):
+        # the time level of the returned index is timezone-aware in the client's TZ
+        for client in [self.utc_client, self.local_client]:
+            ts_df = client.get_ts_df([settings.ECV_TEMPERATURE])
+            time_level = ts_df.index.get_level_values(settings.TIME_COL)
+            self.assertEqual(str(time_level.tz), client.TZ)
+
+
 class TestProgress(unittest.TestCase):
     """Test the progress bar integration across real client classes."""
 
@@ -1245,6 +1352,12 @@ class BaseClientTest:
             )
             # TODO: use "time" as `level` arg?
             assert is_datetime64_any_dtype(ts_df.index.get_level_values(1))
+            # the time index must be timezone-aware in the client's declared `TZ`
+            time_level = ts_df.index.get_level_values(settings.TIME_COL)
+            assert time_level.tz is not None
+            assert str(time_level.tz) == str(
+                pd.Timestamp("2020-01-01", tz=self.client.TZ).tz
+            )
             # test that index is sorted - note that we need to test it as a multi-index
             # for each station because (i) we do not care if stations ids are sorted and
             # (ii) otherwise the time index alone is not unique in long data frames

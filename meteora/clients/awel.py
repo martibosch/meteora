@@ -100,6 +100,8 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
     _variables_dict = VARIABLES_DICT
     _ecv_dict = ECV_DICT
 
+    TZ = "Europe/Zurich"
+
     def __init__(
         self,
         region: RegionType,
@@ -152,8 +154,9 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
     def _ts_params(
         self, variable_ids: Sequence, start: DateTimeType, end: DateTimeType
     ) -> dict:
-        start = pd.Timestamp(start)
-        end = pd.Timestamp(end)
+        # AWEL's timestamps are naive local time, so compare against naive local bounds
+        start = self._naive_datetime(start)
+        end = self._naive_datetime(end)
         return dict(variable_ids=variable_ids, start=start, end=end)
 
     def _ts_cache(self, ts_params) -> bool:
@@ -201,12 +204,16 @@ class AWELClient(TimePartitionedTSMixin, VariablesHardcodedMixin, BaseFileClient
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
-            pandas.Timestamp.
+            pandas.Timestamp. Naive values are interpreted in the data source's
+            timezone (the client's `TZ` attribute); timezone-aware values are
+            converted to it.
 
         Returns
         -------
         ts_df : pandas.DataFrame
             Long form data frame with a time series of measurements (second-level index)
-            at each station (first-level index) for each variable (column).
+            at each station (first-level index) for each variable (column). The time
+            level of the index is timezone-aware in the data source's timezone (the
+            client's `TZ` attribute).
         """
         return self._get_ts_df(variables, start, end)

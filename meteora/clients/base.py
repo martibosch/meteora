@@ -16,7 +16,7 @@ import requests_cache
 from pyregeon import RegionMixin, RegionType
 
 from meteora import settings, units, utils
-from meteora.utils import KwargsType, VariablesType
+from meteora.utils import DateTimeType, KwargsType, VariablesType
 
 __all__ = [
     "BaseFileClient",
@@ -100,6 +100,37 @@ class BaseClient(RegionMixin, abc.ABC):
     @utils.abstract_attribute
     def _ecv_dict(self) -> dict:
         pass
+
+    @utils.abstract_attribute
+    def TZ(self) -> str:  # pylint: disable=invalid-name
+        """Timezone of the timestamps returned by this client's data source.
+
+        Naive timestamps from the data source are interpreted as being in this timezone,
+        and the time level of the returned time series index is made timezone-aware in
+        it. Most providers report in ``"UTC"``; others use their local timezone (e.g.
+        ``"Europe/Zurich"`` for Swiss providers).
+        """
+        pass
+
+    def _localize_datetime(self, value: DateTimeType) -> pd.Timestamp:
+        """Return `value` as a timezone-aware timestamp in `self.TZ`.
+
+        Naive inputs are localized to `self.TZ`; timezone-aware inputs are converted to
+        it. Used to normalize the `start`/`end` arguments before building provider
+        requests or filtering the returned data.
+        """
+        ts = pd.Timestamp(value)
+        if ts.tz is None:
+            return ts.tz_localize(self.TZ)
+        return ts.tz_convert(self.TZ)
+
+    def _naive_datetime(self, value: DateTimeType) -> pd.Timestamp:
+        """Return `value` as a naive timestamp expressed in `self.TZ`.
+
+        Equivalent to `self._localize_datetime(value)` with the timezone dropped, for
+        data sources whose timestamps are naive but implicitly in `self.TZ`.
+        """
+        return self._localize_datetime(value).replace(tzinfo=None)
 
     @property
     def request_headers(self) -> dict:
@@ -231,6 +262,59 @@ class BaseClient(RegionMixin, abc.ABC):
     def _ts_df_from_endpoint(self, ts_params: Mapping) -> pd.DataFrame:
         pass
 
+    def _localize_ts_index(self, ts_df: pd.DataFrame) -> pd.DataFrame:
+        """Make the time level of the time series index timezone-aware in `self.TZ`.
+
+        Naive timestamps are localized to `self.TZ`; timezone-aware timestamps are
+        converted to it.
+        """
+        # coerce to datetime first: some sources leave the time level as strings
+        time_level = pd.DatetimeIndex(
+            pd.to_datetime(ts_df.index.get_level_values(settings.TIME_COL))
+        )
+        if time_level.tz is None:
+            # naive wall times repeated by a DST fall-back are genuinely ambiguous (the
+            # offset cannot be recovered), so label them NaT and drop them below rather
+            # than guessing
+            time_level = time_level.tz_localize(
+                self.TZ, ambiguous="NaT", nonexistent="shift_forward"
+            )
+        else:
+            time_level = time_level.tz_convert(self.TZ)
+        ts_df.index = pd.MultiIndex.from_arrays(
+            [ts_df.index.get_level_values(settings.STATIONS_ID_COL), time_level],
+            names=ts_df.index.names,
+        )
+        if time_level.isna().any():
+            ts_df = ts_df[time_level.notna()]
+        return ts_df
+
+    def _clip_time_range(
+        self,
+        ts_df: pd.DataFrame,
+        start: DateTimeType,
+        end: DateTimeType,
+        *,
+        inclusive: str = "both",
+    ) -> pd.DataFrame:
+        """Clip `ts_df` to the `[start, end]` time range.
+
+        The bounds are normalized to `self.TZ` so the comparison is timezone-safe
+        regardless of how `start`/`end` were provided. Preserves `ts_df.attrs` (e.g. the
+        attached units), which a plain `.loc` selection may drop.
+        """
+        attrs = dict(ts_df.attrs)
+        time_ser = ts_df.index.get_level_values(settings.TIME_COL).to_series()
+        mask = time_ser.between(
+            self._localize_datetime(start),
+            self._localize_datetime(end),
+            inclusive=inclusive,
+        )
+        ts_df = ts_df.loc[(slice(None), mask), :]
+        if attrs:
+            ts_df.attrs = attrs
+        return ts_df
+
     def _get_ts_df(self, variables: VariablesType, *args, **kwargs) -> pd.DataFrame:
         # process the variables arg
         variable_id_ser = self._get_variable_id_ser(variables)
@@ -263,6 +347,9 @@ class BaseClient(RegionMixin, abc.ABC):
                 self._ts_df_time_col: settings.TIME_COL,
             }
         )
+
+        # ensure the time level of the index is timezone-aware (in `self.TZ`)
+        ts_df = self._localize_ts_index(ts_df)
 
         # attach units
         units_map = self._get_units_map(variable_id_ser)
