@@ -1,6 +1,9 @@
 ci:
   autofix_commit_msg: "style(pre-commit.ci): auto fixes from pre-commit hooks"
   autoupdate_commit_msg: "style(pre-commit.ci): pre-commit autoupdate"
+  # tombi fetches a schema catalog over the network (unavailable on
+  # pre-commit.ci) and bibtex-tidy needs node (not installed on pre-commit.ci)
+  skip: [tombi-format, tombi-lint, bibtex-tidy]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
