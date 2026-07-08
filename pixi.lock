@@ -14230,8 +14230,8 @@ packages:
   - pytest ; extra == 'test'
 - pypi: ./
   name: meteora
-  version: 0.15.0
-  sha256: 6c569ee516805587f65ade7fd7e7a3e74e562203f21dc4945e429786f984c355
+  version: 0.16.0
+  sha256: 4683715dd0109953bc24881e4d359901bd2203d0d885b120a3583c6a4f6f41f2
   requires_dist:
   - dask
   - geopandas>=1.0.0
