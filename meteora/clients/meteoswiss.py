@@ -289,8 +289,8 @@ class MeteoSwissClient(
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an Agrometeo variable code (integer or
-            string) or an essential climate variable (ECV) following the Meteora
+            Target variables, which can be either a MeteoSwiss variable code (string) or
+            an essential climate variable (ECV) following the Meteora
             nomenclature (string).
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period

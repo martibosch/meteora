@@ -28,8 +28,8 @@ def flag_mislocated(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns); returned
-        unchanged (this step flags stations purely from their geometry).
+        Wide time series data frame with stations as columns and time as index;
+        returned unchanged (this step flags stations purely from their geometry).
     station_gser : geopandas.GeoSeries, optional
         Geoseries of station locations (points). If None, the step is skipped (with a
         warning) and no station is flagged.
@@ -62,7 +62,7 @@ def flag_unreliable(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     unreliable_threshold : numeric, optional
         Proportion of non-valid measurements after which a station is considered
         unreliable. If None, the value from `settings.UNRELIABLE_THRESHOLD` is used.
@@ -72,7 +72,6 @@ def flag_unreliable(
     ts_df, unreliable_stations : pandas.DataFrame, list
         The (unchanged) time series data frame and the list of station ids considered
         unreliable.
-
     """
     if unreliable_threshold is None:
         unreliable_threshold = settings.UNRELIABLE_THRESHOLD
@@ -97,7 +96,7 @@ def adjust_elevation(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     station_elevation_ser : pandas.Series, optional
         Series of station elevations, indexed by the station id. If None, the step is
         skipped and `ts_df` is returned unchanged.
@@ -111,7 +110,6 @@ def adjust_elevation(
     adjusted_ts_df, discarded : pandas.DataFrame, list
         The elevation-adjusted time series data frame and an (always empty) discard
         list.
-
     """
     if station_elevation_ser is None:
         return ts_df, []
@@ -142,7 +140,7 @@ def _outlier_mask(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     low_alpha, high_alpha : numeric, optional
         Lower and upper tail proportions (from 0 to 1) beyond which a measurement is
         flagged as an outlier. If None, the respective values from
@@ -184,7 +182,7 @@ def flag_outliers(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     low_alpha, high_alpha : numeric, optional
         Values for the lower and upper tail respectively (in proportion from 0 to 1)
         that lead to the rejection of the null hypothesis (i.e., the corresponding
@@ -229,7 +227,7 @@ def mask_outliers(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     low_alpha, high_alpha : numeric, optional
         Lower and upper tail proportions (from 0 to 1) beyond which a measurement is
         masked. If None, the respective values from `settings.OUTLIER_LOW_ALPHA` and
@@ -257,7 +255,7 @@ def flag_indoor(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     station_indoor_corr_threshold : numeric, optional
         Stations showing Pearson correlations (with the overall station median
         distribution) lower than this threshold are likely set up indoors. If None,
@@ -268,7 +266,6 @@ def flag_indoor(
     ts_df, indoor_stations : pandas.DataFrame, list
         The (unchanged) time series data frame and the list of station ids flagged as
         indoor.
-
     """
     if station_indoor_corr_threshold is None:
         station_indoor_corr_threshold = settings.STATION_INDOOR_CORR_THRESHOLD
@@ -366,7 +363,7 @@ def flag_buddies(
     Parameters
     ----------
     ts_df : pandas.DataFrame
-        Time series of measurements (rows) for each station (columns).
+        Wide time series data frame with stations as columns and time as index.
     station_gser : geopandas.GeoSeries
         Geoseries of station locations (points), indexed by the station id. It is
         (re)projected to a metric CRS to compute the neighbourhoods, so `buddy_radius`

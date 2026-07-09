@@ -163,9 +163,9 @@ class AemetClient(
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an AEMET variable code (integer or
-            string) or an essential climate variable (ECV) following the Meteora
-            nomenclature (string).
+            Target variables, which can be either an AEMET variable code (string) or an
+            essential climate variable (ECV) following the Meteora nomenclature
+            (string).
 
         Returns
         -------

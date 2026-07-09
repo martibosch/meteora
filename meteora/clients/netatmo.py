@@ -756,9 +756,9 @@ class NetatmoClient(StationsEndpointMixin, VariablesHardcodedMixin, BaseJSONClie
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either a Netatmo variable code (integer or
-            string) or an essential climate variable (ECV) following the Meteora
-            nomenclature (string).
+            Target variables, which can be either a Netatmo variable code (string) or an
+            essential climate variable (ECV) following the Meteora nomenclature
+            (string).
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to

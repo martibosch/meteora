@@ -229,7 +229,7 @@ class GHCNHourlyClient(
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an GHCNh variable code (string) or an
+            Target variables, which can be either a GHCNh variable code (string) or an
             essential climate variable (ECV) following the Meteora nomenclature
             (string).
         start, end : datetime-like, str, int, float

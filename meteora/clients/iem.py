@@ -237,14 +237,14 @@ class IEMClient(
         start: DateTimeType,
         end: DateTimeType,
     ) -> pd.DataFrame:
-        """Get time series data frame for a given station.
+        """Get time series data frame.
 
         Parameters
         ----------
         variables : str, int or list-like of str or int
-            Target variables, which can be either an IEM variable code (integer or
-            string) or an essential climate variable (ECV) following the Meteora
-            nomenclature (string).
+            Target variables, which can be either an IEM variable code (string) or an
+            essential climate variable (ECV) following the Meteora nomenclature
+            (string).
         start, end : datetime-like, str, int, float
             Values representing the start and end of the requested data period
             respectively. Accepts any datetime-like object that can be passed to
