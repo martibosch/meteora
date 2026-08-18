@@ -22,6 +22,9 @@ repos:
     rev: 1.0.0
     hooks:
       - id: mdformat
+        # mdformat mangles the joss paper, i.e., it turns the yaml front matter
+        # delimiters into thematic breaks and escapes latex commands
+        exclude: ^paper/
         additional_dependencies:
           - mdformat-gfm
           - mdformat-black
