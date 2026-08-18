@@ -1,30 +1,27 @@
-______________________________________________________________________
-
+---
 title: 'Meteora: unified access and processing of meteorological station data in Python'
 tags:
-
-- Python
-- meteorology
-- weather stations
-- citizen weather stations
-- quality control
-- data harmonization
-- time series
-- climate data
-- GIS
-  authors:
-- name: Martí Bosch
-  orcid: 0000-0001-8735-9144
-  affiliation: "1,2"
-  affiliations:
-- name: Federal Office of Meteorology and Climatology MeteoSwiss, Zürich, Switzerland
-  index: 1
-- name: Center for Climate Systems Modeling C2SM, ETH Zurich, Zürich, Switzerland
-  index: 2
-  date: 11 June 2026
-  bibliography: paper.bib
-
-______________________________________________________________________
+  - Python
+  - meteorology
+  - weather stations
+  - citizen weather stations
+  - quality control
+  - data harmonization
+  - time series
+  - climate data
+  - GIS
+authors:
+  - name: Martí Bosch
+    orcid: 0000-0001-8735-9144
+    affiliation: "1,2"
+affiliations:
+  - name: Federal Office of Meteorology and Climatology MeteoSwiss, Zürich, Switzerland
+    index: 1
+  - name: Center for Climate Systems Modeling C2SM, ETH Zurich, Zürich, Switzerland
+    index: 2
+date: 11 June 2026
+bibliography: paper.bib
+---
 
 # Summary
 
@@ -51,16 +48,16 @@ Accessing meteorological station data is fragmented across providers. In some ca
 
 This data harmonization transforms observations into a single, analysis-ready format so that the downstream tasks that normally demand ad-hoc preprocessing become straightforward. A notable example is quality control, which is usually done through dedicated packages such as TITAN [@baaserud2020titan], CrowdQC+ [@fenner2021crowdqc] and the MetObs-toolkit [@vergauwen2024metobs], which assume the user already holds harmonized files — Meteora instead couples acquisition and quality control within one interface. Similarly, climate indices can be computed directly on this harmonized output with xclim [@bourgault2023xclim], thus eliminating the need of per-provider preprocessing that such analyses would otherwise require.
 
-For surface meteorological data, globally harmonized sources can broadly be categorized into two main classes, i.e., gridded products such as the ERA5 reanalysis and global station compilations such as the Global Historical Climatology Network (GHCN). While reanalysis products directly integrate station observations using data assimilation pipelines, they tend to operate at spatial scales too coarse for many applications as well as to smooth away local extremes. Global station compilations, in turn, ingest only the networks exchanged internationally (largely official synoptic and airport/aviation stations, often the same ones the reanalyses assimilate), leaving them too sparse for data-scarce regions [@vandegiesen2014tahmo] and for resolving urban climate [@muller2013sensors; @baklanov2018urban]. Capturing this fine-scale variability requires combining the national, regional and crowdsourced networks those products omit (\\autoref{fig:coverage}) — the central motivation behind Meteora.
+For surface meteorological data, globally harmonized sources can broadly be categorized into two main classes, i.e., gridded products such as the ERA5 reanalysis and global station compilations such as the Global Historical Climatology Network (GHCN). While reanalysis products directly integrate station observations using data assimilation pipelines, they tend to operate at spatial scales too coarse for many applications as well as to smooth away local extremes. Global station compilations, in turn, ingest only the networks exchanged internationally (largely official synoptic and airport/aviation stations, often the same ones the reanalyses assimilate), leaving them too sparse for data-scarce regions [@vandegiesen2014tahmo] and for resolving urban climate [@muller2013sensors; @baklanov2018urban]. Capturing this fine-scale variability requires combining the national, regional and crowdsourced networks those products omit (\autoref{fig:coverage}) — the central motivation behind Meteora.
 
-![Station coverage for the Zürich (Switzerland) area from four networks accessible through Meteora: the global GHCN-hourly compilation, the national MeteoSwiss network, the cantonal AWEL network, and the Netatmo citizen weather stations.abel{fig:coverage}](figure.png)
+![Station coverage for the Zürich (Switzerland) area from four networks accessible through Meteora: the global GHCN-hourly compilation, the national MeteoSwiss network, the cantonal AWEL network, and the Netatmo citizen weather stations.\label{fig:coverage}](figure.png)
 
 Meteora targets researchers and practitioners who need to access station observations from potentially many heterogeneous sources, harmonize them into a single analysis-ready dataset, and apply common processing and analysis such as quality control, radiation-bias correction or climate-index computation, without writing ad-hoc per-provider code. Representative use cases include:
 
 - **Multi-provider and data-fusion studies.** Combining professional automatic weather stations from national weather services with higher-density local, regional and crowdsourced (CWS) networks, e.g., for urban heat island analysis, station-density and network-representativeness assessments [@bosch2026representative], or comparison of CWS against reference observations.
 - **QC and bias correction of low-cost and crowdsourced networks.** Applying and customizing CWS QC, with the same pipeline running seamlessly across providers. The Meteora QC module implements most of the methods of the CrowdQC+ R package [@fenner2021crowdqc; @napoly2018qc; @meier2017crowdsourcing], allows user-defined steps, and adds further corrections such as elevation adjustment and sensor-model-specific radiation-bias correction of LCS [@bosch2026revisiting].
 - **Higher-resolution climate indices.** Computing indices directly from station networks with xclim, rather than from the gridded products, can resolves local detail that gridded aggregations smooth away. Additionally, integrating regional and crowdsourced stations to the official networks can dramatically change the result, as shown for urban heat indices in Switzerland [@bosch2026revisiting].
-- **Benchmarking weather-forecast models.** Evaluating forecasts against in-situ station observations, rather than the reanalysis grids often used as ground truth, better reflects the site-specific conditions that is usually smoothed in the gridding process. Meteora's harmonized, space-time-indexed output feeds directly into forecast-evaluation pipelines such as stationbench [@molinaro2025ept2].
+- **Benchmarking weather-forecast models.** Evaluating forecasts against in-situ station observations, rather than the reanalysis grids often used as ground truth, better reflects the site-specific conditions that is usually smoothed in the gridding process. Meteora's harmonized, space-time-indexed output feeds directly into forecast-evaluation pipelines such as stationbench [@stationbench; @molinaro2025ept2].
 
 # Design and extensibility
 
