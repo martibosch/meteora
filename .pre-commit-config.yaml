@@ -13,7 +13,7 @@ repos:
       - id: end-of-file-fixer
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.2
+    rev: v4.18.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
@@ -27,7 +27,7 @@ repos:
           - mdformat-black
 
   - repo: https://github.com/tombi-toml/tombi-pre-commit
-    rev: v1.1.1
+    rev: v1.5.0
     hooks:
       - id: tombi-format
       - id: tombi-lint
@@ -44,7 +44,7 @@ repos:
         args: ["-d relaxed"]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.37.2
+    rev: 0.38.0
     hooks:
       - id: check-github-workflows
 
@@ -59,14 +59,14 @@ repos:
       - id: pyupgrade
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.15
+    rev: v0.16.5
     hooks:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies:
