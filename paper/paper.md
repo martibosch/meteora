@@ -15,9 +15,9 @@ authors:
     orcid: 0000-0001-8735-9144
     affiliation: "1,2"
 affiliations:
-  - name: Federal Office of Meteorology and Climatology MeteoSwiss, Zürich, Switzerland
-    index: 1
   - name: Center for Climate Systems Modeling C2SM, ETH Zurich, Zürich, Switzerland
+    index: 1
+  - name: Federal Office of Meteorology and Climatology MeteoSwiss, Zürich, Switzerland
     index: 2
 date: 11 June 2026
 bibliography: paper.bib
@@ -48,7 +48,7 @@ For surface meteorological data, globally harmonized sources can broadly be cate
 
 ![Station coverage for the Zürich (Switzerland) area from four networks accessible through Meteora: the global GHCN-hourly compilation, the national MeteoSwiss network, the cantonal AWEL network, and the Netatmo citizen weather stations.\label{fig:coverage}](figure.png)
 
-Meteora targets researchers and practitioners who need to access station observations from potentially many heterogeneous sources, harmonize them into a single analysis-ready dataset, and apply common processing and analysis such as quality control, radiation-bias correction or climate-index computation, without writing ad-hoc per-provider code. Example use cases include urban climate modeling, station-density and network-representativeness assessments, or comparison of CWS against reference observations.
+Meteora targets researchers and practitioners who need to access station observations from potentially many heterogeneous sources, harmonize them into a single analysis-ready dataset, and apply common processing and analysis such as quality control, radiation-bias correction or climate-index computation, without writing ad-hoc per-provider code. Example use cases include urban climate modeling, station-density and network-representativeness assessments, comparison of CWS against reference observations, or evaluation of weather-forecast models against in-situ observations, e.g., with stationbench [@stationbench; @molinaro2025ept2].
 
 # State of the field
 
@@ -62,12 +62,12 @@ A central goal of Meteora is to make supporting a new weather service straightfo
 
 # Research impact statement
 
-Meteora has already been used in research to produce the observational basis of two studies of urban climate in Switzerland, and the same harmonized interface underpins a broader set of applications:
+Meteora has been used to produce the observational basis of two studies of urban climate in Switzerland:
 
-- **Multi-provider and data-fusion studies.** Combining professional automatic weather stations from national weather services with higher-density local, regional and crowdsourced (CWS) networks, e.g., for urban heat island analysis, station-density and network-representativeness assessments [@bosch2026representative], or comparison of CWS against reference observations.
-- **QC and bias correction of low-cost and crowdsourced networks.** Applying and customizing CWS QC, with the same pipeline running seamlessly across providers. The Meteora QC module implements most of the methods of the CrowdQC+ R package [@fenner2021crowdqc; @napoly2018qc; @meier2017crowdsourcing], allows user-defined steps, and adds further corrections such as elevation adjustment and sensor-model-specific radiation-bias correction of LCS [@bosch2026revisiting].
-- **Higher-resolution climate indices.** Computing indices directly from station networks with xclim, rather than from the gridded products, can resolve local detail that gridded aggregations smooth away. Additionally, integrating regional and crowdsourced stations to the official networks can dramatically change the result, as shown for urban heat indices in Switzerland [@bosch2026revisiting].
-- **Benchmarking weather-forecast models.** Evaluating forecasts against in-situ station observations, rather than the reanalysis grids often used as ground truth, better reflects the site-specific conditions that are usually smoothed in the gridding process. Meteora's harmonized, space-time-indexed output feeds directly into forecast-evaluation pipelines such as stationbench [@stationbench; @molinaro2025ept2].
+- @bosch2026revisiting used Meteora in three stages. First, the bias-correction module was used to train sensor-model-specific radiation-bias corrections for several models of LCS, co-located alongside a MeteoSwiss station during summer 2025. Second, in each of the studied cities, Meteora was used to acquire data from the MeteoSwiss stations and, where available, from the local LCS network (e.g., AWEL in Zürich). Third, the climate-indices module was used to compare urban heat indices computed from reference (MeteoSwiss) stations only, from raw LCS and from radiation-corrected LCS, showing that integrating corrected LCS into the official network can substantially change the results. The full reproducible workflow is publicly available at [github.com/martibosch/swiss-uhi-lcd](https://github.com/martibosch/swiss-uhi-lcd).
+- @bosch2026urban used Meteora to acquire and harmonize observations from the MeteoSwiss and AWEL networks into a single dataset, and to detect heatwave periods from the MeteoSwiss observations. The full reproducible workflow is publicly available at [github.com/martibosch/zurich-uhi-lur](https://github.com/martibosch/zurich-uhi-lur).
+
+Both radiation-bias correction and heatwave detection are illustrated with executable example notebooks in the Meteora user guide.
 
 # Availability
 
